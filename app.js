@@ -204,8 +204,15 @@
     try {
       await loadPayPalSdk();
 
+      const { data: tokenResult, error: tokenError } = await supabaseClient.functions.invoke('paypal-client-token', {
+        body: { origin: window.location.origin }
+      });
+      if (tokenError) throw tokenError;
+      if (tokenResult?.error) throw new Error(tokenResult.error);
+      if (!tokenResult?.client_token) throw new Error('PayPal Client-Token konnte nicht erstellt werden.');
+
       const sdk = await window.paypal.createInstance({
-        clientId: config.paypalClientId,
+        clientToken: tokenResult.client_token,
         components: ['paypal-payments'],
         pageType: 'checkout'
       });
