@@ -20,6 +20,11 @@
   let paymentConfigured = false;
   const discoveryAvailability = new Map();
   let discoveryQuery = '';
+  let discoveryMode = 'all';
+  let discoveryOrigin = null;
+  let discoveryRadiusKm = 25;
+  let discoveryFreeOnly = true;
+  const discoveryDistances = new Map();
 
   function selectedValue(name) {
     const el = document.querySelector(`input[name="${name}"]:checked`);
@@ -134,27 +139,100 @@
       .filter(Boolean).join(' ').toLocaleLowerCase('de-DE');
   }
 
+  function hasCoordinates(basar) {
+    return Number.isFinite(Number(basar?.latitude)) && Number.isFinite(Number(basar?.longitude));
+  }
+
+  function distanceKm(lat1, lon1, lat2, lon2) {
+    const toRad = value => Number(value) * Math.PI / 180;
+    const earthKm = 6371;
+    const dLat = toRad(lat2) - toRad(lat1);
+    const dLon = toRad(lon2) - toRad(lon1);
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return earthKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function setLocationStatus(message = '', state = '') {
+    const el = $('locationSearchStatus');
+    if (!el) return;
+    el.textContent = message;
+    el.classList.toggle('hidden', !message);
+    el.dataset.state = state;
+  }
+
+  async function geocodeSearchTerm(query) {
+    const url = new URL('https://nominatim.openstreetmap.org/search');
+    url.searchParams.set('format', 'jsonv2');
+    url.searchParams.set('countrycodes', 'de');
+    url.searchParams.set('limit', '1');
+    url.searchParams.set('addressdetails', '1');
+    url.searchParams.set('q', query);
+    const response = await fetch(url, { headers: { 'Accept-Language': 'de' } });
+    if (!response.ok) throw new Error('Standortsuche vorübergehend nicht erreichbar.');
+    const results = await response.json();
+    if (!Array.isArray(results) || !results.length) return null;
+    const hit = results[0];
+    const lat = Number(hit.lat), lon = Number(hit.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+    return { lat, lon, label: hit.display_name || query };
+  }
+
+  function updateDistanceMap() {
+    discoveryDistances.clear();
+    if (!discoveryOrigin) return;
+    basare.forEach(b => {
+      if (!hasCoordinates(b)) return;
+      discoveryDistances.set(Number(b.id), distanceKm(discoveryOrigin.lat, discoveryOrigin.lon, Number(b.latitude), Number(b.longitude)));
+    });
+  }
+
   function renderDiscoveryCards() {
     const grid = $('basarCards');
     if (!grid) return;
     const query = discoveryQuery.trim().toLocaleLowerCase('de-DE');
-    const matches = basare.filter(b => !query || basarSearchHaystack(b).includes(query));
-    $('noBasarResults')?.classList.toggle('hidden', matches.length > 0);
-    $('clearBasarSearch')?.classList.toggle('hidden', !query);
-    if ($('discoverySubtitle')) {
-      $('discoverySubtitle').textContent = query
-        ? `${matches.length} passende${matches.length === 1 ? 'r' : ''} Basar${matches.length === 1 ? '' : 'e'} gefunden.`
-        : 'Finde einen passenden Basar und reserviere deinen Tisch.';
+    let matches = basare.slice();
+
+    if (discoveryMode === 'distance' && discoveryOrigin) {
+      updateDistanceMap();
+      matches = matches
+        .filter(b => discoveryDistances.has(Number(b.id)) && discoveryDistances.get(Number(b.id)) <= discoveryRadiusKm)
+        .sort((a, b) => (discoveryDistances.get(Number(a.id)) ?? Infinity) - (discoveryDistances.get(Number(b.id)) ?? Infinity));
+    } else if (query) {
+      matches = matches.filter(b => basarSearchHaystack(b).includes(query));
     }
+
+    if (discoveryFreeOnly) {
+      matches = matches.filter(b => {
+        const free = discoveryAvailability.get(Number(b.id));
+        return !Number.isFinite(free) || free > 0;
+      });
+    }
+
+    $('noBasarResults')?.classList.toggle('hidden', matches.length > 0);
+    $('clearBasarSearch')?.classList.toggle('hidden', discoveryMode === 'all' && !query && !discoveryOrigin);
+    if ($('discoverySubtitle')) {
+      if (discoveryMode === 'distance' && discoveryOrigin) {
+        $('discoverySubtitle').textContent = `${matches.length} Basar${matches.length === 1 ? '' : 'e'} im Umkreis von ${discoveryRadiusKm} km gefunden.`;
+      } else if (query) {
+        $('discoverySubtitle').textContent = `${matches.length} passende${matches.length === 1 ? 'r' : ''} Basar${matches.length === 1 ? '' : 'e'} gefunden.`;
+      } else {
+        $('discoverySubtitle').textContent = 'Finde einen passenden Basar und reserviere deinen Tisch.';
+      }
+    }
+
     grid.innerHTML = matches.map((b, index) => {
       const free = discoveryAvailability.get(Number(b.id));
       const minPrice = Math.min(Number(b.preis_1_tisch ?? 0), Number(b.preis_2_tische ?? 0), Number(b.preis_3_tische ?? 0));
       const soldOut = Number.isFinite(free) && free < 1;
       const selected = currentBasar && Number(currentBasar.id) === Number(b.id);
+      const distance = discoveryDistances.get(Number(b.id));
+      const distanceBadge = discoveryMode === 'distance' && Number.isFinite(distance)
+        ? `<span class="distance-badge">📍 ${distance.toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km entfernt</span>` : '';
       return `<article class="market-basar-card ${selected ? 'selected' : ''}" style="--card-delay:${Math.min(index,6)*45}ms">
         <div class="basar-card-art" aria-hidden="true"><span>${index % 3 === 0 ? '🧸' : index % 3 === 1 ? '👗' : '🧺'}</span><span>${index % 2 === 0 ? '🍰' : '🏷️'}</span></div>
         <div class="basar-card-body">
           <div class="basar-card-date"><span>${formatDate(b.veranstaltungsdatum)}</span>${soldOut ? '<b class="soldout">Ausgebucht</b>' : '<b>Buchbar</b>'}</div>
+          ${distanceBadge}
           <h3>${escapeHtml(b.name)}</h3>
           <p class="basar-card-location">📍 ${escapeHtml(basarLocationText(b))}${b.ort && (b.stadt || b.plz) ? ` · ${escapeHtml(b.ort)}` : ''}</p>
           <div class="basar-card-facts"><span><small>ab</small><strong>${euro(minPrice)}</strong></span><span><small>freie Tische</small><strong>${Number.isFinite(free) ? free : '…'}</strong></span></div>
@@ -192,10 +270,70 @@
     if (scroll) $('bookingZone')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  function applyDiscoverySearch() {
+  async function applyDiscoverySearch() {
     discoveryQuery = $('basarSearch')?.value || '';
-    renderDiscoveryCards();
-    $('discover')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const query = discoveryQuery.trim();
+    discoveryRadiusKm = Number($('radiusSelect')?.value || 25);
+    discoveryFreeOnly = $('freeOnly')?.checked !== false;
+    if (!query) {
+      discoveryMode = 'all'; discoveryOrigin = null; discoveryDistances.clear(); setLocationStatus(''); renderDiscoveryCards();
+      $('discover')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); return;
+    }
+
+    const normalized = query.toLocaleLowerCase('de-DE');
+    const nameMatches = basare.filter(b => String(b.name || '').toLocaleLowerCase('de-DE').includes(normalized));
+    const locationMatches = basare.filter(b => [b.plz, b.stadt, b.ort].filter(Boolean).join(' ').toLocaleLowerCase('de-DE').includes(normalized));
+    if (nameMatches.length && !locationMatches.length) {
+      discoveryOrigin = null; discoveryMode = 'text'; setLocationStatus('Basarname gefunden.', 'success'); renderDiscoveryCards();
+      $('discover')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); return;
+    }
+
+    const button = $('searchBasarButton');
+    if (button) { button.disabled = true; button.textContent = 'Suche …'; }
+    setLocationStatus('Standort wird gesucht …', 'loading');
+    try {
+      const found = await geocodeSearchTerm(query);
+      if (found) {
+        discoveryOrigin = { lat: found.lat, lon: found.lon };
+        discoveryMode = 'distance';
+        setLocationStatus(`Basare rund um ${query} – ${discoveryRadiusKm} km Umkreis.`, 'success');
+      } else {
+        discoveryOrigin = null; discoveryMode = 'text';
+        setLocationStatus('Ort nicht eindeutig gefunden. Es wird nach Basarname, Ort oder PLZ gefiltert.', 'notice');
+      }
+      renderDiscoveryCards();
+      $('discover')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (error) {
+      console.warn('Geocoding fehlgeschlagen:', error);
+      discoveryOrigin = null; discoveryMode = 'text';
+      setLocationStatus('Die Umkreissuche ist gerade nicht erreichbar. Die normale Textsuche bleibt verfügbar.', 'notice');
+      renderDiscoveryCards();
+    } finally {
+      if (button) { button.disabled = false; button.textContent = 'Basare finden'; }
+    }
+  }
+
+  async function useCurrentLocation() {
+    if (!navigator.geolocation) {
+      setLocationStatus('Dein Browser unterstützt die Standortfreigabe nicht.', 'notice'); return;
+    }
+    const button = $('useLocationButton');
+    if (button) { button.disabled = true; button.textContent = 'Standort wird ermittelt …'; }
+    setLocationStatus('Standort wird ermittelt …', 'loading');
+    navigator.geolocation.getCurrentPosition(position => {
+      discoveryOrigin = { lat: position.coords.latitude, lon: position.coords.longitude };
+      discoveryMode = 'distance'; discoveryQuery = ''; discoveryRadiusKm = Number($('radiusSelect')?.value || 25);
+      discoveryFreeOnly = $('freeOnly')?.checked !== false;
+      if ($('basarSearch')) $('basarSearch').value = '';
+      setLocationStatus(`Basare in ${discoveryRadiusKm} km rund um deinen Standort.`, 'success');
+      renderDiscoveryCards();
+      $('discover')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      if (button) { button.disabled = false; button.textContent = '📍 Meinen Standort verwenden'; }
+    }, error => {
+      console.warn('Standortfreigabe fehlgeschlagen:', error);
+      setLocationStatus('Standort konnte nicht verwendet werden. Bitte Ort oder PLZ eingeben.', 'notice');
+      if (button) { button.disabled = false; button.textContent = '📍 Meinen Standort verwenden'; }
+    }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 });
   }
 
   function renderBasarSelector() {
@@ -637,15 +775,18 @@
 
   document.querySelectorAll('input[name="tables"], #cake').forEach(el => el.addEventListener('change', updatePrice));
 
-  $('searchBasarButton')?.addEventListener('click', applyDiscoverySearch);
+  $('searchBasarButton')?.addEventListener('click', () => applyDiscoverySearch());
+  $('useLocationButton')?.addEventListener('click', useCurrentLocation);
+  $('radiusSelect')?.addEventListener('change', () => { discoveryRadiusKm = Number($('radiusSelect').value || 25); if (discoveryMode === 'distance') { setLocationStatus(`Basare im Umkreis von ${discoveryRadiusKm} km.`, 'success'); renderDiscoveryCards(); } });
+  $('freeOnly')?.addEventListener('change', () => { discoveryFreeOnly = $('freeOnly').checked; renderDiscoveryCards(); });
   $('basarSearch')?.addEventListener('keydown', event => {
     if (event.key === 'Enter') { event.preventDefault(); applyDiscoverySearch(); }
   });
   $('basarSearch')?.addEventListener('input', () => {
-    if (!$('basarSearch').value.trim()) { discoveryQuery = ''; renderDiscoveryCards(); }
+    if (!$('basarSearch').value.trim()) { discoveryQuery = ''; discoveryMode = 'all'; discoveryOrigin = null; discoveryDistances.clear(); setLocationStatus(''); renderDiscoveryCards(); }
   });
   $('clearBasarSearch')?.addEventListener('click', () => {
-    $('basarSearch').value = ''; discoveryQuery = ''; renderDiscoveryCards(); $('basarSearch').focus();
+    $('basarSearch').value = ''; discoveryQuery = ''; discoveryMode = 'all'; discoveryOrigin = null; discoveryDistances.clear(); setLocationStatus(''); renderDiscoveryCards(); $('basarSearch').focus();
   });
   document.addEventListener('click', event => {
     const button = event.target.closest('[data-discover-basar]');

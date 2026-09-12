@@ -36,6 +36,22 @@
   function clearError(id) { const box=$(id); box.textContent=''; box.classList.add('hidden'); }
   function humanizeError(error) { const m=error?.message || String(error || 'Unbekannter Fehler.'); if (/permission|row-level security|not authorized/i.test(m)) return 'Keine Berechtigung für diese Aktion.'; if (/nicht genuegend/i.test(m)) return 'Nicht genügend freie Tische vorhanden.'; return m; }
 
+  async function geocodeBasarLocation(plz, stadt) {
+    const query = [plz, stadt, 'Deutschland'].filter(Boolean).join(' ');
+    if (!query.trim() || (!plz && !stadt)) return null;
+    const url = new URL('https://nominatim.openstreetmap.org/search');
+    url.searchParams.set('format', 'jsonv2');
+    url.searchParams.set('countrycodes', 'de');
+    url.searchParams.set('limit', '1');
+    url.searchParams.set('q', query);
+    const response = await fetch(url, { headers: { 'Accept-Language': 'de' } });
+    if (!response.ok) return null;
+    const results = await response.json();
+    const hit = Array.isArray(results) ? results[0] : null;
+    const latitude = Number(hit?.lat), longitude = Number(hit?.lon);
+    return Number.isFinite(latitude) && Number.isFinite(longitude) ? { latitude, longitude } : null;
+  }
+
   function setAuthMode(mode) {
     const login = mode === 'login';
     $('loginPanel').classList.toggle('hidden', !login);
@@ -202,7 +218,7 @@
 
   async function loadBasare() {
     clearError('basarError');
-    const { data, error } = await supabase.from('basare').select('id,name,ort,plz,stadt,veranstaltungsdatum,max_tische,aktiv,created_at,veranstalter_id,preis_1_tisch,preis_2_tische,preis_3_tische,kuchenrabatt,zahlungsfrist_tage,kurzfristig_ab_tage,kurzfristige_zahlungsfrist_tage,stornofrist_tage,kuchennachgebuehr,uebertragung_erlaubt,zusatzregeln').eq('veranstalter_id', currentUser.id).order('veranstaltungsdatum', { ascending: true });
+    const { data, error } = await supabase.from('basare').select('id,name,ort,plz,stadt,latitude,longitude,veranstaltungsdatum,max_tische,aktiv,created_at,veranstalter_id,preis_1_tisch,preis_2_tische,preis_3_tische,kuchenrabatt,zahlungsfrist_tage,kurzfristig_ab_tage,kurzfristige_zahlungsfrist_tage,stornofrist_tage,kuchennachgebuehr,uebertragung_erlaubt,zusatzregeln').eq('veranstalter_id', currentUser.id).order('veranstaltungsdatum', { ascending: true });
     if (error) throw error;
     basare=data || [];
     if (!selectedBasarId || !basare.some(b => b.id === selectedBasarId)) { const active=basare.find(b=>b.aktiv) || basare[0]; selectedBasarId=active?.id || null; }
@@ -223,7 +239,7 @@
   function renderBasarList() {
     const el=$('basarList');
     if (!basare.length) { el.innerHTML='<div class="empty-state">Noch kein Basar vorhanden. Lege deinen ersten Basar an.</div>'; return; }
-    el.innerHTML=basare.map(b=>{const st=getBasarBookingStats(b.id);const max=Number(b.max_tische||0);const full=max>0&&st.reserved>=max;const statusText=!b.aktiv?'Inaktiv':full?'Ausgebucht':'Aktiv';const statusClass=!b.aktiv?'inactive':full?'full':'active';return `<button class="basar-list-item ${b.id===selectedBasarId?'selected':''}" data-basar-id="${b.id}" type="button"><div class="basar-list-main"><strong>${escapeHtml(b.name)}</strong><span>${escapeHtml(formatDate(b.veranstaltungsdatum))}${b.ort?' · '+escapeHtml(b.ort):''}</span><small>${st.reserved} von ${max} Tischen reserviert · ${st.open} offen · ${st.paid} bezahlt</small></div><span class="status-chip ${statusClass}">${statusText}</span></button>`;}).join('');
+    el.innerHTML=basare.map(b=>{const st=getBasarBookingStats(b.id);const max=Number(b.max_tische||0);const full=max>0&&st.reserved>=max;const statusText=!b.aktiv?'Inaktiv':full?'Ausgebucht':'Aktiv';const statusClass=!b.aktiv?'inactive':full?'full':'active';return `<button class="basar-list-item ${b.id===selectedBasarId?'selected':''}" data-basar-id="${b.id}" type="button"><div class="basar-list-main"><strong>${escapeHtml(b.name)}</strong><span>${escapeHtml(formatDate(b.veranstaltungsdatum))}${b.ort?' · '+escapeHtml(b.ort):''}</span><small>${st.reserved} von ${max} Tischen reserviert · ${st.open} offen · ${st.paid} bezahlt${Number.isFinite(Number(b.latitude))&&Number.isFinite(Number(b.longitude))?' · 📍 Umkreissuche bereit':' · ⚠ Standort neu speichern'}</small></div><span class="status-chip ${statusClass}">${statusText}</span></button>`;}).join('');
     el.querySelectorAll('[data-basar-id]').forEach(btn=>btn.addEventListener('click', async()=>{ selectedBasarId=Number(btn.dataset.basarId); renderBasarList(); try{await loadSelectedBasar();}catch(e){console.error(e);showError('basarError',humanizeError(e));} }));
   }
 
@@ -395,10 +411,27 @@
   async function saveBasar(event) {
     event.preventDefault(); clearError('basarError'); const id=$('basarId').value?Number($('basarId').value):null;
     const payload={name:$('basarName').value.trim(),ort:$('basarOrt').value.trim()||null,plz:$('basarPlz').value.trim()||null,stadt:$('basarStadt').value.trim()||null,veranstaltungsdatum:$('basarDatum').value,max_tische:Number($('basarTische').value),preis_1_tisch:Number($('preis1Tisch').value),preis_2_tische:Number($('preis2Tische').value),preis_3_tische:Number($('preis3Tische').value),kuchenrabatt:Number($('kuchenrabatt').value),zahlungsfrist_tage:Number($('zahlungsfristTage').value),kurzfristig_ab_tage:Number($('kurzfristigAbTage').value),kurzfristige_zahlungsfrist_tage:Number($('kurzfristigeZahlungsfristTage').value),stornofrist_tage:Number($('stornofristTage').value),kuchennachgebuehr:Number($('kuchennachgebuehr').value),uebertragung_erlaubt:$('uebertragungErlaubt').value==='true',zusatzregeln:$('zusatzregeln').value.trim()||null,aktiv:$('basarAktiv').value==='true',veranstalter_id:currentUser.id};
-    if(!payload.name||!payload.veranstaltungsdatum||!payload.max_tische)return showError('basarError','Bitte Name, Datum und Tischanzahl ausfüllen.'); if([payload.preis_1_tisch,payload.preis_2_tische,payload.preis_3_tische,payload.kuchenrabatt,payload.kuchennachgebuehr].some(v=>!Number.isFinite(v)||v<0))return showError('basarError','Bitte gültige Preise und Gebühren eingeben.'); if([payload.zahlungsfrist_tage,payload.kurzfristig_ab_tage,payload.kurzfristige_zahlungsfrist_tage,payload.stornofrist_tage].some(v=>!Number.isInteger(v)||v<0||v>365))return showError('basarError','Bitte gültige Fristen zwischen 0 und 365 Tagen eingeben.');
-    const btn=$('saveBasarButton');btn.disabled=true;btn.textContent='Speichert …';
-    try { if(id){const {error}=await supabase.from('basare').update(payload).eq('id',id).eq('veranstalter_id',currentUser.id);if(error)throw error;selectedBasarId=id;}else{const {data,error}=await supabase.from('basare').insert(payload).select('id').single();if(error)throw error;selectedBasarId=data.id;} $('basarFormCard').classList.add('hidden'); await loadBasare(); $('onboardingBanner').classList.add('hidden'); }
-    catch(error){console.error(error);showError('basarError',humanizeError(error));}finally{btn.disabled=false;btn.textContent='Basar speichern';}
+    if(!payload.name||!payload.veranstaltungsdatum||!payload.max_tische)return showError('basarError','Bitte Name, Datum und Tischanzahl ausfüllen.');
+    if([payload.preis_1_tisch,payload.preis_2_tische,payload.preis_3_tische,payload.kuchenrabatt,payload.kuchennachgebuehr].some(v=>!Number.isFinite(v)||v<0))return showError('basarError','Bitte gültige Preise und Gebühren eingeben.');
+    if([payload.zahlungsfrist_tage,payload.kurzfristig_ab_tage,payload.kurzfristige_zahlungsfrist_tage,payload.stornofrist_tage].some(v=>!Number.isInteger(v)||v<0||v>365))return showError('basarError','Bitte gültige Fristen zwischen 0 und 365 Tagen eingeben.');
+    const btn=$('saveBasarButton');btn.disabled=true;btn.textContent='Standort wird ermittelt …';
+    try {
+      const existing=id?basare.find(b=>Number(b.id)===Number(id)):null;
+      const locationChanged=!existing || String(existing.plz||'')!==String(payload.plz||'') || String(existing.stadt||'')!==String(payload.stadt||'');
+      if (locationChanged || !Number.isFinite(Number(existing?.latitude)) || !Number.isFinite(Number(existing?.longitude))) {
+        const coords=await geocodeBasarLocation(payload.plz,payload.stadt);
+        payload.latitude=coords?.latitude ?? null;
+        payload.longitude=coords?.longitude ?? null;
+      }
+      btn.textContent='Speichert …';
+      if(id){const {error}=await supabase.from('basare').update(payload).eq('id',id).eq('veranstalter_id',currentUser.id);if(error)throw error;selectedBasarId=id;}
+      else{const {data,error}=await supabase.from('basare').insert(payload).select('id').single();if(error)throw error;selectedBasarId=data.id;}
+      $('basarFormCard').classList.add('hidden'); await loadBasare(); $('onboardingBanner').classList.add('hidden');
+      if ((payload.plz || payload.stadt) && (!Number.isFinite(Number(payload.latitude)) || !Number.isFinite(Number(payload.longitude))) && (locationChanged || !existing)) {
+        showError('basarError','Basar wurde gespeichert, aber der Standort konnte nicht automatisch für die Umkreissuche ermittelt werden. Bitte PLZ und Stadt prüfen und erneut speichern.');
+      }
+    } catch(e){console.error(e);showError('basarError',humanizeError(e));}
+    finally{btn.disabled=false;btn.textContent='Basar speichern';}
   }
 
   async function showDashboard() {
@@ -422,7 +455,7 @@
     if (password !== repeat) return showError('registerError', 'Die beiden Passwörter stimmen nicht überein.');
     const button = $('registerButton'); button.disabled = true; button.textContent = 'Konto wird erstellt …';
     try {
-      const redirectTo = `${window.location.origin}${window.location.pathname}?v=232&onboarding=1`;
+      const redirectTo = `${window.location.origin}${window.location.pathname}?v=25&onboarding=1`;
       const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo } });
       if (error) throw error;
       if (data.session) {

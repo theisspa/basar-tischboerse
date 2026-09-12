@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Basar Tischbörse</title>
-  <link rel="stylesheet" href="styles.css?v=24">
+  <link rel="stylesheet" href="styles.css?v=25">
 </head>
 <body>
   <header class="site-header">
@@ -13,7 +13,7 @@
         <div class="brand">Basar Tischbörse</div>
         <div class="subtitle">Tische einfach online buchen</div>
       </div>
-      <a class="header-link" href="admin.html?v=24">Für Veranstalter</a>
+      <a class="header-link" href="admin.html?v=25">Für Veranstalter</a>
     </div>
   </header>
 
@@ -32,6 +32,12 @@
             </div>
             <button class="market-primary" id="searchBasarButton" type="button">Basare finden</button>
           </div>
+          <div class="proximity-tools" aria-label="Umkreissuche">
+            <label class="radius-control" for="radiusSelect"><span>Umkreis</span><select id="radiusSelect"><option value="10">10 km</option><option value="25" selected>25 km</option><option value="50">50 km</option><option value="100">100 km</option></select></label>
+            <label class="free-only-control"><input id="freeOnly" type="checkbox" checked><span>Nur mit freien Tischen</span></label>
+            <button class="location-button" id="useLocationButton" type="button">📍 Meinen Standort verwenden</button>
+          </div>
+          <div class="location-search-status hidden" id="locationSearchStatus" role="status"></div>
           <div class="hero-trust">
             <span>✓ Direkt reservieren</span><span>✓ Klare Preise</span><span>✓ Bestätigung per E-Mail</span>
           </div>
@@ -72,7 +78,7 @@
       <div id="noBasarResults" class="friendly-empty hidden">
         <div class="friendly-empty-icon">🧺</div>
         <strong>Kein passender Basar gefunden.</strong>
-        <span>Versuche einen anderen Ort, eine andere PLZ oder lösche die Suche.</span>
+        <span>Versuche einen größeren Umkreis, einen anderen Ort oder lösche die Suche.</span>
       </div>
     </section>
 
@@ -169,12 +175,13 @@
         <div><span class="why-icon">💌</span><strong>Bestätigung erhalten</strong><p>Alle wichtigen Angaben und die Teilnahmevereinbarung kommen per E-Mail.</p></div>
       </div>
     </section>
+      <div class="map-attribution container">Standortsuche mit Daten von <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap-Mitwirkenden</a>.</div>
   </main>
 
   <footer class="footer"><div class="container">Basar Tischbörse</div></footer>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
-  <script src="config.js?v=24"></script>
-  <script src="app.js?v=24"></script>
+  <script src="config.js?v=25"></script>
+  <script src="app.js?v=25"></script>
 </body>
 </html>

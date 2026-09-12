@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Veranstalter - Basar Tischbörse</title>
-  <link rel="stylesheet" href="styles.css?v=232">
+  <link rel="stylesheet" href="styles.css?v=25">
 </head>
 <body>
   <header class="site-header">
@@ -115,7 +115,7 @@
           <div class="field full"><label for="basarName">Name des Basars</label><input id="basarName" required maxlength="120" placeholder="z. B. Herbstbasar"></div>
           <div class="field"><label for="basarOrt">Veranstaltungsort / Halle</label><input id="basarOrt" maxlength="160" placeholder="z. B. Alsenzhalle TVA"></div>
           <div class="field"><label for="basarPlz">PLZ des Basars</label><input id="basarPlz" inputmode="numeric" maxlength="10" placeholder="z. B. 67677"></div>
-          <div class="field"><label for="basarStadt">Stadt / Gemeinde</label><input id="basarStadt" maxlength="120" placeholder="z. B. Enkenbach-Alsenborn"></div>
+          <div class="field"><label for="basarStadt">Stadt / Gemeinde</label><input id="basarStadt" maxlength="120" placeholder="z. B. Enkenbach-Alsenborn"><span class="hint">Die Position für die Umkreissuche wird beim Speichern automatisch aus PLZ und Ort ermittelt.</span></div>
           <div class="field"><label for="basarDatum">Veranstaltungsdatum</label><input id="basarDatum" type="date" required></div>
           <div class="field"><label for="basarTische">Maximale Tischanzahl</label><input id="basarTische" type="number" min="1" max="10000" required></div>
           <div class="field"><label for="basarAktiv">Status</label><select id="basarAktiv"><option value="true">Aktiv / buchbar</option><option value="false">Inaktiv / nicht buchbar</option></select></div>
@@ -211,7 +211,7 @@
 
   <footer class="footer"><div class="container">Basar Tischbörse</div></footer>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=232"></script>
-  <script src="admin.js?v=232"></script>
+  <script src="config.js?v=25"></script>
+  <script src="admin.js?v=25"></script>
 </body>
 </html>
