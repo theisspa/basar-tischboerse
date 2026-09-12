@@ -18,6 +18,8 @@
   let lastEmailPayload = null;
   let paypalSdkPromise = null;
   let paymentConfigured = false;
+  const discoveryAvailability = new Map();
+  let discoveryQuery = '';
 
   function selectedValue(name) {
     const el = document.querySelector(`input[name="${name}"]:checked`);
@@ -121,6 +123,81 @@
       .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
   }
 
+  function basarLocationText(basar) {
+    const parts = [basar.plz, basar.stadt].filter(Boolean);
+    if (parts.length) return parts.join(' ');
+    return basar.ort || 'Ort wird noch ergänzt';
+  }
+
+  function basarSearchHaystack(basar) {
+    return [basar.name, basar.ort, basar.plz, basar.stadt]
+      .filter(Boolean).join(' ').toLocaleLowerCase('de-DE');
+  }
+
+  function renderDiscoveryCards() {
+    const grid = $('basarCards');
+    if (!grid) return;
+    const query = discoveryQuery.trim().toLocaleLowerCase('de-DE');
+    const matches = basare.filter(b => !query || basarSearchHaystack(b).includes(query));
+    $('noBasarResults')?.classList.toggle('hidden', matches.length > 0);
+    $('clearBasarSearch')?.classList.toggle('hidden', !query);
+    if ($('discoverySubtitle')) {
+      $('discoverySubtitle').textContent = query
+        ? `${matches.length} passende${matches.length === 1 ? 'r' : ''} Basar${matches.length === 1 ? '' : 'e'} gefunden.`
+        : 'Finde einen passenden Basar und reserviere deinen Tisch.';
+    }
+    grid.innerHTML = matches.map((b, index) => {
+      const free = discoveryAvailability.get(Number(b.id));
+      const minPrice = Math.min(Number(b.preis_1_tisch ?? 0), Number(b.preis_2_tische ?? 0), Number(b.preis_3_tische ?? 0));
+      const soldOut = Number.isFinite(free) && free < 1;
+      const selected = currentBasar && Number(currentBasar.id) === Number(b.id);
+      return `<article class="market-basar-card ${selected ? 'selected' : ''}" style="--card-delay:${Math.min(index,6)*45}ms">
+        <div class="basar-card-art" aria-hidden="true"><span>${index % 3 === 0 ? '🧸' : index % 3 === 1 ? '👗' : '🧺'}</span><span>${index % 2 === 0 ? '🍰' : '🏷️'}</span></div>
+        <div class="basar-card-body">
+          <div class="basar-card-date"><span>${formatDate(b.veranstaltungsdatum)}</span>${soldOut ? '<b class="soldout">Ausgebucht</b>' : '<b>Buchbar</b>'}</div>
+          <h3>${escapeHtml(b.name)}</h3>
+          <p class="basar-card-location">📍 ${escapeHtml(basarLocationText(b))}${b.ort && (b.stadt || b.plz) ? ` · ${escapeHtml(b.ort)}` : ''}</p>
+          <div class="basar-card-facts"><span><small>ab</small><strong>${euro(minPrice)}</strong></span><span><small>freie Tische</small><strong>${Number.isFinite(free) ? free : '…'}</strong></span></div>
+          <button class="market-card-button" type="button" data-discover-basar="${b.id}" ${soldOut ? 'disabled' : ''}>${soldOut ? 'Derzeit ausgebucht' : selected ? 'Ausgewählt · zur Buchung' : 'Details & Tisch buchen'}</button>
+        </div>
+      </article>`;
+    }).join('');
+  }
+
+  async function loadDiscoveryAvailability() {
+    await Promise.all(basare.map(async b => {
+      try {
+        const { data, error } = await supabaseClient.rpc('get_basar_availability', { p_basar_id: b.id });
+        if (error) throw error;
+        const row = Array.isArray(data) ? data[0] : data;
+        if (row) discoveryAvailability.set(Number(b.id), Number(row.free_tables));
+      } catch (error) {
+        console.warn('Verfügbarkeit für Basar konnte nicht geladen werden:', b.id, error);
+      }
+    }));
+    renderDiscoveryCards();
+  }
+
+  async function selectDiscoveredBasar(id, scroll = true) {
+    const next = basare.find(b => Number(b.id) === Number(id));
+    if (!next) return;
+    currentBasar = next;
+    const select = $('basarSelect');
+    if (select) select.value = String(next.id);
+    const url = new URL(window.location.href);
+    url.searchParams.set('basar', String(next.id));
+    history.replaceState(null, '', url);
+    renderDiscoveryCards();
+    await showCurrentBasar();
+    if (scroll) $('bookingZone')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function applyDiscoverySearch() {
+    discoveryQuery = $('basarSearch')?.value || '';
+    renderDiscoveryCards();
+    $('discover')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   function renderBasarSelector() {
     const wrap = $('basarSelectWrap');
     const select = $('basarSelect');
@@ -139,7 +216,9 @@
     const requestedId = Number(params.get('basar'));
     currentBasar = basare.find(b => b.id === requestedId) || basare[0];
     renderBasarSelector();
+    renderDiscoveryCards();
     await showCurrentBasar();
+    loadDiscoveryAvailability();
   }
 
   function updatePaymentOptions() {
@@ -159,7 +238,8 @@
     if (!currentBasar) return;
     clearError();
     $('basarName').textContent = currentBasar.name;
-    $('basarDetails').textContent = `${formatDate(currentBasar.veranstaltungsdatum)} · ${currentBasar.ort || ''}`.replace(/ · $/, '');
+    const publicLocation = [currentBasar.plz, currentBasar.stadt].filter(Boolean).join(' ');
+    $('basarDetails').textContent = [formatDate(currentBasar.veranstaltungsdatum), publicLocation, currentBasar.ort].filter(Boolean).join(' · ');
     updateBookingRules();
     updatePaymentOptions();
     $('price1Label').textContent = euro(currentBasar.preis_1_tisch ?? 12);
@@ -557,13 +637,25 @@
 
   document.querySelectorAll('input[name="tables"], #cake').forEach(el => el.addEventListener('change', updatePrice));
 
+  $('searchBasarButton')?.addEventListener('click', applyDiscoverySearch);
+  $('basarSearch')?.addEventListener('keydown', event => {
+    if (event.key === 'Enter') { event.preventDefault(); applyDiscoverySearch(); }
+  });
+  $('basarSearch')?.addEventListener('input', () => {
+    if (!$('basarSearch').value.trim()) { discoveryQuery = ''; renderDiscoveryCards(); }
+  });
+  $('clearBasarSearch')?.addEventListener('click', () => {
+    $('basarSearch').value = ''; discoveryQuery = ''; renderDiscoveryCards(); $('basarSearch').focus();
+  });
+  document.addEventListener('click', event => {
+    const button = event.target.closest('[data-discover-basar]');
+    if (!button || button.disabled) return;
+    selectDiscoveredBasar(Number(button.dataset.discoverBasar));
+  });
+
   $('basarSelect').addEventListener('change', async event => {
-    const id = Number(event.target.value);
-    currentBasar = basare.find(b => b.id === id) || basare[0];
-    const url = new URL(window.location.href);
-    url.searchParams.set('basar', String(currentBasar.id));
-    window.history.replaceState({}, '', url);
-    try { await showCurrentBasar(); } catch (error) { console.error(error); showError(`Der Basar konnte nicht geladen werden: ${error?.message || error}`); }
+    try { await selectDiscoveredBasar(Number(event.target.value), false); }
+    catch (error) { console.error(error); showError(`Der Basar konnte nicht geladen werden: ${error?.message || error}`); }
   });
 
   $('bookingForm').addEventListener('submit', submitBooking);

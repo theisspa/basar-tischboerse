@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Basar Tischbörse</title>
-  <link rel="stylesheet" href="styles.css?v=221">
+  <link rel="stylesheet" href="styles.css?v=24">
 </head>
 <body>
   <header class="site-header">
@@ -13,118 +13,160 @@
         <div class="brand">Basar Tischbörse</div>
         <div class="subtitle">Tische einfach online buchen</div>
       </div>
-      <a class="header-link" href="admin.html?v=23">Für Veranstalter</a>
+      <a class="header-link" href="admin.html?v=24">Für Veranstalter</a>
     </div>
   </header>
 
-  <main class="container main">
-    <section class="hero">
-      <span class="eyebrow">ONLINE-TISCHRESERVIERUNG</span>
-      <h1>Verkaufsplatz für deinen Basar sichern.</h1>
-      <p>Wähle deinen Basar, reserviere bis zu drei Tische und erhalte direkt deine Buchungsbestätigung und Teilnahmevereinbarung.</p>
+  <main class="public-main">
+    <section class="market-hero">
+      <div class="container market-hero-grid">
+        <div class="market-hero-copy">
+          <span class="eyebrow warm">BASARE ENTDECKEN & TISCHE RESERVIEREN</span>
+          <h1>Finde deinen nächsten Basar ganz einfach.</h1>
+          <p>Entdecke Basare in deiner Umgebung, vergleiche Termine und Preise und sichere dir direkt online deinen Verkaufstisch.</p>
+          <div class="hero-search" role="search">
+            <label class="sr-only" for="basarSearch">Basar oder Ort suchen</label>
+            <div class="hero-search-input-wrap">
+              <span class="search-icon" aria-hidden="true">⌕</span>
+              <input id="basarSearch" type="search" placeholder="Ort, PLZ oder Basarname suchen …" autocomplete="postal-code">
+            </div>
+            <button class="market-primary" id="searchBasarButton" type="button">Basare finden</button>
+          </div>
+          <div class="hero-trust">
+            <span>✓ Direkt reservieren</span><span>✓ Klare Preise</span><span>✓ Bestätigung per E-Mail</span>
+          </div>
+        </div>
+        <div class="market-illustration" aria-hidden="true">
+          <svg viewBox="0 0 520 380" role="img">
+            <defs>
+              <linearGradient id="awning" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stop-color="#e7835f"/><stop offset="1" stop-color="#f1a86f"/>
+              </linearGradient>
+            </defs>
+            <circle cx="420" cy="78" r="42" fill="#f7d88a" opacity=".65"/>
+            <path d="M72 275h376" stroke="#d5b99d" stroke-width="12" stroke-linecap="round" opacity=".5"/>
+            <rect x="118" y="118" width="285" height="154" rx="16" fill="#fffaf1" stroke="#e6ccb1" stroke-width="5"/>
+            <path d="M104 118h315l-24-54H128z" fill="url(#awning)"/>
+            <path d="M128 64h54l-15 54h-63zM182 64h54l-6 54h-63zM236 64h54l5 54h-65zM290 64h54l15 54h-64zM344 64h51l24 54h-60z" fill="#fff3df" opacity=".95"/>
+            <rect x="143" y="188" width="235" height="23" rx="8" fill="#bf7d55"/>
+            <rect x="160" y="211" width="11" height="70" rx="5" fill="#8f6346"/><rect x="349" y="211" width="11" height="70" rx="5" fill="#8f6346"/>
+            <circle cx="205" cy="173" r="25" fill="#f6c34e"/><path d="M189 168c14-13 26-13 34 0-4 12-14 19-17 19s-13-7-17-19z" fill="#ed835a"/>
+            <rect x="255" y="145" width="46" height="45" rx="8" fill="#8fc8b7"/><path d="M265 145c3-19 23-19 26 0" fill="none" stroke="#527e73" stroke-width="5"/>
+            <rect x="318" y="154" width="42" height="36" rx="6" fill="#86a7d6"/><circle cx="331" cy="168" r="5" fill="#fff"/><circle cx="349" cy="168" r="5" fill="#fff"/>
+            <path d="M70 142v128M69 145h80M84 146l19 35 19-35" fill="none" stroke="#5f7384" stroke-width="7" stroke-linecap="round"/>
+            <path d="M94 181v58h22v-58" fill="#e68f77" opacity=".95"/>
+            <rect x="43" y="238" width="87" height="48" rx="10" fill="#d99f68"/><path d="M57 238c4-21 54-21 59 0" fill="none" stroke="#9a6b46" stroke-width="6"/>
+            <circle cx="425" cy="245" r="35" fill="#9ec9a4"/><path d="M425 214v62M395 245h60" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity=".75"/>
+            <circle cx="96" cy="78" r="13" fill="#89b7b0"/><circle cx="67" cy="104" r="8" fill="#e8a76e"/>
+          </svg>
+        </div>
+      </div>
     </section>
 
-    <section class="card booking-card" id="booking">
-      <div class="card-head">
-        <div>
-          <h2 id="basarName">Basar wird geladen …</h2>
-          <p id="basarDetails">Basardaten werden geladen …</p>
-        </div>
-        <div class="availability"><strong id="availableTables">–</strong><span>Tische frei</span></div>
+    <section class="container discovery-section" id="discover">
+      <div class="discovery-head">
+        <div><span class="eyebrow warm">BASARE ENTDECKEN</span><h2>Demnächst buchbar</h2><p id="discoverySubtitle">Finde einen passenden Basar und reserviere deinen Tisch.</p></div>
+        <button class="market-secondary hidden" id="clearBasarSearch" type="button">Suche zurücksetzen</button>
       </div>
-
-      <form id="bookingForm">
-        <div class="section-grid">
-          <div class="field full hidden" id="basarSelectWrap">
-            <label for="basarSelect">Basar auswählen</label>
-            <select id="basarSelect"></select>
-          </div>
-
-          <div class="field full">
-            <label>Anzahl Tische</label>
-            <div class="choices choices-3">
-              <label class="choice"><input type="radio" name="tables" value="1" checked><span>1 Tisch<strong id="price1Label">12 €</strong></span></label>
-              <label class="choice"><input type="radio" name="tables" value="2"><span>2 Tische<strong id="price2Label">20 €</strong></span></label>
-              <label class="choice"><input type="radio" name="tables" value="3"><span>3 Tische<strong id="price3Label">25 €</strong></span></label>
-            </div>
-          </div>
-
-          <div class="field full">
-            <label>Was möchtest du anbieten?</label>
-            <div class="choices choices-2">
-              <label class="choice"><input type="radio" name="category" value="Kinder" checked><span>Kinder</span></label>
-              <label class="choice"><input type="radio" name="category" value="Erwachsene"><span>Erwachsene</span></label>
-            </div>
-            <div class="hint">Kinder und Erwachsene müssen getrennt gebucht werden.</div>
-          </div>
-
-          <div class="field full cake-field">
-            <label class="checkbox-row"><input id="cake" type="checkbox"><span>Ich bringe einen Kuchen mit und erhalte <strong id="cakeDiscountText">4,00 €</strong> Rabatt.</span></label>
-          </div>
-
-          <div class="field"><label for="firstName">Vorname</label><input id="firstName" autocomplete="given-name" required></div>
-          <div class="field"><label for="lastName">Nachname</label><input id="lastName" autocomplete="family-name" required></div>
-          <div class="field"><label for="street">Straße</label><input id="street" autocomplete="address-line1" required></div>
-          <div class="field"><label for="houseNumber">Hausnummer</label><input id="houseNumber" required></div>
-          <div class="field"><label for="zip">PLZ</label><input id="zip" inputmode="numeric" autocomplete="postal-code" required></div>
-          <div class="field"><label for="city">Ort</label><input id="city" autocomplete="address-level2" required></div>
-          <div class="field"><label for="email">E-Mail</label><input id="email" type="email" autocomplete="email" required></div>
-          <div class="field"><label for="phone">Telefon</label><input id="phone" type="tel" autocomplete="tel"></div>
-
-          <div class="field full">
-            <label for="payment">Zahlungsart</label>
-            <select id="payment" required>
-              <option value="">Zahlungsarten werden geladen …</option>
-            </select>
-          </div>
-
-          <div class="field full legal">
-            <label class="checkbox-row"><input id="terms" type="checkbox" required><span>Ich akzeptiere die Teilnahmebedingungen und bestätige, dass die Buchung verbindlich ist.</span></label>
-            <label class="checkbox-row"><input id="privacy" type="checkbox" required><span>Ich habe die Datenschutzhinweise gelesen.</span></label>
-          </div>
-        </div>
-
-        <div class="terms-box">
-          <strong>Wichtige Buchungsregeln</strong>
-          <ul>
-            <li id="paymentRule">Die Zahlungsfrist wird anhand des Veranstaltungstermins berechnet.</li>
-            <li id="cancellationRule">Die Stornierungsregel wird geladen.</li>
-            <li id="cakePenaltyRule">Die Kuchenregel wird geladen.</li>
-            <li id="additionalRule" class="hidden"></li>
-          </ul>
-        </div>
-
-        <div class="price-box">
-          <div><span>Grundpreis</span><strong id="basePrice">12,00 €</strong></div>
-          <div><span>Kuchenrabatt</span><strong id="discount">0,00 €</strong></div>
-          <div class="total"><span>Gesamt</span><strong id="totalPrice">12,00 €</strong></div>
-        </div>
-
-        <div class="form-error hidden" id="formError" role="alert"></div>
-        <button class="primary" id="submitButton" type="submit">Wird geladen …</button>
-      </form>
+      <div id="basarCards" class="basar-card-grid" aria-live="polite"></div>
+      <div id="noBasarResults" class="friendly-empty hidden">
+        <div class="friendly-empty-icon">🧺</div>
+        <strong>Kein passender Basar gefunden.</strong>
+        <span>Versuche einen anderen Ort, eine andere PLZ oder lösche die Suche.</span>
+      </div>
     </section>
 
-    <section class="card confirmation hidden" id="confirmation">
-      <div class="success-mark">✓</div>
-      <span class="eyebrow">BUCHUNG ERFOLGREICH</span>
-      <h2>Dein Tisch ist reserviert.</h2>
-      <p id="confirmationText"></p>
-      <div class="booking-number" id="bookingNumber"></div>
-      <p id="paymentInfo" class="small"></p>
-      <a id="externalPaypalButton" class="primary inline-button hidden" target="_blank" rel="noopener noreferrer">Mit PayPal bezahlen</a>
-      <div id="paypalSection" class="paypal-section hidden">
-        <div class="paypal-heading">Jetzt sicher mit PayPal bezahlen</div>
-        <p class="small">Die Zahlung wird über PayPal Sandbox getestet. Es wird kein echtes Geld übertragen.</p>
-        <div id="paypalButtonContainer"></div>
-        <p id="paypalStatus" class="small paypal-status" aria-live="polite"></p>
+    <section class="booking-zone" id="bookingZone">
+      <div class="container">
+        <div class="booking-intro">
+          <span class="eyebrow warm">DEINE RESERVIERUNG</span>
+          <h2>Tisch bequem online buchen</h2>
+          <p>Basar auswählen, Angaben eintragen und direkt deine Bestätigung erhalten.</p>
+        </div>
+        <section class="card booking-card market-booking-card" id="booking">
+          <div class="card-head market-card-head">
+            <div>
+              <span class="event-pill">Ausgewählter Basar</span>
+              <h2 id="basarName">Basar wird geladen …</h2>
+              <p id="basarDetails">Basardaten werden geladen …</p>
+            </div>
+            <div class="availability"><strong id="availableTables">–</strong><span>Tische frei</span></div>
+          </div>
+
+          <form id="bookingForm">
+            <div class="section-grid">
+              <div class="field full hidden" id="basarSelectWrap">
+                <label for="basarSelect">Basar auswählen</label>
+                <select id="basarSelect"></select>
+              </div>
+
+              <div class="field full"><div class="form-section-label"><span>1</span><div><strong>Dein Verkaufsplatz</strong><small>Wähle Tischanzahl und Bereich.</small></div></div></div>
+              <div class="field full">
+                <label>Anzahl Tische</label>
+                <div class="choices choices-3">
+                  <label class="choice"><input type="radio" name="tables" value="1" checked><span>1 Tisch<strong id="price1Label">12 €</strong></span></label>
+                  <label class="choice"><input type="radio" name="tables" value="2"><span>2 Tische<strong id="price2Label">20 €</strong></span></label>
+                  <label class="choice"><input type="radio" name="tables" value="3"><span>3 Tische<strong id="price3Label">25 €</strong></span></label>
+                </div>
+              </div>
+
+              <div class="field full">
+                <label>Was möchtest du anbieten?</label>
+                <div class="choices choices-2">
+                  <label class="choice"><input type="radio" name="category" value="Kinder" checked><span>🧸 Kinder</span></label>
+                  <label class="choice"><input type="radio" name="category" value="Erwachsene"><span>👕 Erwachsene</span></label>
+                </div>
+                <div class="hint">Kinder und Erwachsene müssen getrennt gebucht werden.</div>
+              </div>
+
+              <div class="field full cake-field">
+                <label class="checkbox-row market-check"><input id="cake" type="checkbox"><span>🍰 Ich bringe einen Kuchen mit und erhalte <strong id="cakeDiscountText">4,00 €</strong> Rabatt.</span></label>
+              </div>
+
+              <div class="field full"><div class="form-section-label"><span>2</span><div><strong>Deine Kontaktdaten</strong><small>Damit der Veranstalter dich erreichen kann.</small></div></div></div>
+              <div class="field"><label for="firstName">Vorname</label><input id="firstName" autocomplete="given-name" required></div>
+              <div class="field"><label for="lastName">Nachname</label><input id="lastName" autocomplete="family-name" required></div>
+              <div class="field"><label for="street">Straße</label><input id="street" autocomplete="address-line1" required></div>
+              <div class="field"><label for="houseNumber">Hausnummer</label><input id="houseNumber" required></div>
+              <div class="field"><label for="zip">PLZ</label><input id="zip" inputmode="numeric" autocomplete="postal-code" required></div>
+              <div class="field"><label for="city">Ort</label><input id="city" autocomplete="address-level2" required></div>
+              <div class="field"><label for="email">E-Mail</label><input id="email" type="email" autocomplete="email" required></div>
+              <div class="field"><label for="phone">Telefon</label><input id="phone" type="tel" autocomplete="tel"></div>
+
+              <div class="field full"><div class="form-section-label"><span>3</span><div><strong>Zahlung & Abschluss</strong><small>Wähle die angebotene Zahlungsart.</small></div></div></div>
+              <div class="field full">
+                <label for="payment">Zahlungsart</label>
+                <select id="payment" required><option value="">Zahlungsarten werden geladen …</option></select>
+              </div>
+
+              <div class="field full legal">
+                <label class="checkbox-row"><input id="terms" type="checkbox" required><span>Ich akzeptiere die Teilnahmebedingungen und bestätige, dass die Buchung verbindlich ist.</span></label>
+                <label class="checkbox-row"><input id="privacy" type="checkbox" required><span>Ich habe die Datenschutzhinweise gelesen.</span></label>
+              </div>
+            </div>
+
+            <div class="terms-box"><strong>Wichtige Buchungsregeln</strong><ul><li id="paymentRule">Die Zahlungsfrist wird anhand des Veranstaltungstermins berechnet.</li><li id="cancellationRule">Die Stornierungsregel wird geladen.</li><li id="cakePenaltyRule">Die Kuchenregel wird geladen.</li><li id="additionalRule" class="hidden"></li></ul></div>
+            <div class="price-box"><div><span>Grundpreis</span><strong id="basePrice">12,00 €</strong></div><div><span>Kuchenrabatt</span><strong id="discount">0,00 €</strong></div><div class="total"><span>Gesamt</span><strong id="totalPrice">12,00 €</strong></div></div>
+            <div class="form-error hidden" id="formError" role="alert"></div>
+            <button class="primary market-submit" id="submitButton" type="submit">Wird geladen …</button>
+          </form>
+        </section>
+
+        <section class="card confirmation hidden" id="confirmation">
+          <div class="success-mark">✓</div><span class="eyebrow warm">BUCHUNG ERFOLGREICH</span><h2>Dein Tisch ist reserviert.</h2><p id="confirmationText"></p><div class="booking-number" id="bookingNumber"></div><p id="paymentInfo" class="small"></p>
+          <a id="externalPaypalButton" class="primary inline-button hidden" target="_blank" rel="noopener noreferrer">Mit PayPal bezahlen</a>
+          <div id="paypalSection" class="paypal-section hidden"><div class="paypal-heading">Jetzt sicher mit PayPal bezahlen</div><p class="small">Die Zahlung wird über PayPal Sandbox getestet. Es wird kein echtes Geld übertragen.</p><div id="paypalButtonContainer"></div><p id="paypalStatus" class="small paypal-status" aria-live="polite"></p></div>
+          <p id="emailStatus" class="small email-status" aria-live="polite"></p><button class="secondary hidden" id="resendEmailButton" type="button">E-Mail erneut senden</button>
+          <div class="actions"><button class="primary" id="pdfButton" type="button">Vertrag als PDF herunterladen</button><button class="secondary" id="printButton" type="button">Buchung drucken</button><button class="secondary" id="newBookingButton" type="button">Neue Buchung</button></div>
+        </section>
       </div>
-      <p id="emailStatus" class="small email-status" aria-live="polite"></p>
-      <button class="secondary hidden" id="resendEmailButton" type="button">E-Mail erneut senden</button>
-      <div class="actions">
-        <button class="primary" id="pdfButton" type="button">Vertrag als PDF herunterladen</button>
-        <button class="secondary" id="printButton" type="button">Buchung drucken</button>
-        <button class="secondary" id="newBookingButton" type="button">Neue Buchung</button>
+    </section>
+
+    <section class="why-section">
+      <div class="container why-grid">
+        <div><span class="why-icon">🔎</span><strong>Basar finden</strong><p>Nach Ort, PLZ oder Namen suchen und passende Termine entdecken.</p></div>
+        <div><span class="why-icon">🧺</span><strong>Tisch sichern</strong><p>Preise und freie Tische auf einen Blick sehen und direkt reservieren.</p></div>
+        <div><span class="why-icon">💌</span><strong>Bestätigung erhalten</strong><p>Alle wichtigen Angaben und die Teilnahmevereinbarung kommen per E-Mail.</p></div>
       </div>
     </section>
   </main>
@@ -132,7 +174,7 @@
   <footer class="footer"><div class="container">Basar Tischbörse</div></footer>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
-  <script src="config.js?v=221"></script>
-  <script src="app.js?v=221"></script>
+  <script src="config.js?v=24"></script>
+  <script src="app.js?v=24"></script>
 </body>
 </html>

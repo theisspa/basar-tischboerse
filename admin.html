@@ -113,7 +113,9 @@
         <form id="basarForm" class="section-grid">
           <input id="basarId" type="hidden">
           <div class="field full"><label for="basarName">Name des Basars</label><input id="basarName" required maxlength="120" placeholder="z. B. Herbstbasar"></div>
-          <div class="field"><label for="basarOrt">Ort / Veranstaltungsort</label><input id="basarOrt" maxlength="160" placeholder="z. B. Alsenzhalle TVA"></div>
+          <div class="field"><label for="basarOrt">Veranstaltungsort / Halle</label><input id="basarOrt" maxlength="160" placeholder="z. B. Alsenzhalle TVA"></div>
+          <div class="field"><label for="basarPlz">PLZ des Basars</label><input id="basarPlz" inputmode="numeric" maxlength="10" placeholder="z. B. 67677"></div>
+          <div class="field"><label for="basarStadt">Stadt / Gemeinde</label><input id="basarStadt" maxlength="120" placeholder="z. B. Enkenbach-Alsenborn"></div>
           <div class="field"><label for="basarDatum">Veranstaltungsdatum</label><input id="basarDatum" type="date" required></div>
           <div class="field"><label for="basarTische">Maximale Tischanzahl</label><input id="basarTische" type="number" min="1" max="10000" required></div>
           <div class="field"><label for="basarAktiv">Status</label><select id="basarAktiv"><option value="true">Aktiv / buchbar</option><option value="false">Inaktiv / nicht buchbar</option></select></div>
