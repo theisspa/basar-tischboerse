@@ -1,8 +1,11 @@
 (() => {
-  const SUPABASE_URL = 'https://byvvsockfobnrqzkxvap.supabase.co';
-  const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_iLXVfFOYROoBHwwhQcoEKg_N7ABYWSx';
-  const { createClient } = window.supabase;
-  const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+  'use strict';
+  const config = window.BASAR_CONFIG;
+  if (!config?.supabaseUrl || !config?.supabasePublishableKey || !window.supabase?.createClient) {
+    console.error('Basar-Konfiguration oder Supabase-Bibliothek fehlt.');
+    return;
+  }
+  const supabase = window.supabase.createClient(config.supabaseUrl, config.supabasePublishableKey);
 
   const $ = id => document.getElementById(id);
   let basare = [];
