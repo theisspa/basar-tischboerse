@@ -43,9 +43,9 @@
           <div class="field full">
             <label>Anzahl Tische</label>
             <div class="choices choices-3">
-              <label class="choice"><input type="radio" name="tables" value="1" checked><span>1 Tisch<strong>12 €</strong></span></label>
-              <label class="choice"><input type="radio" name="tables" value="2"><span>2 Tische<strong>20 €</strong></span></label>
-              <label class="choice"><input type="radio" name="tables" value="3"><span>3 Tische<strong>25 €</strong></span></label>
+              <label class="choice"><input type="radio" name="tables" value="1" checked><span>1 Tisch<strong id="price1Label">12 €</strong></span></label>
+              <label class="choice"><input type="radio" name="tables" value="2"><span>2 Tische<strong id="price2Label">20 €</strong></span></label>
+              <label class="choice"><input type="radio" name="tables" value="3"><span>3 Tische<strong id="price3Label">25 €</strong></span></label>
             </div>
           </div>
 
@@ -59,7 +59,7 @@
           </div>
 
           <div class="field full cake-field">
-            <label class="checkbox-row"><input id="cake" type="checkbox"><span>Ich bringe einen Kuchen mit und erhalte 4 € Rabatt.</span></label>
+            <label class="checkbox-row"><input id="cake" type="checkbox"><span>Ich bringe einen Kuchen mit und erhalte <strong id="cakeDiscountText">4,00 €</strong> Rabatt.</span></label>
           </div>
 
           <div class="field"><label for="firstName">Vorname</label><input id="firstName" autocomplete="given-name" required></div>
@@ -132,6 +132,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
   <script src="config.js?v=18"></script>
-  <script src="app.js?v=18"></script>
+  <script src="app.js?v=19"></script>
 </body>
 </html>

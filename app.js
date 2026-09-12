@@ -8,7 +8,6 @@
   }
 
   const supabaseClient = window.supabase.createClient(config.supabaseUrl, config.supabasePublishableKey);
-  const prices = { 1: 12, 2: 20, 3: 25 };
   const euro = value => Number(value).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
   const $ = id => document.getElementById(id);
 
@@ -48,8 +47,13 @@
   function updatePrice() {
     const tables = Number(selectedValue('tables') || 1);
     const cake = $('cake').checked;
-    const base = prices[tables] ?? 0;
-    const discount = cake ? 4 : 0;
+    const priceMap = {
+      1: Number(currentBasar?.preis_1_tisch ?? 12),
+      2: Number(currentBasar?.preis_2_tische ?? 20),
+      3: Number(currentBasar?.preis_3_tische ?? 25)
+    };
+    const base = priceMap[tables] ?? 0;
+    const discount = cake ? Number(currentBasar?.kuchenrabatt ?? 4) : 0;
     $('basePrice').textContent = euro(base);
     $('discount').textContent = discount ? `-${euro(discount)}` : euro(0);
     $('totalPrice').textContent = euro(Math.max(0, base - discount));
@@ -112,7 +116,7 @@
   async function loadBasare() {
     const { data, error } = await supabaseClient
       .from('basare')
-      .select('id,name,ort,veranstaltungsdatum,max_tische,aktiv')
+      .select('id,name,ort,veranstaltungsdatum,max_tische,aktiv,preis_1_tisch,preis_2_tische,preis_3_tische,kuchenrabatt')
       .eq('aktiv', true)
       .order('veranstaltungsdatum', { ascending: true });
     if (error) throw error;
@@ -132,6 +136,11 @@
     $('basarName').textContent = currentBasar.name;
     $('basarDetails').textContent = `${formatDate(currentBasar.veranstaltungsdatum)} · ${currentBasar.ort || ''}`.replace(/ · $/, '');
     $('paymentRule').textContent = paymentRuleText();
+    $('price1Label').textContent = euro(currentBasar.preis_1_tisch ?? 12);
+    $('price2Label').textContent = euro(currentBasar.preis_2_tische ?? 20);
+    $('price3Label').textContent = euro(currentBasar.preis_3_tische ?? 25);
+    $('cakeDiscountText').textContent = euro(currentBasar.kuchenrabatt ?? 4);
+    updatePrice();
     $('availableTables').textContent = '…';
     await loadAvailability();
   }
@@ -377,7 +386,7 @@
       const booking = Array.isArray(data) ? data[0] : data;
       if (!booking?.buchungsnummer) throw new Error('Keine Buchungsnummer erhalten.');
 
-      lastContract = { booking, payload };
+      lastContract = { booking, payload, pricing: { kuchenrabatt: Number(currentBasar?.kuchenrabatt ?? 4) } };
       $('confirmationText').textContent = `${payload.p_vorname} ${payload.p_nachname}, ${tables === 1 ? '1 Tisch wurde' : `${tables} Tische wurden`} verbindlich reserviert. Gesamtbetrag: ${euro(booking.preis)}. Zahlungsfrist: ${formatDate(booking.zahlungsfrist)}.`;
       $('bookingNumber').textContent = booking.buchungsnummer;
       $('paymentInfo').textContent = paymentInfoText(booking, payload.p_zahlungsart);
@@ -432,7 +441,8 @@
       return;
     }
 
-    const { booking: b, payload: p } = lastContract;
+    const { booking: b, payload: p, pricing } = lastContract;
+    const contractCakeDiscount = Number(pricing?.kuchenrabatt ?? 4);
     const doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' });
     const left = 20;
     const width = 170;
@@ -471,7 +481,7 @@
     const bookingLines = [
       `Tische: ${p.p_anzahl_tische}`,
       `Verkaufsbereich: ${category}`,
-      `Kuchenspende: ${p.p_kuchenspende ? 'Ja (-4 EUR Rabatt)' : 'Nein'}`,
+      `Kuchenspende: ${p.p_kuchenspende ? `Ja (-${contractCakeDiscount.toFixed(2).replace('.', ',')} EUR Rabatt)` : 'Nein'}`,
       `Gesamtbetrag: ${Number(b.preis).toFixed(2).replace('.', ',')} EUR`,
       `Zahlungsart: ${payment}`,
       `Zahlungsfrist: ${formatDate(b.zahlungsfrist)}`
@@ -491,7 +501,7 @@
       `2. Der Teilnahmebetrag ist bis ${formatDate(b.zahlungsfrist)} zu bezahlen. Bei Buchungen mindestens 14 Tage vor der Veranstaltung betraegt die Zahlungsfrist 14 Tage. Bei spaeteren Buchungen betraegt sie 3 Tage, jedoch hoechstens bis zum Veranstaltungstag. Nach Ablauf der Zahlungsfrist besteht ohne Zahlung keine Garantie mehr auf den reservierten Tisch.`,
       `3. Eine kostenlose Stornierung ist bis ${formatDate(b.stornierbar_bis)} (14 Tage vor Veranstaltungsbeginn) moeglich. Danach besteht kein Anspruch auf Rueckerstattung bereits geleisteter Zahlungen. Alternativ kann die Buchung auf eine andere Person uebertragen werden, sofern der Veranstalter vorab informiert wird.`,
       '4. Pro Buchung ist nur ein Verkaufsbereich zulaessig: Kinderartikel oder Erwachsenenartikel. Fuer beide Bereiche sind zwei getrennte Buchungen erforderlich.',
-      '5. Bei ausgewaehlter Kuchenspende wird der Buchungspreis einmalig um 4 EUR reduziert. Wird der zugesagte Kuchen am Veranstaltungstag nicht erbracht, wird nachtraeglich eine Gebuehr von 10 EUR faellig.'
+      `5. Bei ausgewaehlter Kuchenspende wird der Buchungspreis einmalig um ${contractCakeDiscount.toFixed(2).replace('.', ',')} EUR reduziert. Wird der zugesagte Kuchen am Veranstaltungstag nicht erbracht, wird nachtraeglich eine Gebuehr von 10 EUR faellig.`
     ];
     for (const clause of clauses) { y = addWrapped(doc, clause, left, y, width, { lineHeight: 4.8 }); y += 2; }
 
