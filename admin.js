@@ -12,6 +12,25 @@
 
   function formatDate(value) { if (!value) return ''; return new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(`${value}T12:00:00`)); }
   function formatDateTime(value) { if (!value) return ''; return new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)); }
+  function deadlineInfo(row) {
+    if (!row || row.zahlungsstatus !== 'offen' || !row.zahlungsfrist) return { state: 'normal', text: '', days: null };
+    const today = new Date(); today.setHours(0,0,0,0);
+    const deadline = new Date(`${row.zahlungsfrist}T00:00:00`);
+    if (Number.isNaN(deadline.getTime())) return { state: 'normal', text: '', days: null };
+    const days = Math.round((deadline.getTime() - today.getTime()) / 86400000);
+    if (days < 0) return { state: 'overdue', text: `${Math.abs(days)} ${Math.abs(days) === 1 ? 'Tag' : 'Tage'} überfällig`, days };
+    if (days === 0) return { state: 'today', text: 'Heute fällig', days };
+    return { state: 'open', text: days === 1 ? 'Noch 1 Tag' : `Noch ${days} Tage`, days };
+  }
+  function bookingStatusInfo(row) {
+    if (row?.zahlungsstatus === 'bezahlt') return ['Bezahlt','bezahlt'];
+    if (row?.zahlungsstatus === 'storniert') return ['Storniert','storniert'];
+    if (row?.zahlungsstatus === 'abgelaufen') return ['Frist abgelaufen','abgelaufen'];
+    const deadline = deadlineInfo(row);
+    if (deadline.state === 'overdue') return ['Überfällig','ueberfaellig'];
+    if (deadline.state === 'today') return ['Heute fällig','heute'];
+    return ['Offen','offen'];
+  }
   function escapeHtml(value) { return String(value ?? '').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;'); }
   function showError(id, message) { const box=$(id); box.textContent=message; box.classList.remove('hidden'); }
   function clearError(id) { const box=$(id); box.textContent=''; box.classList.add('hidden'); }
@@ -146,7 +165,8 @@
     $('overviewActiveBasars').textContent = activeBasars.length;
     $('overviewNextBasar').textContent = upcoming ? `Nächster Termin: ${formatDate(upcoming.veranstaltungsdatum)}` : (basare.length ? 'Kein aktiver zukünftiger Termin' : 'Noch kein Basar angelegt');
     $('overviewOpenPayments').textContent = openRows.length;
-    $('overviewOpenAmount').textContent = `${euro(openRows.reduce((sum,r)=>sum+Number(r.preis||0),0))} offen`;
+    const overdueRows = openRows.filter(r=>deadlineInfo(r).state==='overdue');
+    $('overviewOpenAmount').textContent = `${euro(openRows.reduce((sum,r)=>sum+Number(r.preis||0),0))} offen${overdueRows.length ? ` · ${overdueRows.length} überfällig` : ''}`;
     $('overviewPaidBookings').textContent = paidRows.length;
     $('overviewPaidAmount').textContent = `${euro(paidRows.reduce((sum,r)=>sum+Number(r.preis||0),0))} bezahlt`;
     $('overviewReservedTables').textContent = reserved;
@@ -233,26 +253,42 @@
     const paidAmount=paidRows.reduce((sum,r)=>sum+Number(r.preis||0),0);
     const percent=max?Math.min(100,Math.round((booked/max)*100)):0;
     $('dashboardBooked').textContent=booked; $('dashboardFree').textContent=free;
-    $('dashboardOpen').textContent=open; $('dashboardPaid').textContent=paidRows.length; $('dashboardRevenue').textContent=euro(paidAmount);
+    const overdue=bookings.filter(r=>deadlineInfo(r).state==='overdue').length;
+    $('dashboardOpen').textContent=open; $('dashboardOpen').title=overdue ? `${overdue} offene Zahlung${overdue===1?' ist':'en sind'} überfällig` : 'Keine überfälligen offenen Zahlungen';
+    $('dashboardPaid').textContent=paidRows.length; $('dashboardRevenue').textContent=euro(paidAmount);
     $('dashboardCapacityText').textContent=`${booked} von ${max} · ${percent} %`;
     $('dashboardCapacityFill').style.width=`${percent}%`;
   }
 
-  function statusInfo(status) {
-    if(status==='bezahlt')return['Bezahlt','bezahlt']; if(status==='storniert')return['Storniert','storniert']; if(status==='abgelaufen')return['Frist abgelaufen','abgelaufen']; return['Offen','offen'];
-  }
-
   function renderBookings() {
     const filter=$('bookingFilter').value;
-    const filtered=bookings.filter(r=>{ if(['offen','bezahlt','abgelaufen'].includes(filter))return r.zahlungsstatus===filter; if(filter==='kuchen')return r.kuchenspende; if(filter==='kinder')return r.verkaufsbereich==='kinder'; if(filter==='erwachsene')return r.verkaufsbereich==='erwachsene'; return true; });
+    const filtered=bookings.filter(r=>{
+      const deadline=deadlineInfo(r);
+      if(filter==='offen') return r.zahlungsstatus==='offen';
+      if(filter==='bezahlt') return r.zahlungsstatus==='bezahlt';
+      if(filter==='abgelaufen') return r.zahlungsstatus==='abgelaufen' || deadline.state==='overdue';
+      if(filter==='heute') return deadline.state==='today';
+      if(filter==='kuchen')return r.kuchenspende;
+      if(filter==='kinder')return r.verkaufsbereich==='kinder';
+      if(filter==='erwachsene')return r.verkaufsbereich==='erwachsene';
+      return true;
+    });
     const rows=$('bookingRows'); if(!filtered.length){rows.innerHTML='<tr><td colspan="10">Keine passenden Buchungen vorhanden.</td></tr>';return;}
-    rows.innerHTML=filtered.map(r=>{const [statusText,statusClass]=statusInfo(r.zahlungsstatus);return `<tr class="${['storniert','abgelaufen'].includes(r.zahlungsstatus)?'muted-row':''}"><td><strong>${escapeHtml(r.buchungsnummer)}</strong></td><td>${escapeHtml(`${r.vorname} ${r.nachname}`)}</td><td>${r.anzahl_tische}</td><td>${r.verkaufsbereich==='kinder'?'Kinder':'Erwachsene'}</td><td>${r.kuchenspende?'Ja':'Nein'}</td><td>${euro(r.preis)}</td><td>${r.zahlungsart==='paypal'?'PayPal (online)':r.zahlungsart==='paypal_link'?'PayPal-Link':'Überweisung'}</td><td>${formatDate(r.zahlungsfrist)}</td><td><span class="badge status-${statusClass}">${statusText}</span></td><td><button class="table-button" type="button" data-booking-id="${r.id}" data-action="open-booking">Öffnen</button></td></tr>`;}).join('');
+    rows.innerHTML=filtered.map(r=>{
+      const [statusText,statusClass]=bookingStatusInfo(r);
+      const deadline=deadlineInfo(r);
+      const rowClass = r.zahlungsstatus==='storniert' || r.zahlungsstatus==='abgelaufen' ? 'muted-row' : deadline.state==='overdue' ? 'overdue-row' : deadline.state==='today' ? 'due-today-row' : '';
+      const deadlineClass = deadline.state==='overdue' ? 'deadline-overdue' : deadline.state==='today' ? 'deadline-today' : '';
+      const deadlineSub = deadline.text ? `<small class="deadline-note ${deadlineClass}">${escapeHtml(deadline.text)}</small>` : '';
+      return `<tr class="${rowClass}"><td><strong>${escapeHtml(r.buchungsnummer)}</strong></td><td>${escapeHtml(`${r.vorname} ${r.nachname}`)}</td><td>${r.anzahl_tische}</td><td>${r.verkaufsbereich==='kinder'?'Kinder':'Erwachsene'}</td><td>${r.kuchenspende?'Ja':'Nein'}</td><td>${euro(r.preis)}</td><td>${r.zahlungsart==='paypal'?'PayPal (online)':r.zahlungsart==='paypal_link'?'PayPal-Link':'Überweisung'}</td><td>${formatDate(r.zahlungsfrist)}${deadlineSub}</td><td><span class="badge status-${statusClass}">${statusText}</span></td><td><button class="table-button" type="button" data-booking-id="${r.id}" data-action="open-booking">Öffnen</button></td></tr>`;
+    }).join('');
   }
 
+
   function openBooking(id) {
-    selectedBooking=bookings.find(b=>b.id===id)||null; if(!selectedBooking)return; const r=selectedBooking; const [status]=statusInfo(r.zahlungsstatus);
+    selectedBooking=bookings.find(b=>b.id===id)||null; if(!selectedBooking)return; const r=selectedBooking; const [status]=bookingStatusInfo(r); const deadline=deadlineInfo(r);
     $('bookingModalTitle').textContent=r.buchungsnummer;
-    $('bookingDetails').innerHTML=`<div class="detail-item"><span>Name</span><strong>${escapeHtml(`${r.vorname} ${r.nachname}`)}</strong></div><div class="detail-item"><span>Bereich</span><strong>${r.verkaufsbereich==='kinder'?'Kinder':'Erwachsene'}</strong></div><div class="detail-item"><span>Tische</span><strong>${r.anzahl_tische}</strong></div><div class="detail-item"><span>Kuchen</span><strong>${r.kuchenspende?'Ja':'Nein'}</strong></div><div class="detail-item"><span>Betrag</span><strong>${euro(r.preis)}</strong></div><div class="detail-item"><span>Zahlung</span><strong>${r.zahlungsart==='paypal'?'PayPal (online)':r.zahlungsart==='paypal_link'?'PayPal-Link':'Überweisung'}</strong></div><div class="detail-item"><span>Status</span><strong>${status}</strong></div><div class="detail-item"><span>Zahlungsfrist</span><strong>${formatDate(r.zahlungsfrist)}</strong></div><div class="detail-item full"><span>Adresse</span><strong>${escapeHtml(`${r.strasse} ${r.hausnummer}, ${r.plz} ${r.ort}`)}</strong></div><div class="detail-item"><span>E-Mail</span><strong>${escapeHtml(r.email)}</strong></div><div class="detail-item"><span>Telefon</span><strong>${escapeHtml(r.telefon||'—')}</strong></div><div class="detail-item"><span>E-Mail an Teilnehmer</span><strong>${r.email_status==='sent'?'Versendet':r.email_status==='error'?'Fehler':r.email_status==='sending'?'Wird gesendet':'Ausstehend'}${r.email_sent_at?` · ${formatDateTime(r.email_sent_at)}`:''}</strong></div><div class="detail-item"><span>E-Mail an Veranstalter</span><strong>${r.veranstalter_email_status==='sent'?'Versendet':r.veranstalter_email_status==='error'?'Fehler':r.veranstalter_email_status==='sending'?'Wird gesendet':'Ausstehend'}${r.veranstalter_email_sent_at?` · ${formatDateTime(r.veranstalter_email_sent_at)}`:''}</strong></div><div class="detail-item full"><span>Buchung eingegangen</span><strong>${formatDateTime(r.created_at)}</strong></div>`;
+    $('bookingDetails').innerHTML=`<div class="detail-item"><span>Name</span><strong>${escapeHtml(`${r.vorname} ${r.nachname}`)}</strong></div><div class="detail-item"><span>Bereich</span><strong>${r.verkaufsbereich==='kinder'?'Kinder':'Erwachsene'}</strong></div><div class="detail-item"><span>Tische</span><strong>${r.anzahl_tische}</strong></div><div class="detail-item"><span>Kuchen</span><strong>${r.kuchenspende?'Ja':'Nein'}</strong></div><div class="detail-item"><span>Betrag</span><strong>${euro(r.preis)}</strong></div><div class="detail-item"><span>Zahlung</span><strong>${r.zahlungsart==='paypal'?'PayPal (online)':r.zahlungsart==='paypal_link'?'PayPal-Link':'Überweisung'}</strong></div><div class="detail-item"><span>Status</span><strong>${status}</strong></div><div class="detail-item"><span>Zahlungsfrist</span><strong>${formatDate(r.zahlungsfrist)}${deadline.text?` · ${escapeHtml(deadline.text)}`:''}</strong></div><div class="detail-item full"><span>Adresse</span><strong>${escapeHtml(`${r.strasse} ${r.hausnummer}, ${r.plz} ${r.ort}`)}</strong></div><div class="detail-item"><span>E-Mail</span><strong>${escapeHtml(r.email)}</strong></div><div class="detail-item"><span>Telefon</span><strong>${escapeHtml(r.telefon||'—')}</strong></div><div class="detail-item"><span>E-Mail an Teilnehmer</span><strong>${r.email_status==='sent'?'Versendet':r.email_status==='error'?'Fehler':r.email_status==='sending'?'Wird gesendet':'Ausstehend'}${r.email_sent_at?` · ${formatDateTime(r.email_sent_at)}`:''}</strong></div><div class="detail-item"><span>E-Mail an Veranstalter</span><strong>${r.veranstalter_email_status==='sent'?'Versendet':r.veranstalter_email_status==='error'?'Fehler':r.veranstalter_email_status==='sending'?'Wird gesendet':'Ausstehend'}${r.veranstalter_email_sent_at?` · ${formatDateTime(r.veranstalter_email_sent_at)}`:''}</strong></div><div class="detail-item full"><span>Buchung eingegangen</span><strong>${formatDateTime(r.created_at)}</strong></div>`;
     $('markPaidButton').classList.toggle('hidden', ['bezahlt','storniert'].includes(r.zahlungsstatus)); $('markOpenButton').classList.toggle('hidden', r.zahlungsstatus!=='bezahlt'); $('cancelBookingButton').classList.toggle('hidden', r.zahlungsstatus==='storniert'); $('bookingModal').classList.remove('hidden');
   }
   function closeBooking(){ $('bookingModal').classList.add('hidden'); selectedBooking=null; }
@@ -298,7 +334,7 @@
     if (password !== repeat) return showError('registerError', 'Die beiden Passwörter stimmen nicht überein.');
     const button = $('registerButton'); button.disabled = true; button.textContent = 'Konto wird erstellt …';
     try {
-      const redirectTo = `${window.location.origin}${window.location.pathname}?v=23&onboarding=1`;
+      const redirectTo = `${window.location.origin}${window.location.pathname}?v=231&onboarding=1`;
       const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo } });
       if (error) throw error;
       if (data.session) {
