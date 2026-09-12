@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Veranstalter - Basar Tischbörse</title>
-  <link rel="stylesheet" href="styles.css?v=27">
+  <link rel="stylesheet" href="styles.css?v=28">
 </head>
 <body class="admin-page">
   <header class="admin-site-header">
     <div class="container admin-header-inner">
-      <a class="admin-brand-link" href="index.html?v=263" aria-label="Basar Tischbörse Startseite">
+      <a class="admin-brand-link" href="index.html?v=28" aria-label="Basar Tischbörse Startseite">
         <img src="logo-header-v263.png" alt="Basar Tischbörse – Tische einfach online buchen" class="admin-brand-logo">
       </a>
       <nav class="admin-nav hidden" id="adminNav" aria-label="Veranstalter-Navigation">
@@ -17,9 +17,10 @@
         <a href="#basarListCard">Basare</a>
         <a href="#bookingCard">Buchungen</a>
         <a href="#profileCard">Profil</a>
+        <a class="hidden" id="platformNavLink" href="#platformAdminCard">Plattform</a>
       </nav>
       <div class="admin-header-actions">
-        <a class="admin-public-link" href="index.html?v=263" target="_blank" rel="noopener">Zur Buchungsseite</a>
+        <a class="admin-public-link" href="index.html?v=28" target="_blank" rel="noopener">Zur Buchungsseite</a>
         <button class="secondary hidden admin-logout" id="topLogoutButton" type="button">Abmelden</button>
       </div>
     </div>
@@ -47,7 +48,7 @@
           <div class="auth-benefits">
             <div><span>✓</span><div><strong>Basare verwalten</strong><small>Termine, Preise und Regeln zentral pflegen.</small></div></div>
             <div><span>✓</span><div><strong>Buchungen im Blick</strong><small>Teilnehmer, Zahlungen und Fristen schnell sehen.</small></div></div>
-            <div><span>✓</span><div><strong>Direkt startklar</strong><small>Registrieren, Profil anlegen und ersten Basar veröffentlichen.</small></div></div>
+            <div><span>✓</span><div><strong>Direkt startklar</strong><small>Registrieren, Profil anlegen und ersten Basar vorbereiten.</small></div></div>
           </div>
         </aside>
         <div class="auth-form-panel">
@@ -84,10 +85,16 @@
         <div><span class="eyebrow">ERSTE SCHRITTE</span><h2 id="onboardingTitle">Willkommen bei der Basar Tischbörse</h2><p id="onboardingText">Schritt 1 von 2: Vervollständige zuerst deine Veranstalterdaten. Danach legst du deinen ersten Basar an.</p></div>
       </section>
 
+      <section class="account-status-banner hidden" id="accountStatusBanner" aria-live="polite">
+        <div class="account-status-icon" id="accountStatusIcon" aria-hidden="true">✓</div>
+        <div class="account-status-copy"><span class="eyebrow">PLATTFORMSTATUS</span><h2 id="accountStatusTitle">Veranstalterkonto</h2><p id="accountStatusText"></p></div>
+        <span class="account-status-chip" id="accountStatusChip">–</span>
+      </section>
+
       <section class="dashboard-overview hidden" id="dashboardOverview" aria-label="Dashboard Übersicht">
         <div class="overview-head">
           <div><span class="eyebrow">ÜBERSICHT</span><h2>Dein Dashboard</h2><p>Die wichtigsten Zahlen deiner Basare auf einen Blick.</p></div>
-          <div class="overview-actions"><a class="secondary dashboard-link" href="index.html?v=263" target="_blank" rel="noopener">Buchungsseite öffnen</a></div>
+          <div class="overview-actions"><a class="secondary dashboard-link" href="index.html?v=28" target="_blank" rel="noopener">Buchungsseite öffnen</a></div>
         </div>
         <div class="overview-grid">
           <div class="overview-stat"><span>Aktive Basare</span><strong id="overviewActiveBasars">–</strong><small id="overviewNextBasar">Noch kein Termin</small></div>
@@ -133,7 +140,7 @@
 
       <section class="card hidden admin-section-card" id="basarFormCard">
         <div class="card-head">
-          <div><span class="eyebrow">BASAR</span><h2 id="basarFormTitle">Neuen Basar anlegen</h2><p>Diese Daten werden den Teilnehmern auf der Buchungsseite angezeigt.</p></div>
+          <div><span class="eyebrow">BASAR</span><h2 id="basarFormTitle">Neuen Basar anlegen</h2><p>Diese Daten werden nach Freigabe und Veröffentlichung den Teilnehmern auf der Buchungsseite angezeigt.</p></div>
           <button class="secondary" id="cancelBasarButton" type="button">Abbrechen</button>
         </div>
         <form id="basarForm" class="section-grid">
@@ -144,7 +151,11 @@
           <div class="field"><label for="basarStadt">Stadt / Gemeinde</label><input id="basarStadt" maxlength="120" placeholder="z. B. Enkenbach-Alsenborn"><span class="hint">Die Position für die Umkreissuche wird beim Speichern automatisch aus PLZ und Ort ermittelt.</span></div>
           <div class="field"><label for="basarDatum">Veranstaltungsdatum</label><input id="basarDatum" type="date" required></div>
           <div class="field"><label for="basarTische">Maximale Tischanzahl</label><input id="basarTische" type="number" min="1" max="10000" required></div>
-          <div class="field"><label for="basarAktiv">Status</label><select id="basarAktiv"><option value="true">Aktiv / buchbar</option><option value="false">Inaktiv / nicht buchbar</option></select></div>
+          <div class="field"><label for="basarAktiv">Buchungsstatus</label><select id="basarAktiv"><option value="true">Aktiv / buchbar</option><option value="false">Inaktiv / nicht buchbar</option></select></div>
+          <div class="field full publication-setting">
+            <label class="checkbox-row"><input id="basarPublished" type="checkbox"><span>Basar öffentlich auf der Basar Tischbörse anzeigen</span></label>
+            <span class="hint" id="basarPublicationHint">Die Veröffentlichung ist nach Freigabe deines Veranstalterkontos möglich.</span>
+          </div>
           <div class="field"><label for="preis1Tisch">Preis 1 Tisch (€)</label><input id="preis1Tisch" type="number" min="0" step="0.01" required></div>
           <div class="field"><label for="preis2Tische">Preis 2 Tische (€)</label><input id="preis2Tische" type="number" min="0" step="0.01" required></div>
           <div class="field"><label for="preis3Tische">Preis 3 Tische (€)</label><input id="preis3Tische" type="number" min="0" step="0.01" required></div>
@@ -224,6 +235,28 @@
         </div>
         <p class="small">Offene Zahlungen werden nach Frist hervorgehoben: offen = orange, heute fällig = kräftig orange, überfällig = rot. Bereits als „Frist abgelaufen“ markierte Buchungen blockieren keine Tische mehr.</p>
       </section>
+
+      <section class="card admin-section-card hidden platform-admin-card" id="platformAdminCard">
+        <div class="card-head platform-admin-head">
+          <div><span class="eyebrow">PLATTFORMVERWALTUNG</span><h2>Veranstalter-Freigaben</h2><p>Neue Veranstalter prüfen, freigeben oder bei Bedarf sperren. Nur freigegebene Veranstalter können Basare öffentlich veröffentlichen.</p></div>
+          <div class="button-row">
+            <select id="platformStatusFilter" class="compact-select" aria-label="Veranstalter nach Status filtern">
+              <option value="alle">Alle Status</option>
+              <option value="ausstehend">Ausstehend</option>
+              <option value="freigegeben">Freigegeben</option>
+              <option value="gesperrt">Gesperrt</option>
+            </select>
+            <button class="secondary" id="refreshPlatformButton" type="button">Aktualisieren</button>
+          </div>
+        </div>
+        <div class="platform-summary-grid">
+          <div class="platform-summary"><span>Ausstehend</span><strong id="platformPendingCount">–</strong></div>
+          <div class="platform-summary success"><span>Freigegeben</span><strong id="platformApprovedCount">–</strong></div>
+          <div class="platform-summary blocked"><span>Gesperrt</span><strong id="platformBlockedCount">–</strong></div>
+        </div>
+        <div class="form-error hidden" id="platformError" role="alert"></div>
+        <div class="platform-review-list" id="platformReviewList"><div class="empty-state">Veranstalter werden geladen …</div></div>
+      </section>
     </section>
   </main>
 
@@ -237,7 +270,7 @@
 
   <footer class="admin-footer">
     <div class="container admin-footer-inner">
-      <a href="index.html?v=263" class="admin-footer-brand"><img src="logo-footer-v263.png" alt="Basar Tischbörse"></a>
+      <a href="index.html?v=28" class="admin-footer-brand"><img src="logo-footer-v263.png" alt="Basar Tischbörse"></a>
       <div class="admin-footer-links">
         <a href="impressum.html">Impressum</a>
         <a href="datenschutz.html">Datenschutz</a>
@@ -248,7 +281,7 @@
     </div>
   </footer>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=27"></script>
-  <script src="admin.js?v=27"></script>
+  <script src="config.js?v=28"></script>
+  <script src="admin.js?v=28"></script>
 </body>
 </html>
