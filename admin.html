@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Veranstalter - Basar Tischbörse</title>
-  <link rel="stylesheet" href="styles.css?v=22">
+  <link rel="stylesheet" href="styles.css?v=23">
 </head>
 <body>
   <header class="site-header">
     <div class="container header-inner">
       <div><div class="brand">Basar Tischbörse</div><div class="subtitle">Veranstalterbereich</div></div>
       <div class="header-actions">
-        <a class="header-link" href="index.html?v=22">Zur Buchungsseite</a>
+        <a class="header-link" href="index.html?v=23">Zur Buchungsseite</a>
         <button class="secondary hidden" id="topLogoutButton" type="button">Abmelden</button>
       </div>
     </div>
@@ -56,6 +56,20 @@
     <section class="hidden" id="dashboard">
       <section class="onboarding-banner hidden" id="onboardingBanner" aria-live="polite">
         <div><span class="eyebrow">ERSTE SCHRITTE</span><h2 id="onboardingTitle">Willkommen bei der Basar Tischbörse</h2><p id="onboardingText">Schritt 1 von 2: Vervollständige zuerst deine Veranstalterdaten. Danach legst du deinen ersten Basar an.</p></div>
+      </section>
+
+      <section class="dashboard-overview hidden" id="dashboardOverview" aria-label="Dashboard Übersicht">
+        <div class="overview-head">
+          <div><span class="eyebrow">ÜBERSICHT</span><h2>Dein Dashboard</h2><p>Die wichtigsten Zahlen deiner Basare auf einen Blick.</p></div>
+          <div class="overview-actions"><a class="secondary dashboard-link" href="index.html?v=23" target="_blank" rel="noopener">Buchungsseite öffnen</a></div>
+        </div>
+        <div class="overview-grid">
+          <div class="overview-stat"><span>Aktive Basare</span><strong id="overviewActiveBasars">–</strong><small id="overviewNextBasar">Noch kein Termin</small></div>
+          <div class="overview-stat attention"><span>Offene Zahlungen</span><strong id="overviewOpenPayments">–</strong><small id="overviewOpenAmount">–</small></div>
+          <div class="overview-stat success"><span>Bezahlte Buchungen</span><strong id="overviewPaidBookings">–</strong><small id="overviewPaidAmount">–</small></div>
+          <div class="overview-stat"><span>Reservierte Tische</span><strong id="overviewReservedTables">–</strong><small id="overviewTotalCapacity">–</small></div>
+        </div>
+        <div class="dashboard-health" id="dashboardHealth"></div>
       </section>
 
       <section class="card" id="profileCard">
@@ -123,11 +137,15 @@
           <div><span class="eyebrow">AUSGEWÄHLTER BASAR</span><h2 id="dashboardTitle">Dein Basar</h2><p id="dashboardDetails"></p></div>
           <div class="button-row"><button class="secondary" id="editCurrentButton" type="button">Basar bearbeiten</button><button class="secondary" id="refreshButton" type="button">Aktualisieren</button></div>
         </div>
-        <div class="dashboard-grid">
+        <div class="dashboard-grid dashboard-grid-6">
           <div class="stat"><span>Tische insgesamt</span><strong id="dashboardTotal">–</strong></div>
-          <div class="stat"><span>Gebucht / reserviert</span><strong id="dashboardBooked">–</strong></div>
+          <div class="stat"><span>Reserviert</span><strong id="dashboardBooked">–</strong></div>
           <div class="stat"><span>Frei</span><strong id="dashboardFree">–</strong></div>
+          <div class="stat attention"><span>Offene Zahlungen</span><strong id="dashboardOpen">–</strong></div>
+          <div class="stat success"><span>Bezahlte Buchungen</span><strong id="dashboardPaid">–</strong></div>
+          <div class="stat"><span>Bezahlt gesamt</span><strong id="dashboardRevenue">–</strong></div>
         </div>
+        <div class="capacity-row"><div><span>Auslastung</span><strong id="dashboardCapacityText">–</strong></div><div class="capacity-track" aria-hidden="true"><div class="capacity-fill" id="dashboardCapacityFill"></div></div></div>
       </section>
 
       <section class="card" id="bookingCard">
@@ -159,7 +177,7 @@
 
   <footer class="footer"><div class="container">Basar Tischbörse</div></footer>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=22"></script>
-  <script src="admin.js?v=22"></script>
+  <script src="config.js?v=23"></script>
+  <script src="admin.js?v=23"></script>
 </body>
 </html>

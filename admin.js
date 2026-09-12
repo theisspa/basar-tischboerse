@@ -7,8 +7,8 @@
   const supabase = window.supabase.createClient(config.supabaseUrl, config.supabasePublishableKey);
   const $ = id => document.getElementById(id);
   const euro = value => Number(value).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
-  let currentUser = null, basare = [], bookings = [], selectedBasarId = null, selectedBooking = null;
-  let profileExists = false, onboardingMode = false;
+  let currentUser = null, basare = [], bookings = [], allBookings = [], selectedBasarId = null, selectedBooking = null;
+  let profileExists = false, onboardingMode = false, profileSnapshot = null;
 
   function formatDate(value) { if (!value) return ''; return new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(`${value}T12:00:00`)); }
   function formatDateTime(value) { if (!value) return ''; return new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)); }
@@ -55,6 +55,7 @@
       $('profilePaypalLinkActive').checked = false;
       $('profileApiPayPalStatus').dataset.active = 'false';
       $('profileApiPayPalStatus').textContent = 'Direkter PayPal-Checkout ist für dieses Konto nicht freigeschaltet.';
+      profileSnapshot = null;
       return false;
     }
     $('profileName').value = data.name || '';
@@ -71,6 +72,7 @@
     $('profilePaypalLink').value = data.paypal_link || '';
     $('profileApiPayPalStatus').dataset.active = data.paypal_api_aktiv ? 'true' : 'false';
     $('profileApiPayPalStatus').textContent = data.paypal_api_aktiv ? 'Direkter PayPal-Checkout ist für dieses Konto freigeschaltet.' : 'Direkter PayPal-Checkout ist für dieses Konto nicht freigeschaltet.';
+    profileSnapshot = data;
     return true;
   }
 
@@ -99,7 +101,7 @@
     try {
       const { error } = await supabase.from('veranstalter').upsert(payload, { onConflict: 'user_id' });
       if (error) throw error;
-      profileExists = true; onboardingMode = false;
+      profileExists = true; onboardingMode = false; profileSnapshot = { ...(profileSnapshot || {}), ...payload, paypal_api_aktiv: apiPayPalActive };
       button.textContent='Gespeichert ✓';
       applyDashboardMode();
       if (wasOnboarding) {
@@ -108,10 +110,74 @@
         $('onboardingTitle').textContent = 'Schritt 2 von 2: Ersten Basar anlegen';
         $('onboardingText').textContent = 'Deine Veranstalterdaten sind gespeichert. Lege jetzt deinen ersten Basar mit Preisen und Buchungsregeln an.';
         startNewBasar();
+      } else {
+        renderDashboardOverview();
       }
       setTimeout(() => { button.textContent='Veranstalterdaten speichern'; }, 1500);
     } catch (error) { console.error(error); showError('profileError', humanizeError(error)); button.textContent='Veranstalterdaten speichern'; }
     finally { button.disabled=false; }
+  }
+
+  function bookingBlocksTable(r) { return ['offen','bezahlt'].includes(r.zahlungsstatus); }
+
+  function getBasarBookingStats(basarId) {
+    const rows = allBookings.filter(r => Number(r.basar_id) === Number(basarId));
+    const blocking = rows.filter(bookingBlocksTable);
+    return {
+      rows,
+      reserved: blocking.reduce((sum,r)=>sum+Number(r.anzahl_tische||0),0),
+      open: rows.filter(r=>r.zahlungsstatus==='offen').length,
+      paid: rows.filter(r=>r.zahlungsstatus==='bezahlt').length,
+      paidAmount: rows.filter(r=>r.zahlungsstatus==='bezahlt').reduce((sum,r)=>sum+Number(r.preis||0),0)
+    };
+  }
+
+  function renderDashboardOverview() {
+    const box = $('dashboardOverview');
+    if (!profileExists) { box.classList.add('hidden'); return; }
+    box.classList.remove('hidden');
+    const activeBasars = basare.filter(b=>b.aktiv);
+    const openRows = allBookings.filter(r=>r.zahlungsstatus==='offen');
+    const paidRows = allBookings.filter(r=>r.zahlungsstatus==='bezahlt');
+    const reserved = allBookings.filter(bookingBlocksTable).reduce((sum,r)=>sum+Number(r.anzahl_tische||0),0);
+    const capacity = basare.reduce((sum,b)=>sum+Number(b.max_tische||0),0);
+    const now = new Date(); now.setHours(0,0,0,0);
+    const upcoming = activeBasars.filter(b=>new Date(`${b.veranstaltungsdatum}T12:00:00`)>=now).sort((a,b)=>String(a.veranstaltungsdatum).localeCompare(String(b.veranstaltungsdatum)))[0];
+    $('overviewActiveBasars').textContent = activeBasars.length;
+    $('overviewNextBasar').textContent = upcoming ? `Nächster Termin: ${formatDate(upcoming.veranstaltungsdatum)}` : (basare.length ? 'Kein aktiver zukünftiger Termin' : 'Noch kein Basar angelegt');
+    $('overviewOpenPayments').textContent = openRows.length;
+    $('overviewOpenAmount').textContent = `${euro(openRows.reduce((sum,r)=>sum+Number(r.preis||0),0))} offen`;
+    $('overviewPaidBookings').textContent = paidRows.length;
+    $('overviewPaidAmount').textContent = `${euro(paidRows.reduce((sum,r)=>sum+Number(r.preis||0),0))} bezahlt`;
+    $('overviewReservedTables').textContent = reserved;
+    $('overviewTotalCapacity').textContent = capacity ? `von ${capacity} Tischplätzen` : 'Noch keine Kapazität';
+
+    const issues = [];
+    const p = profileSnapshot || {};
+    if (!p.telefon) issues.push('Telefonnummer fehlt im Veranstalterprofil.');
+    if (!p.ueberweisung_aktiv && !p.paypal_link_aktiv && !p.paypal_api_aktiv) issues.push('Keine Zahlungsart ist aktiviert.');
+    if (p.ueberweisung_aktiv && !p.iban) issues.push('Überweisung ist aktiv, aber es ist keine IBAN hinterlegt.');
+    if (p.paypal_link_aktiv && !p.paypal_link) issues.push('PayPal-Link ist aktiv, aber kein Link hinterlegt.');
+    if (!basare.length) issues.push('Lege deinen ersten Basar an.');
+    else if (!activeBasars.length) issues.push('Aktuell ist kein Basar öffentlich buchbar.');
+    const health = $('dashboardHealth');
+    if (issues.length) {
+      health.className = 'dashboard-health warning';
+      health.innerHTML = `<strong>${issues.length===1?'Hinweis':'Hinweise'}</strong><span>${issues.map(escapeHtml).join(' · ')}</span>`;
+    } else {
+      health.className = 'dashboard-health good';
+      health.innerHTML = '<strong>Alles bereit</strong><span>Profil, Zahlungsarten und mindestens ein aktiver Basar sind vollständig eingerichtet.</span>';
+    }
+  }
+
+  async function loadDashboardOverview() {
+    if (!basare.length) { allBookings = []; renderDashboardOverview(); renderBasarList(); return; }
+    const ids = basare.map(b=>b.id);
+    const { data, error } = await supabase.from('buchungen').select('id,basar_id,anzahl_tische,preis,zahlungsstatus,zahlungsfrist,created_at').in('basar_id', ids);
+    if (error) throw error;
+    allBookings = data || [];
+    renderDashboardOverview();
+    renderBasarList();
   }
 
   async function loadBasare() {
@@ -120,7 +186,7 @@
     if (error) throw error;
     basare=data || [];
     if (!selectedBasarId || !basare.some(b => b.id === selectedBasarId)) { const active=basare.find(b=>b.aktiv) || basare[0]; selectedBasarId=active?.id || null; }
-    renderBasarList();
+    await loadDashboardOverview();
     if (selectedBasarId) {
       $('onboardingBanner').classList.add('hidden');
       await loadSelectedBasar();
@@ -137,7 +203,7 @@
   function renderBasarList() {
     const el=$('basarList');
     if (!basare.length) { el.innerHTML='<div class="empty-state">Noch kein Basar vorhanden. Lege deinen ersten Basar an.</div>'; return; }
-    el.innerHTML=basare.map(b=>`<button class="basar-list-item ${b.id===selectedBasarId?'selected':''}" data-basar-id="${b.id}" type="button"><div><strong>${escapeHtml(b.name)}</strong><span>${escapeHtml(formatDate(b.veranstaltungsdatum))}${b.ort?' · '+escapeHtml(b.ort):''}</span></div><span class="status-chip ${b.aktiv?'active':'inactive'}">${b.aktiv?'Aktiv':'Inaktiv'}</span></button>`).join('');
+    el.innerHTML=basare.map(b=>{const st=getBasarBookingStats(b.id);const max=Number(b.max_tische||0);const full=max>0&&st.reserved>=max;const statusText=!b.aktiv?'Inaktiv':full?'Ausgebucht':'Aktiv';const statusClass=!b.aktiv?'inactive':full?'full':'active';return `<button class="basar-list-item ${b.id===selectedBasarId?'selected':''}" data-basar-id="${b.id}" type="button"><div class="basar-list-main"><strong>${escapeHtml(b.name)}</strong><span>${escapeHtml(formatDate(b.veranstaltungsdatum))}${b.ort?' · '+escapeHtml(b.ort):''}</span><small>${st.reserved} von ${max} Tischen reserviert · ${st.open} offen · ${st.paid} bezahlt</small></div><span class="status-chip ${statusClass}">${statusText}</span></button>`;}).join('');
     el.querySelectorAll('[data-basar-id]').forEach(btn=>btn.addEventListener('click', async()=>{ selectedBasarId=Number(btn.dataset.basarId); renderBasarList(); try{await loadSelectedBasar();}catch(e){console.error(e);showError('basarError',humanizeError(e));} }));
   }
 
@@ -158,8 +224,18 @@
 
   function updateStats() {
     const basar=basare.find(b=>b.id===selectedBasarId); if(!basar)return;
-    const blocking=bookings.filter(r=>['offen','bezahlt'].includes(r.zahlungsstatus));
-    const booked=blocking.reduce((sum,r)=>sum+Number(r.anzahl_tische||0),0); $('dashboardBooked').textContent=booked; $('dashboardFree').textContent=Math.max(0,Number(basar.max_tische)-booked);
+    const blocking=bookings.filter(bookingBlocksTable);
+    const booked=blocking.reduce((sum,r)=>sum+Number(r.anzahl_tische||0),0);
+    const max=Number(basar.max_tische||0);
+    const free=Math.max(0,max-booked);
+    const open=bookings.filter(r=>r.zahlungsstatus==='offen').length;
+    const paidRows=bookings.filter(r=>r.zahlungsstatus==='bezahlt');
+    const paidAmount=paidRows.reduce((sum,r)=>sum+Number(r.preis||0),0);
+    const percent=max?Math.min(100,Math.round((booked/max)*100)):0;
+    $('dashboardBooked').textContent=booked; $('dashboardFree').textContent=free;
+    $('dashboardOpen').textContent=open; $('dashboardPaid').textContent=paidRows.length; $('dashboardRevenue').textContent=euro(paidAmount);
+    $('dashboardCapacityText').textContent=`${booked} von ${max} · ${percent} %`;
+    $('dashboardCapacityFill').style.width=`${percent}%`;
   }
 
   function statusInfo(status) {
@@ -183,7 +259,7 @@
 
   async function updateBookingStatus(status) {
     if(!selectedBooking)return; const label=status==='bezahlt'?'Zahlung als bezahlt markieren':status==='offen'?'Zahlung wieder öffnen':'Buchung stornieren'; if(!window.confirm(`${label}?`))return;
-    const { error }=await supabase.from('buchungen').update({zahlungsstatus:status}).eq('id',selectedBooking.id); if(error){showError('dashboardError',humanizeError(error));return;} closeBooking(); await loadBookings();
+    const { error }=await supabase.from('buchungen').update({zahlungsstatus:status}).eq('id',selectedBooking.id); if(error){showError('dashboardError',humanizeError(error));return;} closeBooking(); await loadBookings(); await loadDashboardOverview();
   }
 
   document.addEventListener('click', async e=>{ const b=e.target.closest('[data-action]'); if(!b)return; const a=b.dataset.action; if(a==='open-booking')openBooking(Number(b.dataset.bookingId)); else if(a==='close-booking')closeBooking(); else if(a==='mark-paid')await updateBookingStatus('bezahlt'); else if(a==='mark-open')await updateBookingStatus('offen'); else if(a==='cancel-booking')await updateBookingStatus('storniert'); }, true);
@@ -205,11 +281,11 @@
     const { data:{user}, error }=await supabase.auth.getUser(); if(error||!user)throw error||new Error('Nicht angemeldet'); currentUser=user;
     $('loginCard').classList.add('hidden'); $('dashboard').classList.remove('hidden'); $('topLogoutButton').classList.remove('hidden');
     profileExists = await loadProfile();
-    selectedBasarId = null; basare = []; bookings = [];
+    selectedBasarId = null; basare = []; bookings = []; allBookings = [];
     applyDashboardMode();
     if (profileExists) await loadBasare();
   }
-  async function logout(){await supabase.auth.signOut();currentUser=null;profileExists=false;onboardingMode=false;selectedBasarId=null;basare=[];bookings=[];$('dashboard').classList.add('hidden');$('loginCard').classList.remove('hidden');$('topLogoutButton').classList.add('hidden');$('loginForm').reset();$('registerForm').reset();setAuthMode('login');}
+  async function logout(){await supabase.auth.signOut();currentUser=null;profileExists=false;onboardingMode=false;selectedBasarId=null;basare=[];bookings=[];allBookings=[];profileSnapshot=null;$('dashboard').classList.add('hidden');$('loginCard').classList.remove('hidden');$('topLogoutButton').classList.add('hidden');$('loginForm').reset();$('registerForm').reset();setAuthMode('login');}
 
   $('loginForm').addEventListener('submit',async e=>{e.preventDefault();clearError('loginError');$('loginButton').disabled=true;$('loginButton').textContent='Anmeldung läuft …';const {error}=await supabase.auth.signInWithPassword({email:$('loginEmail').value.trim(),password:$('loginPassword').value});$('loginButton').disabled=false;$('loginButton').textContent='Anmelden';if(error)return showError('loginError','Anmeldung fehlgeschlagen. Bitte E-Mail-Adresse, Passwort und ggf. die E-Mail-Bestätigung prüfen.');try{await showDashboard();}catch(err){console.error(err);showError('loginError',humanizeError(err));}});
 
@@ -222,7 +298,7 @@
     if (password !== repeat) return showError('registerError', 'Die beiden Passwörter stimmen nicht überein.');
     const button = $('registerButton'); button.disabled = true; button.textContent = 'Konto wird erstellt …';
     try {
-      const redirectTo = `${window.location.origin}${window.location.pathname}?v=22&onboarding=1`;
+      const redirectTo = `${window.location.origin}${window.location.pathname}?v=23&onboarding=1`;
       const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo } });
       if (error) throw error;
       if (data.session) {
