@@ -13,7 +13,7 @@
         <div class="brand">Basar Tischbörse</div>
         <div class="subtitle">Tische einfach online buchen</div>
       </div>
-      <a class="header-link" href="#veranstalter">Für Veranstalter</a>
+      <a class="header-link" href="admin.html">Für Veranstalter</a>
     </div>
   </header>
 
@@ -27,8 +27,8 @@
     <section class="card booking-card" id="booking">
       <div class="card-head">
         <div>
-          <h2>Sommerbasar Alsenborn</h2>
-          <p>Samstag, 10. Oktober 2026 · Bürgerhaus Alsenborn</p>
+          <h2 id="basarName">Basar wird geladen …</h2>
+          <p id="basarDetails">Basardaten werden geladen …</p>
         </div>
         <div class="availability"><strong id="availableTables">37</strong><span>Tische frei</span></div>
       </div>
@@ -86,7 +86,8 @@
           <div class="total"><span>Gesamt</span><strong id="totalPrice">12,00 €</strong></div>
         </div>
 
-        <button class="primary" type="submit">Verbindlich buchen</button>
+        <div class="form-error hidden" id="formError" role="alert"></div>
+        <button class="primary" id="submitButton" type="submit">Verbindlich buchen</button>
         <p class="small">Zahlungsfrist: innerhalb von 14 Tagen nach Buchung. Bei zugesagter, aber vor Ort nicht erbrachter Kuchenspende wird nachträglich eine Gebühr von 10 € fällig.</p>
       </form>
     </section>
@@ -97,27 +98,15 @@
       <h2>Dein Tisch ist reserviert.</h2>
       <p id="confirmationText"></p>
       <div class="booking-number" id="bookingNumber"></div>
+      <p id="paymentInfo" class="small"></p>
       <div class="actions"><button class="secondary" id="printButton">Buchung drucken</button><button class="secondary" id="newBookingButton">Neue Buchung</button></div>
     </section>
 
-    <section class="card organizer" id="veranstalter">
-      <div class="card-head">
-        <div>
-          <span class="eyebrow">VERANSTALTER</span>
-          <h2>Übersicht</h2>
-        </div>
-        <span class="badge">MVP-Demo</span>
-      </div>
-      <div class="dashboard-grid">
-        <div class="stat"><span>Tische insgesamt</span><strong>50</strong></div>
-        <div class="stat"><span>Gebucht</span><strong id="dashboardBooked">13</strong></div>
-        <div class="stat"><span>Frei</span><strong id="dashboardFree">37</strong></div>
-      </div>
-      <p class="small">In der finalen Version wird diese Übersicht durch einen geschützten Veranstalter-Login ersetzt. Dort werden Buchungen, Zahlungen, Verträge und verfügbare Tische verwaltet.</p>
-    </section>
+
   </main>
 
-  <footer class="footer"><div class="container">Basar Tischbörse · MVP</div></footer>
+  <footer class="footer"><div class="container">Basar Tischbörse</div></footer>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="app.js"></script>
 </body>
 </html>

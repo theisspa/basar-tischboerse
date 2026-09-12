@@ -1,7 +1,106 @@
 <!doctype html>
-<html lang="de"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Veranstalter - Basar Tischbörse</title><link rel="stylesheet" href="styles.css"></head>
-<body><header class="site-header"><div class="container header-inner"><div><div class="brand">Basar Tischbörse</div><div class="subtitle">Veranstalterbereich</div></div><a class="header-link" href="index.html">Zur Buchungsseite</a></div></header>
-<main class="container main"><section class="hero"><span class="eyebrow">VERANSTALTER</span><h1>Deinen Basar verwalten.</h1><p>Demo-Ansicht für den später geschützten Veranstalterbereich.</p></section>
-<section class="card"><div class="card-head"><div><h2>Sommerbasar Alsenborn</h2><p>10. Oktober 2026 · Bürgerhaus Alsenborn</p></div><span class="badge">Demo</span></div><div class="dashboard-grid"><div class="stat"><span>Tische insgesamt</span><strong>50</strong></div><div class="stat"><span>Gebucht</span><strong>13</strong></div><div class="stat"><span>Frei</span><strong>37</strong></div></div></section>
-<section class="card"><h2>Nächste Funktionen</h2><p class="small">Basar anlegen, Tischanzahl festlegen, Buchungen filtern, Zahlungseingänge markieren, Buchungsbestätigungen/Verträge erzeugen und Buchungen stornieren.</p></section>
-</main><footer class="footer"><div class="container">Basar Tischbörse · MVP</div></footer></body></html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Veranstalter - Basar Tischbörse</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <div>
+        <div class="brand">Basar Tischbörse</div>
+        <div class="subtitle">Veranstalterbereich</div>
+      </div>
+      <a class="header-link" href="index.html">Zur Buchungsseite</a>
+    </div>
+  </header>
+
+  <main class="container main">
+    <section class="hero">
+      <span class="eyebrow">GESCHÜTZTER BEREICH</span>
+      <h1>Basar verwalten.</h1>
+      <p>Nur angemeldete Veranstalter können Buchungs- und Teilnehmerdaten sehen.</p>
+    </section>
+
+    <section class="card" id="loginCard">
+      <div class="card-head">
+        <div>
+          <h2>Anmelden</h2>
+          <p>Mit deinem Veranstalter-Konto einloggen.</p>
+        </div>
+      </div>
+      <form id="loginForm" class="section-grid">
+        <div class="field full">
+          <label for="loginEmail">E-Mail</label>
+          <input id="loginEmail" type="email" autocomplete="username" required>
+        </div>
+        <div class="field full">
+          <label for="loginPassword">Passwort</label>
+          <input id="loginPassword" type="password" autocomplete="current-password" required>
+        </div>
+        <div class="form-error hidden full" id="loginError" role="alert"></div>
+        <div class="field full">
+          <button class="primary" id="loginButton" type="submit">Anmelden</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="hidden" id="dashboard">
+      <section class="card">
+        <div class="card-head">
+          <div>
+            <span class="eyebrow">DASHBOARD</span>
+            <h2 id="dashboardTitle">Dein Basar</h2>
+            <p id="dashboardDetails"></p>
+          </div>
+          <button class="secondary" id="logoutButton" type="button">Abmelden</button>
+        </div>
+        <div class="dashboard-grid">
+          <div class="stat"><span>Tische insgesamt</span><strong id="dashboardTotal">–</strong></div>
+          <div class="stat"><span>Gebucht</span><strong id="dashboardBooked">–</strong></div>
+          <div class="stat"><span>Frei</span><strong id="dashboardFree">–</strong></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head">
+          <div>
+            <span class="eyebrow">BUCHUNGEN</span>
+            <h2>Teilnehmerübersicht</h2>
+          </div>
+          <button class="secondary" id="refreshButton" type="button">Aktualisieren</button>
+        </div>
+        <div class="form-error hidden" id="dashboardError" role="alert"></div>
+        <div class="table-wrap">
+          <table class="booking-table">
+            <thead>
+              <tr>
+                <th>Buchungsnr.</th>
+                <th>Name</th>
+                <th>Tische</th>
+                <th>Bereich</th>
+                <th>Kuchen</th>
+                <th>Betrag</th>
+                <th>Zahlung</th>
+                <th>Frist</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="bookingRows">
+              <tr><td colspan="9">Buchungen werden geladen …</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="small">Personen- und Buchungsdaten sind ausschließlich für angemeldete Veranstalter sichtbar.</p>
+      </section>
+    </section>
+  </main>
+
+  <footer class="footer"><div class="container">Basar Tischbörse</div></footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
