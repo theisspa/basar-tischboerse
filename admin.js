@@ -179,7 +179,7 @@
     }).join('');
 
     rows.querySelectorAll('[data-booking-id]').forEach(btn => {
-      btn.addEventListener('click', () => openBooking(Number(btn.dataset.bookingId)));
+      btn.dataset.action = 'open-booking';
     });
   }
 
@@ -223,22 +223,16 @@
     selectedBooking = null;
   }
 
-  // Global handlers: the modal controls also use inline onclick attributes
-  // so they keep working even if another listener fails to attach.
-  window.closeBookingModal = closeBooking;
-  window.markSelectedBookingPaid = () => updateBookingStatus('bezahlt');
-  window.markSelectedBookingOpen = () => updateBookingStatus('offen');
-  window.cancelSelectedBooking = () => updateBookingStatus('storniert');
-
   async function updateBookingStatus(status) {
     if (!selectedBooking) return;
     const label = status === 'bezahlt' ? 'Zahlung als bezahlt markieren' : status === 'offen' ? 'Zahlung wieder öffnen' : 'Buchung stornieren';
     if (!window.confirm(`${label}?`)) return;
 
+    const bookingId = selectedBooking.id;
     const { error } = await supabase
       .from('buchungen')
       .update({ zahlungsstatus: status })
-      .eq('id', selectedBooking.id);
+      .eq('id', bookingId);
     if (error) {
       showError('dashboardError', humanizeError(error));
       return;
@@ -246,6 +240,55 @@
     closeBooking();
     await loadBookings();
   }
+
+  // Bind the modal controls immediately and via event delegation. This makes
+  // the controls resilient even if the modal content is re-rendered.
+  document.addEventListener('click', async (event) => {
+    const actionButton = event.target.closest('[data-action]');
+    if (!actionButton) return;
+
+    const action = actionButton.dataset.action;
+    if (action === 'open-booking') {
+      event.preventDefault();
+      event.stopPropagation();
+      openBooking(Number(actionButton.dataset.bookingId));
+      return;
+    }
+    if (action === 'close-booking') {
+      event.preventDefault();
+      event.stopPropagation();
+      closeBooking();
+      return;
+    }
+    if (action === 'mark-paid') {
+      event.preventDefault();
+      event.stopPropagation();
+      await updateBookingStatus('bezahlt');
+      return;
+    }
+    if (action === 'mark-open') {
+      event.preventDefault();
+      event.stopPropagation();
+      await updateBookingStatus('offen');
+      return;
+    }
+    if (action === 'cancel-booking') {
+      event.preventDefault();
+      event.stopPropagation();
+      await updateBookingStatus('storniert');
+    }
+  }, true);
+
+  // Clicking the dark backdrop closes the modal.
+  document.addEventListener('click', (event) => {
+    const modal = $('bookingModal');
+    if (modal && event.target === modal) closeBooking();
+  });
+
+  // Secondary modal fallbacks.
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeBooking();
+  });
 
   function startNewBasar() {
     clearError('basarError');
@@ -379,27 +422,6 @@
     try { await loadBookings(); } catch (error) { console.error(error); showError('dashboardError', humanizeError(error)); }
   });
   $('bookingFilter').addEventListener('change', renderBookings);
-  $('closeBookingModal').addEventListener('click', event => {
-    event.preventDefault();
-    event.stopPropagation();
-    closeBooking();
-  });
-
-  // Also allow clicking the dark area outside the dialog to close it.
-  $('bookingModal').addEventListener('click', event => {
-    if (event.target === event.currentTarget) closeBooking();
-  });
-
-  // Keyboard fallback.
-  document.addEventListener('keydown', event => {
-    if (event.key === 'Escape') closeBooking();
-  });
-
-  // Keep JS listeners too, while inline handlers provide an additional fallback.
-  $('markPaidButton').addEventListener('click', event => { event.preventDefault(); updateBookingStatus('bezahlt'); });
-  $('markOpenButton').addEventListener('click', event => { event.preventDefault(); updateBookingStatus('offen'); });
-  $('cancelBookingButton').addEventListener('click', event => { event.preventDefault(); updateBookingStatus('storniert'); });
-
   supabase.auth.onAuthStateChange((_event, session) => {
     if (!session) return;
     setTimeout(() => showDashboard().catch(console.error), 0);

@@ -176,13 +176,13 @@
           <span class="eyebrow">BUCHUNG</span>
           <h2 id="bookingModalTitle">Buchung</h2>
         </div>
-        <button class="icon-button" id="closeBookingModal" type="button" aria-label="Schließen" onclick="window.closeBookingModal(); return false;">×</button>
+        <button class="icon-button" id="closeBookingModal" type="button" aria-label="Schließen" data-action="close-booking">×</button>
       </div>
       <div id="bookingDetails" class="detail-grid"></div>
       <div class="modal-actions">
-        <button class="secondary hidden" id="markOpenButton" type="button" onclick="window.markSelectedBookingOpen(); return false;">Als offen markieren</button>
-        <button class="secondary" id="markPaidButton" type="button" onclick="window.markSelectedBookingPaid(); return false;">Als bezahlt markieren</button>
-        <button class="danger" id="cancelBookingButton" type="button" onclick="window.cancelSelectedBooking(); return false;">Buchung stornieren</button>
+        <button class="secondary hidden" id="markOpenButton" type="button" data-action="mark-open">Als offen markieren</button>
+        <button class="secondary" id="markPaidButton" type="button" data-action="mark-paid">Als bezahlt markieren</button>
+        <button class="danger" id="cancelBookingButton" type="button" data-action="cancel-booking">Buchung stornieren</button>
       </div>
     </div>
   </div>
