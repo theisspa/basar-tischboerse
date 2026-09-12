@@ -118,3 +118,17 @@ html{scroll-behavior:smooth;scroll-padding-top:88px}.market-site-header{backgrou
 @media(max-width:760px){
   .market-header-inner{display:flex;min-height:78px;padding-top:8px;padding-bottom:8px}.market-logo{width:235px}.market-nav{display:none}.market-organizer-button{padding:11px 14px!important;font-size:11px}.market-hero-grid{grid-template-columns:1fr;min-height:auto}.market-stall-scene{display:block;margin-top:20px}.hero-basar-image{width:100%;margin:0;mix-blend-mode:multiply}.market-hero-copy h1{font-size:44px}
 }
+
+
+/* ===== V26.2: inline logos, transparent hero illustration, precise benefit icons ===== */
+.market-header-inner{grid-template-columns:minmax(320px,1fr) auto auto;gap:28px}
+.market-logo-link{line-height:0}.brand-logo-svg{display:block;width:320px;height:auto;max-width:100%}
+.market-organizer-button{justify-self:end;display:inline-flex!important;width:auto!important;min-width:0!important;white-space:nowrap;padding:13px 22px!important;font-size:14px!important;line-height:1.1;border-radius:999px!important}
+.market-stall-scene{overflow:visible;background:transparent!important;isolation:isolate}
+.hero-basar-svg{display:block;width:116%;max-width:none;height:auto;margin-right:-9%;overflow:visible;background:transparent!important;filter:drop-shadow(0 18px 18px rgba(96,67,42,.06))}
+.hero-basar-image{display:none!important}
+.benefit-icon{font-size:0}.benefit-icon svg{width:27px;height:27px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.footer-logo-link{display:inline-block;line-height:0}.footer-logo-link .brand-logo-svg{width:245px}
+.market-footer-grid .footer-brand-block{min-width:0}
+@media(max-width:1100px){.market-header-inner{grid-template-columns:minmax(280px,1fr) auto}.brand-logo-svg{width:285px}.hero-basar-svg{width:105%;margin-right:-2%}}
+@media(max-width:760px){.brand-logo-svg{width:220px}.market-organizer-button{padding:10px 13px!important;font-size:11px!important}.hero-basar-svg{width:100%;margin:0}.footer-logo-link .brand-logo-svg{width:230px}}
