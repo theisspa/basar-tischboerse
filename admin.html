@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Veranstalter - Basar Tischbörse</title>
-  <link rel="stylesheet" href="styles.css?v=20">
+  <link rel="stylesheet" href="styles.css?v=21">
 </head>
 <body>
   <header class="site-header">
     <div class="container header-inner">
       <div><div class="brand">Basar Tischbörse</div><div class="subtitle">Veranstalterbereich</div></div>
       <div class="header-actions">
-        <a class="header-link" href="index.html?v=13">Zur Buchungsseite</a>
+        <a class="header-link" href="index.html?v=21">Zur Buchungsseite</a>
         <button class="secondary hidden" id="topLogoutButton" type="button">Abmelden</button>
       </div>
     </div>
@@ -25,17 +25,40 @@
     </section>
 
     <section class="card" id="loginCard">
-      <div class="card-head"><div><h2>Anmelden</h2><p>Mit deinem Veranstalter-Konto einloggen.</p></div></div>
-      <form id="loginForm" class="section-grid">
-        <div class="field full"><label for="loginEmail">E-Mail</label><input id="loginEmail" type="email" autocomplete="username" required></div>
-        <div class="field full"><label for="loginPassword">Passwort</label><input id="loginPassword" type="password" autocomplete="current-password" required></div>
-        <div class="form-error hidden full" id="loginError" role="alert"></div>
-        <div class="field full"><button class="primary" id="loginButton" type="submit">Anmelden</button></div>
-      </form>
+      <div class="auth-tabs" role="tablist" aria-label="Veranstalter-Zugang">
+        <button class="auth-tab active" id="showLoginButton" type="button">Anmelden</button>
+        <button class="auth-tab" id="showRegisterButton" type="button">Neu registrieren</button>
+      </div>
+
+      <div id="loginPanel">
+        <div class="card-head auth-head"><div><h2>Anmelden</h2><p>Mit deinem Veranstalter-Konto einloggen.</p></div></div>
+        <form id="loginForm" class="section-grid">
+          <div class="field full"><label for="loginEmail">E-Mail</label><input id="loginEmail" type="email" autocomplete="username" required></div>
+          <div class="field full"><label for="loginPassword">Passwort</label><input id="loginPassword" type="password" autocomplete="current-password" required></div>
+          <div class="form-error hidden full" id="loginError" role="alert"></div>
+          <div class="field full"><button class="primary" id="loginButton" type="submit">Anmelden</button></div>
+        </form>
+      </div>
+
+      <div class="hidden" id="registerPanel">
+        <div class="card-head auth-head"><div><h2>Veranstalter-Konto erstellen</h2><p>Nach der Registrierung richtest du dein Profil und anschließend deinen ersten Basar ein.</p></div></div>
+        <form id="registerForm" class="section-grid">
+          <div class="field full"><label for="registerEmail">E-Mail</label><input id="registerEmail" type="email" autocomplete="email" required></div>
+          <div class="field"><label for="registerPassword">Passwort</label><input id="registerPassword" type="password" autocomplete="new-password" minlength="8" required><span class="hint">Mindestens 8 Zeichen.</span></div>
+          <div class="field"><label for="registerPasswordRepeat">Passwort wiederholen</label><input id="registerPasswordRepeat" type="password" autocomplete="new-password" minlength="8" required></div>
+          <div class="form-error hidden full" id="registerError" role="alert"></div>
+          <div class="auth-notice hidden full" id="registerSuccess" role="status"></div>
+          <div class="field full"><button class="primary" id="registerButton" type="submit">Konto erstellen</button></div>
+        </form>
+      </div>
     </section>
 
     <section class="hidden" id="dashboard">
-      <section class="card">
+      <section class="onboarding-banner hidden" id="onboardingBanner" aria-live="polite">
+        <div><span class="eyebrow">ERSTE SCHRITTE</span><h2 id="onboardingTitle">Willkommen bei der Basar Tischbörse</h2><p id="onboardingText">Schritt 1 von 2: Vervollständige zuerst deine Veranstalterdaten. Danach legst du deinen ersten Basar an.</p></div>
+      </section>
+
+      <section class="card" id="profileCard">
         <div class="card-head">
           <div><span class="eyebrow">VERTRAGSPARTNER</span><h2>Meine Veranstalterdaten</h2><p>Diese Daten erscheinen in den Buchungsunterlagen deiner Basare.</p></div>
         </div>
@@ -55,7 +78,7 @@
         </form>
       </section>
 
-      <section class="card">
+      <section class="card" id="basarListCard">
         <div class="card-head">
           <div><span class="eyebrow">BASARE</span><h2>Meine Basare</h2><p>Basare anlegen, bearbeiten und verwalten.</p></div>
           <button class="primary inline-button" id="newBasarButton" type="button">+ Neuer Basar</button>
@@ -132,7 +155,7 @@
 
   <footer class="footer"><div class="container">Basar Tischbörse</div></footer>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=13"></script>
-  <script src="admin.js?v=20"></script>
+  <script src="config.js?v=21"></script>
+  <script src="admin.js?v=21"></script>
 </body>
 </html>

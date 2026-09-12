@@ -8,6 +8,7 @@
   const $ = id => document.getElementById(id);
   const euro = value => Number(value).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
   let currentUser = null, basare = [], bookings = [], selectedBasarId = null, selectedBooking = null;
+  let profileExists = false, onboardingMode = false;
 
   function formatDate(value) { if (!value) return ''; return new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(`${value}T12:00:00`)); }
   function formatDateTime(value) { if (!value) return ''; return new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)); }
@@ -16,11 +17,42 @@
   function clearError(id) { const box=$(id); box.textContent=''; box.classList.add('hidden'); }
   function humanizeError(error) { const m=error?.message || String(error || 'Unbekannter Fehler.'); if (/permission|row-level security|not authorized/i.test(m)) return 'Keine Berechtigung für diese Aktion.'; if (/nicht genuegend/i.test(m)) return 'Nicht genügend freie Tische vorhanden.'; return m; }
 
+  function setAuthMode(mode) {
+    const login = mode === 'login';
+    $('loginPanel').classList.toggle('hidden', !login);
+    $('registerPanel').classList.toggle('hidden', login);
+    $('showLoginButton').classList.toggle('active', login);
+    $('showRegisterButton').classList.toggle('active', !login);
+    clearError('loginError'); clearError('registerError');
+  }
+
+  function applyDashboardMode() {
+    const locked = !profileExists;
+    onboardingMode = locked;
+    $('onboardingBanner').classList.toggle('hidden', !locked);
+    $('basarListCard').classList.toggle('hidden', locked);
+    $('basarFormCard').classList.add('hidden');
+    $('selectedBasarCard').classList.toggle('hidden', locked || !selectedBasarId);
+    $('bookingCard').classList.toggle('hidden', locked || !selectedBasarId);
+    if (locked) {
+      $('onboardingTitle').textContent = 'Willkommen bei der Basar Tischbörse';
+      $('onboardingText').textContent = 'Schritt 1 von 2: Vervollständige zuerst deine Veranstalterdaten. Danach legst du deinen ersten Basar an.';
+      $('saveProfileButton').textContent = 'Veranstalterdaten speichern und weiter';
+      setTimeout(() => $('profileName').focus(), 0);
+    } else {
+      $('saveProfileButton').textContent = 'Veranstalterdaten speichern';
+    }
+  }
+
   async function loadProfile() {
     clearError('profileError');
     const { data, error } = await supabase.from('veranstalter').select('*').eq('user_id', currentUser.id).maybeSingle();
     if (error) throw error;
-    if (!data) throw new Error('Für dieses Konto fehlen Veranstalterdaten.');
+    if (!data) {
+      $('profileForm').reset();
+      $('profileEmail').value = currentUser.email || '';
+      return false;
+    }
     $('profileName').value = data.name || '';
     $('profileStreet').value = data.strasse || '';
     $('profileHouseNumber').value = data.hausnummer || '';
@@ -31,6 +63,7 @@
     $('profileAccountHolder').value = data.kontoinhaber || '';
     $('profileIban').value = data.iban || '';
     $('profilePaypal').value = data.paypal_email || '';
+    return true;
   }
 
   async function saveProfile(event) {
@@ -42,11 +75,25 @@
       email: $('profileEmail').value.trim(), kontoinhaber: $('profileAccountHolder').value.trim() || null,
       iban: $('profileIban').value.trim() || null, paypal_email: $('profilePaypal').value.trim() || null, updated_at: new Date().toISOString()
     };
+    if (!payload.name || !payload.strasse || !payload.hausnummer || !payload.plz || !payload.ort || !payload.email) {
+      return showError('profileError', 'Bitte alle Pflichtfelder der Veranstalterdaten ausfüllen.');
+    }
+    const wasOnboarding = onboardingMode;
     const button=$('saveProfileButton'); button.disabled=true; button.textContent='Speichert …';
     try {
       const { error } = await supabase.from('veranstalter').upsert(payload, { onConflict: 'user_id' });
       if (error) throw error;
-      button.textContent='Gespeichert ✓'; setTimeout(() => { button.textContent='Veranstalterdaten speichern'; }, 1500);
+      profileExists = true; onboardingMode = false;
+      button.textContent='Gespeichert ✓';
+      applyDashboardMode();
+      if (wasOnboarding) {
+        await loadBasare();
+        $('onboardingBanner').classList.remove('hidden');
+        $('onboardingTitle').textContent = 'Schritt 2 von 2: Ersten Basar anlegen';
+        $('onboardingText').textContent = 'Deine Veranstalterdaten sind gespeichert. Lege jetzt deinen ersten Basar mit Preisen und Buchungsregeln an.';
+        startNewBasar();
+      }
+      setTimeout(() => { button.textContent='Veranstalterdaten speichern'; }, 1500);
     } catch (error) { console.error(error); showError('profileError', humanizeError(error)); button.textContent='Veranstalterdaten speichern'; }
     finally { button.disabled=false; }
   }
@@ -58,7 +105,17 @@
     basare=data || [];
     if (!selectedBasarId || !basare.some(b => b.id === selectedBasarId)) { const active=basare.find(b=>b.aktiv) || basare[0]; selectedBasarId=active?.id || null; }
     renderBasarList();
-    if (selectedBasarId) await loadSelectedBasar(); else clearSelectedBasar();
+    if (selectedBasarId) {
+      $('onboardingBanner').classList.add('hidden');
+      await loadSelectedBasar();
+    } else {
+      clearSelectedBasar();
+      if (profileExists) {
+        $('onboardingBanner').classList.remove('hidden');
+        $('onboardingTitle').textContent = 'Schritt 2 von 2: Ersten Basar anlegen';
+        $('onboardingText').textContent = 'Dein Veranstalterprofil ist bereit. Lege jetzt deinen ersten Basar mit Preisen und Buchungsregeln an.';
+      }
+    }
   }
 
   function renderBasarList() {
@@ -124,18 +181,48 @@
     const payload={name:$('basarName').value.trim(),ort:$('basarOrt').value.trim()||null,veranstaltungsdatum:$('basarDatum').value,max_tische:Number($('basarTische').value),preis_1_tisch:Number($('preis1Tisch').value),preis_2_tische:Number($('preis2Tische').value),preis_3_tische:Number($('preis3Tische').value),kuchenrabatt:Number($('kuchenrabatt').value),zahlungsfrist_tage:Number($('zahlungsfristTage').value),kurzfristig_ab_tage:Number($('kurzfristigAbTage').value),kurzfristige_zahlungsfrist_tage:Number($('kurzfristigeZahlungsfristTage').value),stornofrist_tage:Number($('stornofristTage').value),kuchennachgebuehr:Number($('kuchennachgebuehr').value),uebertragung_erlaubt:$('uebertragungErlaubt').value==='true',zusatzregeln:$('zusatzregeln').value.trim()||null,aktiv:$('basarAktiv').value==='true',veranstalter_id:currentUser.id};
     if(!payload.name||!payload.veranstaltungsdatum||!payload.max_tische)return showError('basarError','Bitte Name, Datum und Tischanzahl ausfüllen.'); if([payload.preis_1_tisch,payload.preis_2_tische,payload.preis_3_tische,payload.kuchenrabatt,payload.kuchennachgebuehr].some(v=>!Number.isFinite(v)||v<0))return showError('basarError','Bitte gültige Preise und Gebühren eingeben.'); if([payload.zahlungsfrist_tage,payload.kurzfristig_ab_tage,payload.kurzfristige_zahlungsfrist_tage,payload.stornofrist_tage].some(v=>!Number.isInteger(v)||v<0||v>365))return showError('basarError','Bitte gültige Fristen zwischen 0 und 365 Tagen eingeben.');
     const btn=$('saveBasarButton');btn.disabled=true;btn.textContent='Speichert …';
-    try { if(id){const {error}=await supabase.from('basare').update(payload).eq('id',id).eq('veranstalter_id',currentUser.id);if(error)throw error;selectedBasarId=id;}else{const {data,error}=await supabase.from('basare').insert(payload).select('id').single();if(error)throw error;selectedBasarId=data.id;} $('basarFormCard').classList.add('hidden'); await loadBasare(); }
+    try { if(id){const {error}=await supabase.from('basare').update(payload).eq('id',id).eq('veranstalter_id',currentUser.id);if(error)throw error;selectedBasarId=id;}else{const {data,error}=await supabase.from('basare').insert(payload).select('id').single();if(error)throw error;selectedBasarId=data.id;} $('basarFormCard').classList.add('hidden'); await loadBasare(); $('onboardingBanner').classList.add('hidden'); }
     catch(error){console.error(error);showError('basarError',humanizeError(error));}finally{btn.disabled=false;btn.textContent='Basar speichern';}
   }
 
   async function showDashboard() {
     const { data:{user}, error }=await supabase.auth.getUser(); if(error||!user)throw error||new Error('Nicht angemeldet'); currentUser=user;
     $('loginCard').classList.add('hidden'); $('dashboard').classList.remove('hidden'); $('topLogoutButton').classList.remove('hidden');
-    await loadProfile(); await loadBasare();
+    profileExists = await loadProfile();
+    selectedBasarId = null; basare = []; bookings = [];
+    applyDashboardMode();
+    if (profileExists) await loadBasare();
   }
-  async function logout(){await supabase.auth.signOut();currentUser=null;$('dashboard').classList.add('hidden');$('loginCard').classList.remove('hidden');$('topLogoutButton').classList.add('hidden');$('loginForm').reset();}
+  async function logout(){await supabase.auth.signOut();currentUser=null;profileExists=false;onboardingMode=false;selectedBasarId=null;basare=[];bookings=[];$('dashboard').classList.add('hidden');$('loginCard').classList.remove('hidden');$('topLogoutButton').classList.add('hidden');$('loginForm').reset();$('registerForm').reset();setAuthMode('login');}
 
-  $('loginForm').addEventListener('submit',async e=>{e.preventDefault();clearError('loginError');$('loginButton').disabled=true;$('loginButton').textContent='Anmeldung läuft …';const {error}=await supabase.auth.signInWithPassword({email:$('loginEmail').value.trim(),password:$('loginPassword').value});$('loginButton').disabled=false;$('loginButton').textContent='Anmelden';if(error)return showError('loginError','Anmeldung fehlgeschlagen. Bitte E-Mail-Adresse und Passwort prüfen.');try{await showDashboard();}catch(err){console.error(err);showError('loginError',humanizeError(err));}});
+  $('loginForm').addEventListener('submit',async e=>{e.preventDefault();clearError('loginError');$('loginButton').disabled=true;$('loginButton').textContent='Anmeldung läuft …';const {error}=await supabase.auth.signInWithPassword({email:$('loginEmail').value.trim(),password:$('loginPassword').value});$('loginButton').disabled=false;$('loginButton').textContent='Anmelden';if(error)return showError('loginError','Anmeldung fehlgeschlagen. Bitte E-Mail-Adresse, Passwort und ggf. die E-Mail-Bestätigung prüfen.');try{await showDashboard();}catch(err){console.error(err);showError('loginError',humanizeError(err));}});
+
+  $('registerForm').addEventListener('submit', async e => {
+    e.preventDefault(); clearError('registerError'); $('registerSuccess').classList.add('hidden');
+    const email = $('registerEmail').value.trim();
+    const password = $('registerPassword').value;
+    const repeat = $('registerPasswordRepeat').value;
+    if (password.length < 8) return showError('registerError', 'Das Passwort muss mindestens 8 Zeichen lang sein.');
+    if (password !== repeat) return showError('registerError', 'Die beiden Passwörter stimmen nicht überein.');
+    const button = $('registerButton'); button.disabled = true; button.textContent = 'Konto wird erstellt …';
+    try {
+      const redirectTo = `${window.location.origin}${window.location.pathname}?v=21&onboarding=1`;
+      const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo } });
+      if (error) throw error;
+      if (data.session) {
+        await showDashboard();
+      } else {
+        $('registerSuccess').textContent = 'Konto angelegt. Bitte öffne jetzt die Bestätigungs-E-Mail und bestätige deine Adresse. Danach kannst du dich anmelden und dein Veranstalterprofil einrichten.';
+        $('registerSuccess').classList.remove('hidden');
+        $('registerPassword').value = ''; $('registerPasswordRepeat').value = '';
+      }
+    } catch (error) {
+      console.error(error);
+      const msg = /signups.*disabled/i.test(error?.message || '') ? 'Registrierung ist in Supabase noch deaktiviert. Aktiviere sie erst nach dem V21-Deployment.' : humanizeError(error);
+      showError('registerError', msg);
+    } finally { button.disabled = false; button.textContent = 'Konto erstellen'; }
+  });
+  $('showLoginButton').addEventListener('click',()=>setAuthMode('login')); $('showRegisterButton').addEventListener('click',()=>setAuthMode('register'));
   $('profileForm').addEventListener('submit',saveProfile); $('topLogoutButton').addEventListener('click',logout); $('newBasarButton').addEventListener('click',startNewBasar); $('cancelBasarButton').addEventListener('click',()=> $('basarFormCard').classList.add('hidden')); $('basarForm').addEventListener('submit',saveBasar);
   $('editCurrentButton').addEventListener('click',()=>{const b=basare.find(x=>x.id===selectedBasarId);if(b)editBasar(b);}); $('refreshButton').addEventListener('click',()=>loadBasare().catch(e=>showError('dashboardError',humanizeError(e)))); $('refreshBookingsButton').addEventListener('click',()=>loadBookings().catch(e=>showError('dashboardError',humanizeError(e)))); $('bookingFilter').addEventListener('change',renderBookings);
   supabase.auth.onAuthStateChange((_e,session)=>{if(session)setTimeout(()=>showDashboard().catch(console.error),0);});
