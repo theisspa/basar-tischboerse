@@ -4,29 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Basar Tischbörse</title>
-  <link rel="stylesheet" href="styles.css?v=262">
+  <link rel="stylesheet" href="styles.css?v=263">
 </head>
 <body id="top">
   <header class="site-header market-site-header">
     <div class="container header-inner market-header-inner">
-      <a class="market-logo-link" href="index.html?v=262#top" aria-label="Basar Tischbörse – zur Startseite">
-        <svg class="brand-logo-svg" viewBox="0 0 390 92" role="img" aria-label="Basar Tischbörse – Tische einfach online buchen" xmlns="http://www.w3.org/2000/svg">
-  <g transform="translate(3 5)">
-    <path d="M12 26h78l-8-15H20z" fill="#f6ddc8" stroke="#b9684b" stroke-width="2"/>
-    <path d="M20 11h15l-5 15H12zM35 11h15v15H30zM50 11h15l5 15H50zM65 11h17l8 15H70z" fill="#d57b58" opacity=".94"/>
-    <path d="M18 27v35M84 27v35" stroke="#76533e" stroke-width="3" stroke-linecap="round"/>
-    <path d="M27 37h48" stroke="#76533e" stroke-width="3" stroke-linecap="round"/>
-    <path d="M38 37v8M51 37v8M64 37v8" stroke="#76533e" stroke-width="1.8"/>
-    <path d="M31 44h14l-2 18H33z" fill="#79a99a"/><path d="M44 44h14l-1 18H45z" fill="#ec9c8c"/><path d="M57 44h14l1 18H58z" fill="#d59a63"/>
-    <path d="M4 60c6-12 10-14 14-17-2 8-1 15 0 23M92 60c-5-12-9-14-14-17 2 8 1 15 0 23" fill="none" stroke="#719581" stroke-width="3" stroke-linecap="round"/>
-    <circle cx="10" cy="50" r="3" fill="#719581"/><circle cx="90" cy="50" r="3" fill="#719581"/>
-  </g>
-  <text x="108" y="39" font-family="Arial,Helvetica,sans-serif" font-size="28" font-weight="800" fill="#29465a">Basar Tischbörse</text>
-  <text x="110" y="66" font-family="Arial,Helvetica,sans-serif" font-size="17" font-weight="600" fill="#bf6f52">Tische einfach online buchen</text>
-</svg>
+      <a class="market-logo-link" href="index.html?v=263#top" aria-label="Basar Tischbörse – zur Startseite">
+        <img class="market-logo-img" src="logo-header-v263.png" alt="Basar Tischbörse – Tische einfach online buchen">
       </a>
       <nav class="market-nav" aria-label="Hauptnavigation">
-        <a href="index.html?v=262#top" class="active">
+        <a href="index.html?v=263#top" class="active">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 10.5V20h13v-9.5M9.5 20v-6h5v6"/></svg>
           <span>Startseite</span>
         </a>
@@ -38,12 +25,8 @@
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M8.5 14.5c-1.4-1.1-2.5-2.7-2.5-4.5a6 6 0 0 1 12 0c0 1.8-1.1 3.4-2.5 4.5-.8.6-1.3 1.3-1.5 2.5h-4c-.2-1.2-.7-1.9-1.5-2.5Z"/></svg>
           <span>So funktioniert’s</span>
         </a>
-        <a href="admin.html?v=262" class="organizer-nav-link">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="7" width="16" height="13" rx="2"/><path d="M8 7V4h8v3M4 11h16"/></svg>
-          <span>Für Veranstalter</span>
-        </a>
       </nav>
-      <a class="header-link market-organizer-button" href="admin.html?v=262">Für Veranstalter</a>
+      <a class="header-link market-organizer-button" href="admin.html?v=263">Für Veranstalter</a>
     </div>
   </header>
 
@@ -57,7 +40,7 @@
           <div class="hero-search" role="search">
             <label class="sr-only" for="basarSearch">Basar oder Ort suchen</label>
             <div class="hero-search-input-wrap">
-              <span class="search-icon" aria-hidden="true">⌕</span>
+              <span class="search-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg></span>
               <input id="basarSearch" type="search" placeholder="Ort, PLZ oder Basarname suchen …" autocomplete="postal-code">
             </div>
             <button class="market-primary" id="searchBasarButton" type="button">Basare finden</button>
@@ -65,59 +48,25 @@
           <div class="proximity-tools" aria-label="Umkreissuche">
             <label class="radius-control" for="radiusSelect"><span>Umkreis</span><select id="radiusSelect"><option value="10">10 km</option><option value="25" selected>25 km</option><option value="50">50 km</option><option value="100">100 km</option></select></label>
             <label class="free-only-control"><input id="freeOnly" type="checkbox" checked><span>Nur mit freien Tischen</span></label>
-            <button class="location-button" id="useLocationButton" type="button">📍 Meinen Standort verwenden</button>
+            <button class="location-button" id="useLocationButton" type="button"><svg class="location-pin-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11Z"/><circle cx="12" cy="10" r="2"/></svg><span>Meinen Standort verwenden</span></button>
           </div>
           <div class="location-search-status hidden" id="locationSearchStatus" role="status"></div>
           <div class="hero-trust">
             <span>✓ Direkt reservieren</span><span>✓ Klare Preise</span><span>✓ Bestätigung per E-Mail</span>
           </div>
         </div>
-        <div class="market-illustration market-stall-scene"><svg class="hero-basar-svg" viewBox="0 0 760 500" aria-label="Illustration eines freundlichen Second-Hand-Basarstands" role="img" xmlns="http://www.w3.org/2000/svg">
-  <g stroke-linecap="round" stroke-linejoin="round">
-    <path d="M585 53c34-41 101-18 103 31 2 50-61 88-89 109-29-24-85-60-80-109 4-37 42-57 66-31z" fill="#dfe8d2"/>
-    <text x="600" y="91" text-anchor="middle" font-family="Comic Sans MS,cursive" font-size="19" fill="#315b65" transform="rotate(-7 600 91)">Regional</text>
-    <text x="603" y="118" text-anchor="middle" font-family="Comic Sans MS,cursive" font-size="18" fill="#315b65" transform="rotate(-7 603 118)">Nachhaltig</text>
-    <text x="606" y="145" text-anchor="middle" font-family="Comic Sans MS,cursive" font-size="17" fill="#315b65" transform="rotate(-7 606 145)">Familienfreundlich</text>
-    <path d="M604 166c8-12 22-2 11 9l-11 10-11-10c-11-11 3-21 11-9z" fill="#315b65"/>
-
-    <path d="M94 143h392l-34-70H128z" fill="#f9e5cb" stroke="#d18a67" stroke-width="2"/>
-    <path d="M128 73h65l-20 70H94zM193 73h65v70h-85zM258 73h65l20 70h-85zM323 73h65l42 70h-87zM388 73h64l34 70h-56z" fill="#d17a58"/>
-    <path d="M95 143c0 26 39 31 58 6 13 24 55 25 75 0 17 25 60 25 80 0 18 25 61 25 80 0 17 25 58 24 64-6" fill="#f6dcc0"/>
-    <path d="M117 148v259M456 148v259" stroke="#79523b" stroke-width="7"/>
-
-    <path d="M174 218h194" stroke="#6f503d" stroke-width="7"/>
-    <path d="M197 218v19M252 218v19M307 218v19" stroke="#6f503d" stroke-width="2.5"/>
-    <path d="M175 235h52l-10 86h-39z" fill="#87a8bf"/><path d="M182 260h37M182 279h37" stroke="#e9f0f2" stroke-width="6" opacity=".9"/>
-    <path d="M229 237h52l-7 87h-39z" fill="#ef9c8b"/><path d="M246 238l10 13 10-13" fill="#f7d5cf"/>
-    <path d="M284 237h52l7 87h-45z" fill="#78a796"/><circle cx="312" cy="262" r="2" fill="#eaf1e9"/><circle cx="312" cy="276" r="2" fill="#eaf1e9"/>
-
-    <path d="M76 349c-12-45 3-85 23-100 15 35 15 66 4 95M69 333c-30-31-36-66-25-85 24 22 38 49 40 77" fill="none" stroke="#6f947d" stroke-width="12"/>
-    <path d="M66 355h58l-8 66H75z" fill="#df9a5c"/><ellipse cx="95" cy="355" rx="31" ry="8" fill="#eeb57e"/>
-    <path d="M390 294c8-56 20-84 41-106 8 48 3 83-8 112M424 293c18-48 39-70 65-84-6 49-25 75-48 93" fill="none" stroke="#6f947d" stroke-width="14"/>
-
-    <path d="M349 323h191v96H349z" fill="#b9784f" rx="10"/>
-    <path d="M363 312h167v26H363z" fill="#bb7751"/>
-    <g transform="translate(386 250)"><circle cx="45" cy="39" r="33" fill="#b77347"/><circle cx="21" cy="15" r="12" fill="#a7633f"/><circle cx="69" cy="15" r="12" fill="#a7633f"/><ellipse cx="45" cy="42" rx="16" ry="13" fill="#e2b07f"/><circle cx="35" cy="34" r="3" fill="#493426"/><circle cx="55" cy="34" r="3" fill="#493426"/><path d="M40 47q5 6 10 0" fill="none" stroke="#493426" stroke-width="2"/></g>
-    <rect x="480" y="274" width="52" height="32" rx="8" fill="#75a8d7"/><rect x="489" y="281" width="15" height="11" rx="3" fill="#eef7ff"/><rect x="510" y="281" width="15" height="11" rx="3" fill="#eef7ff"/><circle cx="493" cy="307" r="6" fill="#5f6c72"/><circle cx="520" cy="307" r="6" fill="#5f6c72"/>
-    <rect x="468" y="314" width="78" height="8" rx="4" fill="#e5b058"/><rect x="472" y="305" width="72" height="8" rx="4" fill="#c7796d"/><rect x="476" y="296" width="68" height="8" rx="4" fill="#75a081"/>
-
-    <path d="M155 368h170l-8 91H163z" fill="#e8b67f"/><path d="M169 360h142l14 18H155z" fill="#f2c69a"/><path d="M180 362c32-27 74-23 95-2M218 365c20-24 60-22 78 0" fill="#d58b75" opacity=".75"/>
-    <text x="239" y="415" text-anchor="middle" font-family="Comic Sans MS,cursive" font-size="19" fill="#5f493a">Second Hand</text><text x="239" y="438" text-anchor="middle" font-family="Comic Sans MS,cursive" font-size="18" fill="#5f493a">mit Herz ♥</text>
-    <path d="M523 374h103l-7 74H531z" fill="#e4a463"/><path d="M530 368h89l10 15H520z" fill="#f0bf88"/><path d="M536 376c19-19 61-22 80 0" fill="#ef9e8f"/><path d="M545 393c17-15 49-16 65 0" fill="#8bb7c3"/>
-
-    <g transform="translate(624 228)"><path d="M0 0h119v211H0z" fill="#a86e47" rx="6"/><path d="M11 14h97v172H11z" fill="#2f3c3e" rx="3"/><path d="M15 194h89" stroke="#7e5338" stroke-width="5"/><path d="M16 211 3 242M101 211l13 31" stroke="#7e5338" stroke-width="8"/><text x="59" y="49" text-anchor="middle" font-family="Comic Sans MS,cursive" font-size="18" fill="#fff7eb">Schönes</text><text x="59" y="76" text-anchor="middle" font-family="Comic Sans MS,cursive" font-size="18" fill="#fff7eb">für</text><text x="59" y="104" text-anchor="middle" font-family="Comic Sans MS,cursive" font-size="18" fill="#fff7eb">große &</text><text x="59" y="132" text-anchor="middle" font-family="Comic Sans MS,cursive" font-size="18" fill="#fff7eb">kleine</text><text x="59" y="160" text-anchor="middle" font-family="Comic Sans MS,cursive" font-size="18" fill="#fff7eb">Menschen</text><text x="59" y="181" text-anchor="middle" font-family="Arial" font-size="22" fill="#ffd8c7">♥</text></g>
-    <ellipse cx="392" cy="464" rx="332" ry="15" fill="#d9e4d6" opacity=".55"/>
-  </g>
-</svg></div>
+        <div class="market-illustration market-stall-scene">
+          <img class="hero-mockup-stand" src="hero-stand-v263.png" alt="Illustration eines liebevoll gestalteten Second-Hand-Basarstands mit Kleidung, Spielzeug und Marktstand">
+        </div>
       </div>
     </section>
 
     <section class="hero-benefits" id="how-it-works">
       <div class="container hero-benefits-grid">
-        <div><span class="benefit-icon calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 9h16"/><path d="M8 13h2M12 13h2M16 13h1M8 17h2M12 17h2"/></svg></span><p><strong>Direkt reservieren</strong><small>Einfach, sicher und online.</small></p></div>
-        <div><span class="benefit-icon coins"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="9" cy="7" rx="5" ry="2.5"/><path d="M4 7v4c0 1.4 2.2 2.5 5 2.5s5-1.1 5-2.5V7M4 11v4c0 1.4 2.2 2.5 5 2.5 1.1 0 2.1-.2 2.9-.5"/><ellipse cx="16" cy="14" rx="4" ry="2"/><path d="M12 14v4c0 1.1 1.8 2 4 2s4-.9 4-2v-4"/></svg></span><p><strong>Klare Preise</strong><small>Alle Infos auf einen Blick.</small></p></div>
-        <div><span class="benefit-icon mail"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg></span><p><strong>Bestätigung per E-Mail</strong><small>Schnell und zuverlässig.</small></p></div>
-        <div><span class="benefit-icon heart"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.8 5.8c-2.1-2.1-5.5-2.1-7.6 0L12 7l-1.2-1.2c-2.1-2.1-5.5-2.1-7.6 0s-2.1 5.5 0 7.6L12 22l8.8-8.6c2.1-2.1 2.1-5.5 0-7.6Z"/></svg></span><p><strong>Regional & nachhaltig</strong><small>Second Hand mit Herz.</small></p></div>
+        <div class="hero-benefit-item"><img class="benefit-art" src="benefit-calendar-v263.png" alt=""><p><strong>Direkt reservieren</strong><small>Einfach, sicher und online.</small></p></div>
+        <div class="hero-benefit-item"><img class="benefit-art" src="benefit-coins-v263.png" alt=""><p><strong>Klare Preise</strong><small>Alle Infos auf einen Blick.</small></p></div>
+        <div class="hero-benefit-item"><img class="benefit-art" src="benefit-mail-v263.png" alt=""><p><strong>Bestätigung per E-Mail</strong><small>Schnell und zuverlässig.</small></p></div>
+        <div class="hero-benefit-item"><img class="benefit-art" src="benefit-heart-v263.png" alt=""><p><strong>Regional &amp; nachhaltig</strong><small>Second Hand mit Herz.</small></p></div>
       </div>
     </section>
 
@@ -227,31 +176,18 @@
   <footer class="market-footer">
     <div class="container market-footer-grid">
       <div class="footer-brand-block">
-        <a href="index.html?v=262#top" class="footer-logo-link" aria-label="Zur Startseite"><svg class="brand-logo-svg" viewBox="0 0 390 92" role="img" aria-label="Basar Tischbörse – Tische einfach online buchen" xmlns="http://www.w3.org/2000/svg">
-  <g transform="translate(3 5)">
-    <path d="M12 26h78l-8-15H20z" fill="#f6ddc8" stroke="#b9684b" stroke-width="2"/>
-    <path d="M20 11h15l-5 15H12zM35 11h15v15H30zM50 11h15l5 15H50zM65 11h17l8 15H70z" fill="#d57b58" opacity=".94"/>
-    <path d="M18 27v35M84 27v35" stroke="#76533e" stroke-width="3" stroke-linecap="round"/>
-    <path d="M27 37h48" stroke="#76533e" stroke-width="3" stroke-linecap="round"/>
-    <path d="M38 37v8M51 37v8M64 37v8" stroke="#76533e" stroke-width="1.8"/>
-    <path d="M31 44h14l-2 18H33z" fill="#79a99a"/><path d="M44 44h14l-1 18H45z" fill="#ec9c8c"/><path d="M57 44h14l1 18H58z" fill="#d59a63"/>
-    <path d="M4 60c6-12 10-14 14-17-2 8-1 15 0 23M92 60c-5-12-9-14-14-17 2 8 1 15 0 23" fill="none" stroke="#719581" stroke-width="3" stroke-linecap="round"/>
-    <circle cx="10" cy="50" r="3" fill="#719581"/><circle cx="90" cy="50" r="3" fill="#719581"/>
-  </g>
-  <text x="108" y="39" font-family="Arial,Helvetica,sans-serif" font-size="28" font-weight="800" fill="#29465a">Basar Tischbörse</text>
-  <text x="110" y="66" font-family="Arial,Helvetica,sans-serif" font-size="17" font-weight="600" fill="#bf6f52">Tische einfach online buchen</text>
-</svg></a>
+        <a href="index.html?v=263#top" class="footer-logo-link" aria-label="Zur Startseite"><img class="footer-logo-img" src="logo-footer-v263.png" alt="Basar Tischbörse – Gemeinsam für nachhaltige Vielfalt"></a>
         <p class="footer-tagline">Gemeinsam für nachhaltige Vielfalt ♡</p>
       </div>
-      <div class="footer-links-block"><h3>Links</h3><a href="#top">Startseite</a><a href="#discover">Basare finden</a><a href="admin.html?v=262">Für Veranstalter</a><a href="#how-it-works">So funktioniert’s</a></div>
-      <div class="footer-links-block"><h3>Rechtliches</h3><a href="impressum.html?v=262">Impressum</a><a href="datenschutz.html?v=262">Datenschutzerklärung</a><a href="haftung.html?v=262">Hinweise & Haftung</a><a href="nutzungsbedingungen.html?v=262">Nutzungsbedingungen</a></div>
-      <div class="footer-notice"><h3>ⓘ Wichtige Hinweise</h3><p><strong>Basar Tischbörse ist die technische Vermittlungs- und Buchungsplattform.</strong> Veranstalter sind für ihre eingestellten Basare, Inhalte, Preise, Durchführung, Zahlungsabwicklung, Erstattungen und veranstaltungsbezogenen Pflichten selbst verantwortlich. Verträge über die Teilnahme am jeweiligen Basar kommen grundsätzlich zwischen Teilnehmer und dem jeweiligen Veranstalter zustande.</p><p>Personenbezogene Buchungsdaten werden zur technischen Abwicklung verarbeitet und automatisiert dem jeweiligen Veranstalter bereitgestellt. Weitere Informationen findest du in unserer <a href="datenschutz.html?v=262">Datenschutzerklärung</a>.</p></div>
+      <div class="footer-links-block"><h3>Links</h3><a href="#top">Startseite</a><a href="#discover">Basare finden</a><a href="admin.html?v=263">Für Veranstalter</a><a href="#how-it-works">So funktioniert’s</a></div>
+      <div class="footer-links-block"><h3>Rechtliches</h3><a href="impressum.html?v=263">Impressum</a><a href="datenschutz.html?v=263">Datenschutzerklärung</a><a href="haftung.html?v=263">Hinweise & Haftung</a><a href="nutzungsbedingungen.html?v=263">Nutzungsbedingungen</a></div>
+      <div class="footer-notice"><h3>ⓘ Wichtige Hinweise</h3><p><strong>Basar Tischbörse ist die technische Vermittlungs- und Buchungsplattform.</strong> Veranstalter sind für ihre eingestellten Basare, Inhalte, Preise, Durchführung, Zahlungsabwicklung, Erstattungen und veranstaltungsbezogenen Pflichten selbst verantwortlich. Verträge über die Teilnahme am jeweiligen Basar kommen grundsätzlich zwischen Teilnehmer und dem jeweiligen Veranstalter zustande.</p><p>Personenbezogene Buchungsdaten werden zur technischen Abwicklung verarbeitet und automatisiert dem jeweiligen Veranstalter bereitgestellt. Weitere Informationen findest du in unserer <a href="datenschutz.html?v=263">Datenschutzerklärung</a>.</p></div>
     </div>
     <div class="container footer-bottom"><span>© 2026 Basar Tischbörse. Alle Rechte vorbehalten.</span><span>Mit ♡ für regionale Basare.</span></div>
   </footer>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
-  <script src="config.js?v=262"></script>
-  <script src="app.js?v=262"></script>
+  <script src="config.js?v=263"></script>
+  <script src="app.js?v=263"></script>
 </body>
 </html>
