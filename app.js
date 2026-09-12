@@ -169,17 +169,21 @@
   }
 
   function loadPayPalSdk() {
-    if (window.paypal?.Buttons) return Promise.resolve(window.paypal);
+    if (window.paypal?.createInstance) return Promise.resolve(window.paypal);
     if (paypalSdkPromise) return paypalSdkPromise;
     if (!config.paypalClientId) return Promise.reject(new Error('PayPal Client-ID fehlt in der Konfiguration.'));
 
     paypalSdkPromise = new Promise((resolve, reject) => {
       const script = document.createElement('script');
-      const currency = encodeURIComponent(config.paypalCurrency || 'EUR');
-      script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(config.paypalClientId)}&currency=${currency}&intent=capture&components=buttons`;
+      const isSandbox = (config.paypalEnvironment || 'sandbox') !== 'live';
+      script.src = isSandbox
+        ? 'https://www.sandbox.paypal.com/web-sdk/v6/core'
+        : 'https://www.paypal.com/web-sdk/v6/core';
       script.async = true;
-      script.onload = () => window.paypal?.Buttons ? resolve(window.paypal) : reject(new Error('PayPal SDK wurde geladen, ist aber nicht verfügbar.'));
-      script.onerror = () => reject(new Error('PayPal konnte nicht geladen werden.'));
+      script.onload = () => window.paypal?.createInstance
+        ? resolve(window.paypal)
+        : reject(new Error('PayPal Web SDK v6 wurde geladen, ist aber nicht verfügbar.'));
+      script.onerror = () => reject(new Error('PayPal Web SDK v6 konnte nicht geladen werden.'));
       document.head.appendChild(script);
     });
     return paypalSdkPromise;
@@ -199,29 +203,31 @@
 
     try {
       await loadPayPalSdk();
-      setPayPalStatus('');
 
-      const buttons = window.paypal.Buttons({
-        style: { layout: 'vertical', shape: 'rect', label: 'paypal' },
-        createOrder: async () => {
-          setPayPalStatus('PayPal-Zahlung wird vorbereitet …');
-          const { data, error } = await supabaseClient.functions.invoke('paypal-create-order', {
-            body: { booking_id: booking.buchung_id, email_token: booking.email_token }
-          });
-          if (error) throw error;
-          if (data?.error) throw new Error(data.error);
-          if (!data?.order_id) throw new Error('PayPal hat keine Order-ID geliefert.');
-          setPayPalStatus('Bitte bestätige die Zahlung im PayPal-Fenster.');
-          return data.order_id;
-        },
-        onApprove: async data => {
+      const sdk = await window.paypal.createInstance({
+        clientId: config.paypalClientId,
+        components: ['paypal-payments'],
+        pageType: 'checkout'
+      });
+
+      const methods = await sdk.findEligibleMethods({
+        currencyCode: config.paypalCurrency || 'EUR'
+      });
+
+      if (!methods?.isEligible?.('paypal')) {
+        setPayPalStatus('PayPal ist für diese Testumgebung derzeit nicht verfügbar.', 'error');
+        return;
+      }
+
+      const session = sdk.createPayPalOneTimePaymentSession({
+        onApprove: async ({ orderId }) => {
           setPayPalStatus('Zahlung wird bestätigt …');
           try {
             const { data: result, error } = await supabaseClient.functions.invoke('paypal-capture-order', {
               body: {
                 booking_id: booking.buchung_id,
                 email_token: booking.email_token,
-                order_id: data.orderID
+                order_id: orderId
               }
             });
             if (error) throw error;
@@ -248,11 +254,33 @@
         }
       });
 
-      if (!buttons.isEligible()) {
-        setPayPalStatus('PayPal ist in diesem Browser derzeit nicht verfügbar.', 'error');
-        return;
-      }
-      await buttons.render('#paypalButtonContainer');
+      const button = document.createElement('paypal-button');
+      button.setAttribute('type', 'pay');
+      button.style.display = 'block';
+      button.style.width = '100%';
+      container.appendChild(button);
+      setPayPalStatus('');
+
+      button.addEventListener('click', async () => {
+        try {
+          setPayPalStatus('PayPal-Zahlung wird vorbereitet …');
+          const { data, error } = await supabaseClient.functions.invoke('paypal-create-order', {
+            body: { booking_id: booking.buchung_id, email_token: booking.email_token }
+          });
+          if (error) throw error;
+          if (data?.error) throw new Error(data.error);
+          if (!data?.order_id) throw new Error('PayPal hat keine Order-ID geliefert.');
+
+          setPayPalStatus('Bitte bestätige die Zahlung im PayPal-Fenster.');
+          await session.start(
+            { presentationMode: 'auto' },
+            { orderId: data.order_id }
+          );
+        } catch (error) {
+          console.error('PayPal-Start fehlgeschlagen:', error);
+          setPayPalStatus(`PayPal konnte nicht gestartet werden: ${error?.message || error}`, 'error');
+        }
+      });
     } catch (error) {
       console.error('PayPal konnte nicht geladen werden:', error);
       setPayPalStatus(`PayPal konnte nicht geladen werden: ${error?.message || error}`, 'error');
