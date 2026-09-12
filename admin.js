@@ -212,17 +212,23 @@
     $('markOpenButton').classList.toggle('hidden', row.zahlungsstatus !== 'bezahlt');
     $('cancelBookingButton').classList.toggle('hidden', row.zahlungsstatus === 'storniert');
     $('bookingModal').classList.remove('hidden');
+    $('bookingModal').setAttribute('aria-hidden', 'false');
   }
 
   function closeBooking() {
     const modal = $('bookingModal');
     if (!modal) return;
     modal.classList.add('hidden');
+    modal.setAttribute('aria-hidden', 'true');
     selectedBooking = null;
   }
 
-  // Expose a safe close handler for the modal and inline/browser fallbacks.
+  // Global handlers: the modal controls also use inline onclick attributes
+  // so they keep working even if another listener fails to attach.
   window.closeBookingModal = closeBooking;
+  window.markSelectedBookingPaid = () => updateBookingStatus('bezahlt');
+  window.markSelectedBookingOpen = () => updateBookingStatus('offen');
+  window.cancelSelectedBooking = () => updateBookingStatus('storniert');
 
   async function updateBookingStatus(status) {
     if (!selectedBooking) return;
@@ -384,19 +390,15 @@
     if (event.target === event.currentTarget) closeBooking();
   });
 
-  // Fallback event delegation in case the button gets re-rendered.
-  document.addEventListener('click', event => {
-    const closeButton = event.target.closest?.('#closeBookingModal');
-    if (closeButton) {
-      event.preventDefault();
-      closeBooking();
-    }
+  // Keyboard fallback.
+  document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') closeBooking();
   });
-  $('markPaidButton').addEventListener('click', () => updateBookingStatus('bezahlt'));
-  $('markOpenButton').addEventListener('click', () => updateBookingStatus('offen'));
-  $('cancelBookingButton').addEventListener('click', () => updateBookingStatus('storniert'));
 
-  document.addEventListener('keydown', event => { if (event.key === 'Escape') closeBooking(); });
+  // Keep JS listeners too, while inline handlers provide an additional fallback.
+  $('markPaidButton').addEventListener('click', event => { event.preventDefault(); updateBookingStatus('bezahlt'); });
+  $('markOpenButton').addEventListener('click', event => { event.preventDefault(); updateBookingStatus('offen'); });
+  $('cancelBookingButton').addEventListener('click', event => { event.preventDefault(); updateBookingStatus('storniert'); });
 
   supabase.auth.onAuthStateChange((_event, session) => {
     if (!session) return;
