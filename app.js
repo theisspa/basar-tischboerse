@@ -140,7 +140,12 @@
   }
 
   function hasCoordinates(basar) {
-    return Number.isFinite(Number(basar?.latitude)) && Number.isFinite(Number(basar?.longitude));
+    const latRaw = basar?.latitude;
+    const lonRaw = basar?.longitude;
+    if (latRaw === null || latRaw === undefined || latRaw === '' || lonRaw === null || lonRaw === undefined || lonRaw === '') return false;
+    const lat = Number(latRaw);
+    const lon = Number(lonRaw);
+    return Number.isFinite(lat) && Number.isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
   }
 
   function distanceKm(lat1, lon1, lat2, lon2) {

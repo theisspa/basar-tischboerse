@@ -35,6 +35,13 @@
   function showError(id, message) { const box=$(id); box.textContent=message; box.classList.remove('hidden'); }
   function clearError(id) { const box=$(id); box.textContent=''; box.classList.add('hidden'); }
   function humanizeError(error) { const m=error?.message || String(error || 'Unbekannter Fehler.'); if (/permission|row-level security|not authorized/i.test(m)) return 'Keine Berechtigung für diese Aktion.'; if (/nicht genuegend/i.test(m)) return 'Nicht genügend freie Tische vorhanden.'; return m; }
+  function hasValidCoordinates(value) {
+    const latRaw = value?.latitude;
+    const lonRaw = value?.longitude;
+    if (latRaw === null || latRaw === undefined || latRaw === '' || lonRaw === null || lonRaw === undefined || lonRaw === '') return false;
+    const lat = Number(latRaw), lon = Number(lonRaw);
+    return Number.isFinite(lat) && Number.isFinite(lon) && lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
+  }
 
   async function geocodeBasarLocation(plz, stadt) {
     const query = [plz, stadt, 'Deutschland'].filter(Boolean).join(' ');
@@ -239,7 +246,7 @@
   function renderBasarList() {
     const el=$('basarList');
     if (!basare.length) { el.innerHTML='<div class="empty-state">Noch kein Basar vorhanden. Lege deinen ersten Basar an.</div>'; return; }
-    el.innerHTML=basare.map(b=>{const st=getBasarBookingStats(b.id);const max=Number(b.max_tische||0);const full=max>0&&st.reserved>=max;const statusText=!b.aktiv?'Inaktiv':full?'Ausgebucht':'Aktiv';const statusClass=!b.aktiv?'inactive':full?'full':'active';return `<button class="basar-list-item ${b.id===selectedBasarId?'selected':''}" data-basar-id="${b.id}" type="button"><div class="basar-list-main"><strong>${escapeHtml(b.name)}</strong><span>${escapeHtml(formatDate(b.veranstaltungsdatum))}${b.ort?' · '+escapeHtml(b.ort):''}</span><small>${st.reserved} von ${max} Tischen reserviert · ${st.open} offen · ${st.paid} bezahlt${Number.isFinite(Number(b.latitude))&&Number.isFinite(Number(b.longitude))?' · 📍 Umkreissuche bereit':' · ⚠ Standort neu speichern'}</small></div><span class="status-chip ${statusClass}">${statusText}</span></button>`;}).join('');
+    el.innerHTML=basare.map(b=>{const st=getBasarBookingStats(b.id);const max=Number(b.max_tische||0);const full=max>0&&st.reserved>=max;const statusText=!b.aktiv?'Inaktiv':full?'Ausgebucht':'Aktiv';const statusClass=!b.aktiv?'inactive':full?'full':'active';return `<button class="basar-list-item ${b.id===selectedBasarId?'selected':''}" data-basar-id="${b.id}" type="button"><div class="basar-list-main"><strong>${escapeHtml(b.name)}</strong><span>${escapeHtml(formatDate(b.veranstaltungsdatum))}${b.ort?' · '+escapeHtml(b.ort):''}</span><small>${st.reserved} von ${max} Tischen reserviert · ${st.open} offen · ${st.paid} bezahlt${hasValidCoordinates(b)?' · 📍 Umkreissuche bereit':' · ⚠ Standort neu speichern'}</small></div><span class="status-chip ${statusClass}">${statusText}</span></button>`;}).join('');
     el.querySelectorAll('[data-basar-id]').forEach(btn=>btn.addEventListener('click', async()=>{ selectedBasarId=Number(btn.dataset.basarId); renderBasarList(); try{await loadSelectedBasar();}catch(e){console.error(e);showError('basarError',humanizeError(e));} }));
   }
 
@@ -418,7 +425,7 @@
     try {
       const existing=id?basare.find(b=>Number(b.id)===Number(id)):null;
       const locationChanged=!existing || String(existing.plz||'')!==String(payload.plz||'') || String(existing.stadt||'')!==String(payload.stadt||'');
-      if (locationChanged || !Number.isFinite(Number(existing?.latitude)) || !Number.isFinite(Number(existing?.longitude))) {
+      if (locationChanged || !hasValidCoordinates(existing)) {
         const coords=await geocodeBasarLocation(payload.plz,payload.stadt);
         payload.latitude=coords?.latitude ?? null;
         payload.longitude=coords?.longitude ?? null;
@@ -427,7 +434,7 @@
       if(id){const {error}=await supabase.from('basare').update(payload).eq('id',id).eq('veranstalter_id',currentUser.id);if(error)throw error;selectedBasarId=id;}
       else{const {data,error}=await supabase.from('basare').insert(payload).select('id').single();if(error)throw error;selectedBasarId=data.id;}
       $('basarFormCard').classList.add('hidden'); await loadBasare(); $('onboardingBanner').classList.add('hidden');
-      if ((payload.plz || payload.stadt) && (!Number.isFinite(Number(payload.latitude)) || !Number.isFinite(Number(payload.longitude))) && (locationChanged || !existing)) {
+      if ((payload.plz || payload.stadt) && !hasValidCoordinates(payload) && (locationChanged || !existing)) {
         showError('basarError','Basar wurde gespeichert, aber der Standort konnte nicht automatisch für die Umkreissuche ermittelt werden. Bitte PLZ und Stadt prüfen und erneut speichern.');
       }
     } catch(e){console.error(e);showError('basarError',humanizeError(e));}
@@ -455,7 +462,7 @@
     if (password !== repeat) return showError('registerError', 'Die beiden Passwörter stimmen nicht überein.');
     const button = $('registerButton'); button.disabled = true; button.textContent = 'Konto wird erstellt …';
     try {
-      const redirectTo = `${window.location.origin}${window.location.pathname}?v=25&onboarding=1`;
+      const redirectTo = `${window.location.origin}${window.location.pathname}?v=251&onboarding=1`;
       const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo } });
       if (error) throw error;
       if (data.session) {
