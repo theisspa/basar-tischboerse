@@ -149,39 +149,44 @@
       </section>
 
       <section class="card" id="bookingCard">
-        <div class="card-head">
+        <div class="card-head booking-card-head">
           <div><span class="eyebrow">BUCHUNGEN</span><h2>Teilnehmerübersicht</h2><p>Öffne Buchungen, markiere Zahlungen und storniere Buchungen.</p></div>
           <div class="booking-tools" aria-label="Buchungen suchen und filtern">
-            <div class="booking-search-wrap">
-              <label class="sr-only" for="bookingSearch">Name oder Buchungsnummer suchen</label>
-              <input id="bookingSearch" class="booking-search" type="search" placeholder="Name oder Buchungsnummer suchen …" autocomplete="off">
+            <div class="booking-filter-grid">
+              <div class="booking-search-wrap">
+                <label class="sr-only" for="bookingSearch">Name oder Buchungsnummer suchen</label>
+                <input id="bookingSearch" class="booking-search" type="search" placeholder="Name oder Buchungsnummer suchen …" autocomplete="off">
+              </div>
+              <select id="bookingFilter" class="compact-select" aria-label="Zahlungsstatus filtern">
+                <option value="alle">Alle Status</option>
+                <option value="offen">Offene Zahlungen</option>
+                <option value="heute">Heute fällig</option>
+                <option value="abgelaufen">Überfällig / Frist abgelaufen</option>
+                <option value="bezahlt">Bezahlt</option>
+                <option value="storniert">Storniert</option>
+              </select>
+              <select id="paymentFilter" class="compact-select" aria-label="Zahlungsart filtern">
+                <option value="alle">Alle Zahlungsarten</option>
+                <option value="ueberweisung">Überweisung</option>
+                <option value="paypal_link">PayPal-Link</option>
+                <option value="paypal">PayPal online</option>
+              </select>
+              <select id="areaFilter" class="compact-select" aria-label="Verkaufsbereich filtern">
+                <option value="alle">Alle Bereiche</option>
+                <option value="kinder">Kinder</option>
+                <option value="erwachsene">Erwachsene</option>
+              </select>
+              <select id="cakeFilter" class="compact-select" aria-label="Kuchenspende filtern">
+                <option value="alle">Kuchen: alle</option>
+                <option value="ja">Kuchen: ja</option>
+                <option value="nein">Kuchen: nein</option>
+              </select>
             </div>
-            <select id="bookingFilter" class="compact-select" aria-label="Zahlungsstatus filtern">
-              <option value="alle">Alle Status</option>
-              <option value="offen">Offene Zahlungen</option>
-              <option value="heute">Heute fällig</option>
-              <option value="abgelaufen">Überfällig / Frist abgelaufen</option>
-              <option value="bezahlt">Bezahlt</option>
-              <option value="storniert">Storniert</option>
-            </select>
-            <select id="paymentFilter" class="compact-select" aria-label="Zahlungsart filtern">
-              <option value="alle">Alle Zahlungsarten</option>
-              <option value="ueberweisung">Überweisung</option>
-              <option value="paypal_link">PayPal-Link</option>
-              <option value="paypal">PayPal online</option>
-            </select>
-            <select id="areaFilter" class="compact-select" aria-label="Verkaufsbereich filtern">
-              <option value="alle">Alle Bereiche</option>
-              <option value="kinder">Kinder</option>
-              <option value="erwachsene">Erwachsene</option>
-            </select>
-            <select id="cakeFilter" class="compact-select" aria-label="Kuchenspende filtern">
-              <option value="alle">Kuchen: alle</option>
-              <option value="ja">Kuchen: ja</option>
-              <option value="nein">Kuchen: nein</option>
-            </select>
-            <button class="secondary" id="exportBookingsButton" type="button">CSV exportieren</button>
-            <button class="secondary" id="refreshBookingsButton" type="button">Aktualisieren</button>
+            <div class="booking-action-row">
+              <button class="secondary compact-action" id="resetBookingFiltersButton" type="button">Filter zurücksetzen</button>
+              <button class="secondary compact-action" id="exportBookingsButton" type="button">CSV exportieren</button>
+              <button class="secondary compact-action" id="refreshBookingsButton" type="button">Aktualisieren</button>
+            </div>
           </div>
         </div>
         <div class="form-error hidden" id="dashboardError" role="alert"></div>

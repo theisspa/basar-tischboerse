@@ -318,6 +318,22 @@
     return `"${text.replaceAll('"','""')}"`;
   }
 
+  function excelPhoneCell(value) {
+    const phone = String(value ?? '').trim().replace(/[^0-9+()\-./ ]/g, '');
+    if (!phone) return '';
+    return `="${phone.replaceAll('"','""')}"`;
+  }
+
+  function resetBookingFilters() {
+    $('bookingSearch').value = '';
+    $('bookingFilter').value = 'alle';
+    $('paymentFilter').value = 'alle';
+    $('areaFilter').value = 'alle';
+    $('cakeFilter').value = 'alle';
+    renderBookings();
+    $('bookingSearch').focus();
+  }
+
   function exportFilteredBookings() {
     const rows = getFilteredBookings();
     if (!rows.length) {
@@ -331,7 +347,7 @@
       r.vorname,
       r.nachname,
       r.email,
-      r.telefon || '',
+      excelPhoneCell(r.telefon),
       r.anzahl_tische,
       r.verkaufsbereich === 'kinder' ? 'Kinder' : 'Erwachsene',
       r.kuchenspende ? 'Ja' : 'Nein',
@@ -424,7 +440,7 @@
   });
   $('showLoginButton').addEventListener('click',()=>setAuthMode('login')); $('showRegisterButton').addEventListener('click',()=>setAuthMode('register'));
   $('profileForm').addEventListener('submit',saveProfile); $('topLogoutButton').addEventListener('click',logout); $('newBasarButton').addEventListener('click',startNewBasar); $('cancelBasarButton').addEventListener('click',()=> $('basarFormCard').classList.add('hidden')); $('basarForm').addEventListener('submit',saveBasar);
-  $('editCurrentButton').addEventListener('click',()=>{const b=basare.find(x=>x.id===selectedBasarId);if(b)editBasar(b);}); $('refreshButton').addEventListener('click',()=>loadBasare().catch(e=>showError('dashboardError',humanizeError(e)))); $('refreshBookingsButton').addEventListener('click',()=>loadBookings().catch(e=>showError('dashboardError',humanizeError(e)))); $('bookingFilter').addEventListener('change',renderBookings); $('paymentFilter').addEventListener('change',renderBookings); $('areaFilter').addEventListener('change',renderBookings); $('cakeFilter').addEventListener('change',renderBookings); $('bookingSearch').addEventListener('input',renderBookings); $('exportBookingsButton').addEventListener('click',exportFilteredBookings);
+  $('editCurrentButton').addEventListener('click',()=>{const b=basare.find(x=>x.id===selectedBasarId);if(b)editBasar(b);}); $('refreshButton').addEventListener('click',()=>loadBasare().catch(e=>showError('dashboardError',humanizeError(e)))); $('refreshBookingsButton').addEventListener('click',()=>loadBookings().catch(e=>showError('dashboardError',humanizeError(e)))); $('bookingFilter').addEventListener('change',renderBookings); $('paymentFilter').addEventListener('change',renderBookings); $('areaFilter').addEventListener('change',renderBookings); $('cakeFilter').addEventListener('change',renderBookings); $('bookingSearch').addEventListener('input',renderBookings); $('resetBookingFiltersButton').addEventListener('click',resetBookingFilters); $('exportBookingsButton').addEventListener('click',exportFilteredBookings);
   supabase.auth.onAuthStateChange((_e,session)=>{if(session)setTimeout(()=>showDashboard().catch(console.error),0);});
   (async()=>{try{const {data:{session}}=await supabase.auth.getSession();if(session)await showDashboard();}catch(e){console.error(e);showError('loginError','Die Anmeldung konnte nicht geprüft werden.');}})();
 })();
