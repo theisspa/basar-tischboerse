@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Basar Tischbörse</title>
-  <link rel="stylesheet" href="styles.css?v=11">
+  <link rel="stylesheet" href="styles.css?v=12">
 </head>
 <body>
   <header class="site-header">
@@ -13,7 +13,7 @@
         <div class="brand">Basar Tischbörse</div>
         <div class="subtitle">Tische einfach online buchen</div>
       </div>
-      <a class="header-link" href="admin.html?v=11">Für Veranstalter</a>
+      <a class="header-link" href="admin.html?v=12">Für Veranstalter</a>
     </div>
   </header>
 
@@ -21,7 +21,7 @@
     <section class="hero">
       <span class="eyebrow">ONLINE-TISCHRESERVIERUNG</span>
       <h1>Verkaufsplatz für deinen Basar sichern.</h1>
-      <p>Wähle deinen Basar, reserviere bis zu drei Tische und erhalte direkt eine Buchungsbestätigung.</p>
+      <p>Wähle deinen Basar, reserviere bis zu drei Tische und erhalte direkt deine Buchungsbestätigung und Teilnahmevereinbarung.</p>
     </section>
 
     <section class="card booking-card" id="booking">
@@ -85,6 +85,15 @@
           </div>
         </div>
 
+        <div class="terms-box">
+          <strong>Wichtige Buchungsregeln</strong>
+          <ul>
+            <li id="paymentRule">Die Zahlungsfrist wird anhand des Veranstaltungstermins berechnet.</li>
+            <li>Kostenlose Stornierung bis 14 Tage vor Veranstaltungsbeginn; danach keine Rückzahlung. Eine Übertragung auf eine andere Person ist nach Information an den Veranstalter möglich.</li>
+            <li>Bei zugesagter, aber nicht erbrachter Kuchenspende wird nachträglich eine Gebühr von 10 € fällig.</li>
+          </ul>
+        </div>
+
         <div class="price-box">
           <div><span>Grundpreis</span><strong id="basePrice">12,00 €</strong></div>
           <div><span>Kuchenrabatt</span><strong id="discount">0,00 €</strong></div>
@@ -93,7 +102,6 @@
 
         <div class="form-error hidden" id="formError" role="alert"></div>
         <button class="primary" id="submitButton" type="submit">Wird geladen …</button>
-        <p class="small">Zahlungsfrist: innerhalb von 14 Tagen nach Buchung. Bei zugesagter, aber vor Ort nicht erbrachter Kuchenspende wird nachträglich eine Gebühr von 10 € fällig.</p>
       </form>
     </section>
 
@@ -105,6 +113,7 @@
       <div class="booking-number" id="bookingNumber"></div>
       <p id="paymentInfo" class="small"></p>
       <div class="actions">
+        <button class="primary" id="pdfButton" type="button">Vertrag als PDF herunterladen</button>
         <button class="secondary" id="printButton" type="button">Buchung drucken</button>
         <button class="secondary" id="newBookingButton" type="button">Neue Buchung</button>
       </div>
@@ -113,7 +122,8 @@
 
   <footer class="footer"><div class="container">Basar Tischbörse</div></footer>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=11"></script>
-  <script src="app.js?v=11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+  <script src="config.js?v=12"></script>
+  <script src="app.js?v=12"></script>
 </body>
 </html>
