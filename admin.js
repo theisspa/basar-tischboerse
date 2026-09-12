@@ -3,7 +3,7 @@
   if (window.__basarAdminInitialized) return;
   window.__basarAdminInitialized = true;
 
-  const SUPABASE_URL = 'https://byvsockfobnrqzkxvap.supabase.co';
+  const SUPABASE_URL = 'https://byvvsockfobnrqzkxvap.supabase.co';
   const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_iLXVfFOYROoBHwwhQcoEKg_N7ABYWSx';
 
   if (!window.supabase || typeof window.supabase.createClient !== 'function') {
