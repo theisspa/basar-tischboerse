@@ -188,3 +188,135 @@ html{scroll-behavior:smooth;scroll-padding-top:88px}.market-site-header{backgrou
   .benefit-art{width:62px;height:62px;flex-basis:62px}
   .footer-logo-img{width:230px}
 }
+
+/* ===== V27: Veranstalterbereich im Markenstil von V26.3 ===== */
+.admin-page{
+  --admin-cream:#f8f3e9;
+  --admin-cream-2:#fffaf2;
+  --admin-card:#fffdf9;
+  --admin-ink:#263d50;
+  --admin-muted:#6f7b83;
+  --admin-line:#ead9c6;
+  --admin-terracotta:#c97555;
+  --admin-terracotta-dark:#ad6045;
+  --admin-green:#5f887c;
+  --admin-green-soft:#e7f0ea;
+  --admin-blue-soft:#e4eef3;
+  --admin-yellow-soft:#fff1d2;
+  background:linear-gradient(180deg,#fbf7ef 0,#f6f1e8 45%,#f8f5ee 100%);
+  color:var(--admin-ink);
+}
+.admin-page .container{width:min(1180px,calc(100% - 40px));}
+.admin-page .main{padding:38px 0 72px;}
+.admin-page .eyebrow{color:var(--admin-terracotta);letter-spacing:.14em;}
+.admin-page h1,.admin-page h2{color:var(--admin-ink);}
+.admin-page .hidden{display:none!important;}
+
+.admin-site-header{position:sticky;top:0;z-index:60;background:rgba(255,253,248,.97);backdrop-filter:blur(10px);border-bottom:1px solid var(--admin-line);box-shadow:0 5px 18px rgba(87,59,37,.035)}
+.admin-header-inner{min-height:84px;display:grid;grid-template-columns:minmax(250px,1fr) auto minmax(250px,1fr);align-items:center;gap:24px}
+.admin-brand-link{display:inline-flex;align-items:center;width:max-content;max-width:100%;line-height:0;text-decoration:none}
+.admin-brand-logo{display:block;width:285px;max-width:100%;height:auto}
+.admin-nav{display:flex;align-items:center;justify-content:center;gap:10px;white-space:nowrap}
+.admin-nav a{display:inline-flex;align-items:center;padding:10px 12px;border-radius:999px;text-decoration:none;color:#617383;font-size:13px;font-weight:800;transition:.18s ease}
+.admin-nav a:hover{color:var(--admin-terracotta-dark);background:#fff0e4}
+.admin-header-actions{justify-self:end;display:flex;align-items:center;gap:10px}
+.admin-public-link{display:inline-flex;align-items:center;justify-content:center;padding:11px 15px;border:1px solid #e3cbb8;border-radius:999px;background:#fffaf3;color:var(--admin-terracotta-dark);text-decoration:none;font-size:13px;font-weight:800;white-space:nowrap}
+.admin-public-link:hover{background:#fff0e4;border-color:#d9b99f}
+.admin-page .admin-logout{padding:11px 15px!important;border-radius:999px!important;background:#eef1ef!important;color:#415761!important;white-space:nowrap}
+.admin-page .admin-logout:hover{background:#e3e9e5!important}
+
+.admin-intro{display:grid;grid-template-columns:1fr auto;align-items:center;gap:30px;margin-bottom:26px;padding:12px 2px 4px}
+.admin-intro h1{font-size:clamp(36px,5vw,56px);line-height:1.02;margin:8px 0 12px;max-width:760px}
+.admin-intro p{margin:0;max-width:760px;color:var(--admin-muted);font-size:17px;line-height:1.6}
+.admin-intro-mark{display:flex;align-items:center;gap:14px;padding:14px 18px;border:1px solid #e5d3c0;border-radius:18px;background:rgba(255,253,249,.75);box-shadow:0 10px 24px rgba(111,75,47,.055)}
+.admin-intro-icon{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:#f6dfd2;color:var(--admin-terracotta-dark);flex:none}
+.admin-intro-icon svg{width:25px;height:25px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.admin-intro-mark strong,.admin-intro-mark small{display:block}.admin-intro-mark strong{font-size:14px}.admin-intro-mark small{margin-top:3px;color:var(--admin-muted);font-size:11px}
+
+.admin-page .card,.admin-page .dashboard-overview{background:var(--admin-card);border:1px solid var(--admin-line);box-shadow:0 14px 34px rgba(90,62,41,.055)}
+.admin-page .card{border-radius:22px;padding:28px;margin-bottom:24px}
+.admin-page .card-head{border-bottom-color:#eee0d2;margin-bottom:24px;padding-bottom:18px}
+.admin-page .card-head h2{font-size:27px}
+.admin-page .card-head p{color:var(--admin-muted)}
+.admin-section-card{scroll-margin-top:108px}
+#dashboardOverview{scroll-margin-top:108px}
+
+.admin-auth-card{padding:0!important;overflow:hidden}
+.admin-auth-grid{display:grid;grid-template-columns:.9fr 1.1fr;min-height:500px}
+.auth-brand-panel{padding:38px;background:radial-gradient(circle at 90% 15%,rgba(231,240,234,.9),transparent 34%),linear-gradient(145deg,#fff2e2 0%,#f9eadb 100%);border-right:1px solid #ead8c5}
+.auth-brand-panel h2{font-size:34px;line-height:1.08;margin:9px 0 14px}
+.auth-brand-panel>p{color:#6f6f6b;line-height:1.65;margin:0 0 28px}
+.auth-benefits{display:grid;gap:14px}
+.auth-benefits>div{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start;padding:12px 0;border-top:1px solid rgba(178,130,94,.16)}
+.auth-benefits>div:first-child{border-top:0}
+.auth-benefits>div>span{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#dfece4;color:#457469;font-size:14px;font-weight:900}
+.auth-benefits strong,.auth-benefits small{display:block}.auth-benefits strong{font-size:14px}.auth-benefits small{margin-top:3px;color:#817a73;font-size:11px;line-height:1.5}
+.auth-form-panel{padding:32px 36px 36px;background:#fffdf9}
+.admin-page .auth-tabs{display:inline-flex;gap:6px;padding:5px;border:1px solid #eadccc;border-radius:999px;background:#f8f1e8;margin-bottom:24px}
+.admin-page .auth-tab{border:0;background:transparent;color:#6a7781;border-radius:999px;padding:10px 16px;font:inherit;font-size:13px;font-weight:800;cursor:pointer}
+.admin-page .auth-tab.active{background:#fff;color:var(--admin-terracotta-dark);box-shadow:0 3px 10px rgba(80,56,38,.08)}
+.admin-page .auth-head{border:0;padding:0;margin-bottom:22px}
+.admin-page .auth-head h2{font-size:30px}
+
+.admin-page input,.admin-page select,.admin-page textarea{background:#fffdfa;border-color:#dfd4c9;color:var(--admin-ink);border-radius:12px}
+.admin-page input:focus,.admin-page select:focus,.admin-page textarea:focus{border-color:#d08a6e;box-shadow:0 0 0 3px rgba(201,117,85,.12)}
+.admin-page label{color:#344a59}
+.admin-page .hint,.admin-page .small{color:#7d878c}
+.admin-page .primary{background:var(--admin-terracotta);color:#fff;border-radius:12px;box-shadow:0 8px 18px rgba(181,95,64,.12)}
+.admin-page .primary:hover{background:var(--admin-terracotta-dark)}
+.admin-page .secondary{background:#f0f2ef;color:#354b58;border-radius:12px}
+.admin-page .secondary:hover{background:#e7ebe7}
+.admin-page .danger{border-radius:12px}
+
+.admin-page .onboarding-banner{border:1px solid #d9c7b4;border-radius:20px;padding:24px 26px;margin-bottom:24px;background:linear-gradient(100deg,#fff0df 0,#f7eee4 58%,#e9f0e8 100%);box-shadow:0 12px 28px rgba(90,62,41,.045)}
+.admin-page .onboarding-banner h2{margin-top:6px;font-size:26px}.admin-page .onboarding-banner p{color:#69767d;margin-bottom:0}
+
+.admin-page .dashboard-overview{border-radius:22px;padding:28px;margin-bottom:24px}
+.admin-page .overview-head h2{font-size:30px}
+.admin-page .overview-grid{gap:14px}
+.admin-page .overview-stat{background:#f8f5ef;border:1px solid #eee2d4;border-radius:16px;padding:18px}
+.admin-page .overview-stat.attention{background:#fff4dc;border-color:#f0d69d}
+.admin-page .overview-stat.success{background:#eaf3ed;border-color:#cfe1d4}
+.admin-page .overview-stat span{color:#6e7b84}
+.admin-page .overview-stat strong{color:var(--admin-ink)}
+.admin-page .dashboard-health{border-radius:13px}
+
+.admin-page .payment-settings{margin-top:8px;padding:17px 18px;border:1px solid #e6d8c9;border-radius:14px;background:#faf5ed}
+.admin-page .payment-settings strong{font-size:16px;color:#334a58}
+.admin-page .info-box{border-color:#d8ded9;background:#f5f8f5}
+
+.admin-page .basar-list{gap:12px}
+.admin-page .basar-list-item{background:#fffdf9;border-color:#e6d8ca;border-radius:16px;padding:17px 18px}
+.admin-page .basar-list-item:hover{border-color:#d9b9a2;background:#fffaf5}
+.admin-page .basar-list-item.selected{border-color:#ca7d5d;box-shadow:0 0 0 3px rgba(201,117,85,.09)}
+.admin-page .basar-list-item span{color:#758087}
+.admin-page .status-chip.active{background:#e6f0e9;color:#427163}.admin-page .status-chip.inactive{background:#efefeb;color:#77766f}.admin-page .status-chip.full{background:#f9e3df;color:#a25846}
+
+.admin-page .dashboard-grid-6{gap:12px}.admin-page .stat{background:#f8f5ef;border:1px solid #efe4d8;border-radius:15px;padding:17px}.admin-page .stat.attention{background:#fff4dc;border-color:#f0d69d}.admin-page .stat.success{background:#eaf3ed;border-color:#cfe1d4}
+.admin-page .capacity-row{border-color:#e7d9ca;background:#fbf8f2}.admin-page .capacity-fill{background:linear-gradient(90deg,#c97555,#e49a77)}
+
+.admin-page .booking-card-head{align-items:flex-start}.admin-page .booking-tools{background:#faf6ef;border:1px solid #eadfD3;border-radius:16px;padding:14px}.admin-page .booking-search,.admin-page .compact-select{background:#fffdf9;border-color:#dfd4c9}
+.admin-page .booking-table th{background:#f7f2ea;color:#617383;border-bottom-color:#e5d8cb}
+.admin-page .booking-table td{color:#263d50;border-bottom-color:#eee4da}
+.admin-page .booking-table tbody tr:hover td{background:#fffaf5}
+.admin-page .table-button{border-color:#e0d2c4;color:#a35b42;background:#fffdf9}
+.admin-page .table-button:hover{border-color:#c98265;background:#fff7f1}
+.admin-page .status-offen{background:#fff0cf;color:#8e641f}.admin-page .status-bezahlt{background:#e4f0e8;color:#34735e}.admin-page .status-storniert{background:#f7e5e2;color:#9a4b40}.admin-page .status-abgelaufen{background:#f8ded9;color:#9d4538}
+
+.admin-page .modal{background:rgba(36,49,57,.48)}
+.admin-page .modal-panel{background:#fffdf9;border:1px solid #e6d8ca;border-radius:20px;box-shadow:0 28px 70px rgba(47,38,31,.25)}
+.admin-page .modal-head{border-bottom-color:#eadfd4}.admin-page .detail-item{background:#faf6ef;border-color:#eadfd3}.admin-page .icon-button{background:#f0ece6;color:#5c6b72}
+
+.admin-footer{margin-top:10px;background:#f7f2e9;border-top:1px solid #e6d9ca}
+.admin-footer-inner{min-height:128px;display:grid;grid-template-columns:1fr auto;grid-template-areas:"brand links" "copy copy";align-items:center;gap:18px 32px;padding-top:22px;padding-bottom:18px}
+.admin-footer-brand{grid-area:brand;display:inline-flex;line-height:0;width:max-content;max-width:100%}.admin-footer-brand img{width:230px;max-width:100%;height:auto}
+.admin-footer-links{grid-area:links;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:10px 18px}.admin-footer-links a{color:#697982;text-decoration:none;font-size:12px;font-weight:700}.admin-footer-links a:hover{color:var(--admin-terracotta-dark);text-decoration:underline}
+.admin-footer-copy{grid-area:copy;border-top:1px solid #e7ddd2;padding-top:15px;color:#8a9194;font-size:11px}
+
+@media(max-width:1050px){
+  .admin-header-inner{grid-template-columns:1fr auto;gap:16px}.admin-nav{grid-column:1/-1;grid-row:2;justify-content:flex-start;padding:0 0 10px;overflow:auto}.admin-brand-logo{width:265px}.admin-auth-grid{grid-template-columns:1fr}.auth-brand-panel{border-right:0;border-bottom:1px solid #ead8c5}.admin-intro{grid-template-columns:1fr}.admin-intro-mark{width:max-content;max-width:100%}
+}
+@media(max-width:720px){
+  .admin-page .container{width:min(100% - 24px,1180px)}.admin-header-inner{display:flex;align-items:center;min-height:74px}.admin-brand-logo{width:205px}.admin-nav{display:none!important}.admin-header-actions{margin-left:auto;gap:6px}.admin-public-link{font-size:0;padding:10px 12px}.admin-public-link:after{content:'Buchungsseite';font-size:11px}.admin-page .admin-logout{font-size:11px!important;padding:10px 12px!important}.admin-page .main{padding-top:26px}.admin-intro h1{font-size:40px}.admin-intro p{font-size:15px}.admin-intro-mark{display:none}.admin-auth-card{border-radius:18px!important}.auth-brand-panel{padding:26px}.auth-brand-panel h2{font-size:28px}.auth-form-panel{padding:24px}.admin-page .card,.admin-page .dashboard-overview{padding:20px;border-radius:18px}.admin-page .card-head{gap:14px}.admin-page .overview-grid{grid-template-columns:1fr 1fr}.admin-page .dashboard-grid-6{grid-template-columns:1fr 1fr}.admin-page .booking-tools{padding:10px}.admin-footer-inner{display:flex;flex-direction:column;align-items:flex-start}.admin-footer-links{justify-content:flex-start}.admin-footer-copy{width:100%}
+}
+@media(max-width:480px){.admin-page .overview-grid,.admin-page .dashboard-grid-6{grid-template-columns:1fr}.admin-page .auth-tabs{width:100%}.admin-page .auth-tab{flex:1}.admin-public-link{display:none}.admin-brand-logo{width:190px}}

@@ -4,52 +4,78 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Veranstalter - Basar Tischbörse</title>
-  <link rel="stylesheet" href="styles.css?v=26">
+  <link rel="stylesheet" href="styles.css?v=27">
 </head>
-<body>
-  <header class="site-header">
-    <div class="container header-inner">
-      <div><div class="brand">Basar Tischbörse</div><div class="subtitle">Veranstalterbereich</div></div>
-      <div class="header-actions">
-        <a class="header-link" href="index.html?v=23">Zur Buchungsseite</a>
-        <button class="secondary hidden" id="topLogoutButton" type="button">Abmelden</button>
+<body class="admin-page">
+  <header class="admin-site-header">
+    <div class="container admin-header-inner">
+      <a class="admin-brand-link" href="index.html?v=263" aria-label="Basar Tischbörse Startseite">
+        <img src="logo-header-v263.png" alt="Basar Tischbörse – Tische einfach online buchen" class="admin-brand-logo">
+      </a>
+      <nav class="admin-nav hidden" id="adminNav" aria-label="Veranstalter-Navigation">
+        <a href="#dashboardOverview">Dashboard</a>
+        <a href="#basarListCard">Basare</a>
+        <a href="#bookingCard">Buchungen</a>
+        <a href="#profileCard">Profil</a>
+      </nav>
+      <div class="admin-header-actions">
+        <a class="admin-public-link" href="index.html?v=263" target="_blank" rel="noopener">Zur Buchungsseite</a>
+        <button class="secondary hidden admin-logout" id="topLogoutButton" type="button">Abmelden</button>
       </div>
     </div>
   </header>
 
   <main class="container main">
-    <section class="hero">
-      <span class="eyebrow">GESCHÜTZTER BEREICH</span>
-      <h1>Basar verwalten.</h1>
-      <p>Veranstalterdaten, Basare, Buchungen und Zahlungen an einem Ort.</p>
+    <section class="admin-intro">
+      <div>
+        <span class="eyebrow">VERANSTALTERBEREICH</span>
+        <h1>Deine Basare. Einfach im Blick.</h1>
+        <p>Basare planen, Buchungen verwalten und Zahlungen im Blick behalten – im gleichen freundlichen Stil wie deine Buchungsseite.</p>
+      </div>
+      <div class="admin-intro-mark" aria-hidden="true">
+        <span class="admin-intro-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2"></rect><path d="M8 3.5v4M16 3.5v4M3.5 10h17M8 14h3M13 14h3M8 17.5h3"></path></svg></span>
+        <div><strong>Alles an einem Ort</strong><small>Basare · Buchungen · Zahlungen</small></div>
+      </div>
     </section>
 
-    <section class="card" id="loginCard">
-      <div class="auth-tabs" role="tablist" aria-label="Veranstalter-Zugang">
-        <button class="auth-tab active" id="showLoginButton" type="button">Anmelden</button>
-        <button class="auth-tab" id="showRegisterButton" type="button">Neu registrieren</button>
-      </div>
-
-      <div id="loginPanel">
-        <div class="card-head auth-head"><div><h2>Anmelden</h2><p>Mit deinem Veranstalter-Konto einloggen.</p></div></div>
-        <form id="loginForm" class="section-grid">
-          <div class="field full"><label for="loginEmail">E-Mail</label><input id="loginEmail" type="email" autocomplete="username" required></div>
-          <div class="field full"><label for="loginPassword">Passwort</label><input id="loginPassword" type="password" autocomplete="current-password" required></div>
-          <div class="form-error hidden full" id="loginError" role="alert"></div>
-          <div class="field full"><button class="primary" id="loginButton" type="submit">Anmelden</button></div>
-        </form>
-      </div>
-
-      <div class="hidden" id="registerPanel">
-        <div class="card-head auth-head"><div><h2>Veranstalter-Konto erstellen</h2><p>Nach der Registrierung richtest du dein Profil und anschließend deinen ersten Basar ein.</p></div></div>
-        <form id="registerForm" class="section-grid">
-          <div class="field full"><label for="registerEmail">E-Mail</label><input id="registerEmail" type="email" autocomplete="email" required></div>
-          <div class="field"><label for="registerPassword">Passwort</label><input id="registerPassword" type="password" autocomplete="new-password" minlength="8" required><span class="hint">Mindestens 8 Zeichen.</span></div>
-          <div class="field"><label for="registerPasswordRepeat">Passwort wiederholen</label><input id="registerPasswordRepeat" type="password" autocomplete="new-password" minlength="8" required></div>
-          <div class="form-error hidden full" id="registerError" role="alert"></div>
-          <div class="auth-notice hidden full" id="registerSuccess" role="status"></div>
-          <div class="field full"><button class="primary" id="registerButton" type="submit">Konto erstellen</button></div>
-        </form>
+    <section class="card admin-auth-card" id="loginCard">
+      <div class="admin-auth-grid">
+        <aside class="auth-brand-panel">
+          <span class="eyebrow">WILLKOMMEN</span>
+          <h2>Dein Veranstalterbereich</h2>
+          <p>Verwalte deinen Basar einfach und übersichtlich – von der Veröffentlichung bis zur letzten Zahlung.</p>
+          <div class="auth-benefits">
+            <div><span>✓</span><div><strong>Basare verwalten</strong><small>Termine, Preise und Regeln zentral pflegen.</small></div></div>
+            <div><span>✓</span><div><strong>Buchungen im Blick</strong><small>Teilnehmer, Zahlungen und Fristen schnell sehen.</small></div></div>
+            <div><span>✓</span><div><strong>Direkt startklar</strong><small>Registrieren, Profil anlegen und ersten Basar veröffentlichen.</small></div></div>
+          </div>
+        </aside>
+        <div class="auth-form-panel">
+          <div class="auth-tabs" role="tablist" aria-label="Veranstalter-Zugang">
+            <button class="auth-tab active" id="showLoginButton" type="button">Anmelden</button>
+            <button class="auth-tab" id="showRegisterButton" type="button">Neu registrieren</button>
+          </div>
+          <div id="loginPanel">
+            <div class="card-head auth-head"><div><h2>Anmelden</h2><p>Mit deinem Veranstalter-Konto einloggen.</p></div></div>
+            <form id="loginForm" class="section-grid">
+              <div class="field full"><label for="loginEmail">E-Mail</label><input id="loginEmail" type="email" autocomplete="username" required></div>
+              <div class="field full"><label for="loginPassword">Passwort</label><input id="loginPassword" type="password" autocomplete="current-password" required></div>
+              <div class="form-error hidden full" id="loginError" role="alert"></div>
+              <div class="field full"><button class="primary" id="loginButton" type="submit">Anmelden</button></div>
+            </form>
+          </div>
+          <div class="hidden" id="registerPanel">
+            <div class="card-head auth-head"><div><h2>Veranstalter-Konto erstellen</h2><p>Nach der Registrierung richtest du dein Profil und anschließend deinen ersten Basar ein.</p></div></div>
+            <form id="registerForm" class="section-grid">
+              <div class="field full"><label for="registerEmail">E-Mail</label><input id="registerEmail" type="email" autocomplete="email" required></div>
+              <div class="field"><label for="registerPassword">Passwort</label><input id="registerPassword" type="password" autocomplete="new-password" minlength="8" required><span class="hint">Mindestens 8 Zeichen.</span></div>
+              <div class="field"><label for="registerPasswordRepeat">Passwort wiederholen</label><input id="registerPasswordRepeat" type="password" autocomplete="new-password" minlength="8" required></div>
+              <div class="form-error hidden full" id="registerError" role="alert"></div>
+              <div class="auth-notice hidden full" id="registerSuccess" role="status"></div>
+              <div class="field full"><button class="primary" id="registerButton" type="submit">Konto erstellen</button></div>
+            </form>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -61,7 +87,7 @@
       <section class="dashboard-overview hidden" id="dashboardOverview" aria-label="Dashboard Übersicht">
         <div class="overview-head">
           <div><span class="eyebrow">ÜBERSICHT</span><h2>Dein Dashboard</h2><p>Die wichtigsten Zahlen deiner Basare auf einen Blick.</p></div>
-          <div class="overview-actions"><a class="secondary dashboard-link" href="index.html?v=23" target="_blank" rel="noopener">Buchungsseite öffnen</a></div>
+          <div class="overview-actions"><a class="secondary dashboard-link" href="index.html?v=263" target="_blank" rel="noopener">Buchungsseite öffnen</a></div>
         </div>
         <div class="overview-grid">
           <div class="overview-stat"><span>Aktive Basare</span><strong id="overviewActiveBasars">–</strong><small id="overviewNextBasar">Noch kein Termin</small></div>
@@ -72,7 +98,7 @@
         <div class="dashboard-health" id="dashboardHealth"></div>
       </section>
 
-      <section class="card" id="profileCard">
+      <section class="card admin-section-card" id="profileCard">
         <div class="card-head">
           <div><span class="eyebrow">VERTRAGSPARTNER</span><h2>Meine Veranstalterdaten</h2><p>Diese Daten erscheinen in den Buchungsunterlagen deiner Basare.</p></div>
         </div>
@@ -96,7 +122,7 @@
         </form>
       </section>
 
-      <section class="card" id="basarListCard">
+      <section class="card admin-section-card" id="basarListCard">
         <div class="card-head">
           <div><span class="eyebrow">BASARE</span><h2>Meine Basare</h2><p>Basare anlegen, bearbeiten und verwalten.</p></div>
           <button class="primary inline-button" id="newBasarButton" type="button">+ Neuer Basar</button>
@@ -105,7 +131,7 @@
         <div id="basarList" class="basar-list"></div>
       </section>
 
-      <section class="card hidden" id="basarFormCard">
+      <section class="card hidden admin-section-card" id="basarFormCard">
         <div class="card-head">
           <div><span class="eyebrow">BASAR</span><h2 id="basarFormTitle">Neuen Basar anlegen</h2><p>Diese Daten werden den Teilnehmern auf der Buchungsseite angezeigt.</p></div>
           <button class="secondary" id="cancelBasarButton" type="button">Abbrechen</button>
@@ -134,7 +160,7 @@
         </form>
       </section>
 
-      <section class="card" id="selectedBasarCard">
+      <section class="card admin-section-card" id="selectedBasarCard">
         <div class="card-head">
           <div><span class="eyebrow">AUSGEWÄHLTER BASAR</span><h2 id="dashboardTitle">Dein Basar</h2><p id="dashboardDetails"></p></div>
           <div class="button-row"><button class="secondary" id="editCurrentButton" type="button">Basar bearbeiten</button><button class="secondary" id="refreshButton" type="button">Aktualisieren</button></div>
@@ -150,7 +176,7 @@
         <div class="capacity-row"><div><span>Auslastung</span><strong id="dashboardCapacityText">–</strong></div><div class="capacity-track" aria-hidden="true"><div class="capacity-fill" id="dashboardCapacityFill"></div></div></div>
       </section>
 
-      <section class="card" id="bookingCard">
+      <section class="card admin-section-card" id="bookingCard">
         <div class="card-head booking-card-head">
           <div><span class="eyebrow">BUCHUNGEN</span><h2>Teilnehmerübersicht</h2><p>Öffne Buchungen, markiere Zahlungen und storniere Buchungen.</p></div>
           <div class="booking-tools" aria-label="Buchungen suchen und filtern">
@@ -209,9 +235,20 @@
     </div>
   </div>
 
-  <footer class="footer"><div class="container">Basar Tischbörse</div></footer>
+  <footer class="admin-footer">
+    <div class="container admin-footer-inner">
+      <a href="index.html?v=263" class="admin-footer-brand"><img src="logo-footer-v263.png" alt="Basar Tischbörse"></a>
+      <div class="admin-footer-links">
+        <a href="impressum.html">Impressum</a>
+        <a href="datenschutz.html">Datenschutz</a>
+        <a href="nutzungsbedingungen.html">Nutzungsbedingungen</a>
+        <a href="haftung.html">Hinweise &amp; Haftung</a>
+      </div>
+      <div class="admin-footer-copy">© 2026 Basar Tischbörse · Veranstalterbereich</div>
+    </div>
+  </footer>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=26"></script>
-  <script src="admin.js?v=26"></script>
+  <script src="config.js?v=27"></script>
+  <script src="admin.js?v=27"></script>
 </body>
 </html>
