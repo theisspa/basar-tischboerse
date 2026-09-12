@@ -37,3 +37,6 @@ textarea{resize:vertical;min-height:96px}
 
 /* V22 Zahlungsarten */
 .payment-settings{padding-top:8px;border-top:1px solid #e4e9f0;margin-top:4px}.payment-settings strong,.info-box strong{display:block;margin-bottom:4px}.info-box{padding:14px 16px;border:1px solid #d8e1ee;border-radius:12px;background:#f7f9fc}.info-box span{display:block}.confirmation>a.inline-button{display:inline-block;margin:8px 0 16px;text-decoration:none}
+
+/* V22.1: Zahlungsbutton nur bei tatsaechlich gewaehltem PayPal-Link anzeigen */
+.confirmation > a.inline-button.hidden { display: none !important; }
