@@ -84,13 +84,6 @@ alter table public.basare alter column veranstalter_id set not null;
 
 -- Adminzugriff pro Veranstalter
 grant select, insert, update, delete on public.basare to authenticated;
--- Oeffentliche Buchungsseite darf aktive Basare lesen.
-grant select on public.basare to anon, authenticated;
-drop policy if exists "aktive basare oeffentlich lesbar" on public.basare;
-create policy "aktive basare oeffentlich lesbar"
-on public.basare for select to anon, authenticated
-using (aktiv = true);
-
 grant select, update on public.buchungen to authenticated;
 grant usage, select on sequence public.basare_id_seq to authenticated;
 
@@ -207,10 +200,8 @@ $$;
 grant execute on function public.get_basar_availability(bigint) to anon, authenticated;
 
 -- 6) Buchung mit 14-/3-Tage-Zahlungslogik + Vertragsdaten
--- Der Rueckgabetyp wurde erweitert; deshalb alte Funktion zuerst entfernen.
-drop function if exists public.create_buchung(bigint, integer, text, boolean, text, text, text, text, text, text, text, text, text);
-
-create function public.create_buchung(
+-- Alte Funktion mit identischer Signatur wird ersetzt.
+create or replace function public.create_buchung(
   p_basar_id bigint,
   p_anzahl_tische integer,
   p_verkaufsbereich text,

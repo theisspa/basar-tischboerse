@@ -16,6 +16,7 @@
   let currentBasar = null;
   let currentFreeTables = 0;
   let lastContract = null;
+  let lastEmailPayload = null;
 
   function selectedValue(name) {
     const el = document.querySelector(`input[name="${name}"]:checked`);
@@ -161,6 +162,41 @@
     return `Zahlungsfrist: ${formatDate(booking.zahlungsfrist)}. Die Bankverbindung wird vom Veranstalter separat mitgeteilt. Verwendungszweck: ${booking.buchungsnummer}.`;
   }
 
+  async function sendBookingEmail(booking, silent = false) {
+    if (!booking?.buchung_id || !booking?.email_token) {
+      if (!silent) {
+        $('emailStatus').textContent = 'Die Buchung wurde gespeichert, aber der automatische E-Mail-Versand ist für diese Buchung nicht verfügbar.';
+        $('emailStatus').className = 'small email-status warning';
+      }
+      return false;
+    }
+
+    lastEmailPayload = { booking_id: booking.buchung_id, email_token: booking.email_token };
+    if (!silent) {
+      $('emailStatus').textContent = 'Buchungsbestätigung wird per E-Mail versendet …';
+      $('emailStatus').className = 'small email-status';
+      $('resendEmailButton').classList.add('hidden');
+    }
+
+    try {
+      const { data, error } = await supabaseClient.functions.invoke('send-booking-email', { body: lastEmailPayload });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      $('emailStatus').textContent = data?.already_sent
+        ? 'Die Buchungsbestätigung wurde bereits per E-Mail versendet.'
+        : 'Buchungsbestätigung und Vertrag wurden per E-Mail versendet.';
+      $('emailStatus').className = 'small email-status success';
+      $('resendEmailButton').classList.add('hidden');
+      return true;
+    } catch (error) {
+      console.error('E-Mail-Versand fehlgeschlagen:', error);
+      $('emailStatus').textContent = 'Die Buchung ist erfolgreich gespeichert. Die E-Mail konnte gerade nicht versendet werden. Du kannst sie hier erneut senden.';
+      $('emailStatus').className = 'small email-status warning';
+      $('resendEmailButton').classList.remove('hidden');
+      return false;
+    }
+  }
+
   async function submitBooking(event) {
     event.preventDefault();
     clearError();
@@ -208,7 +244,11 @@
 
       $('booking').classList.add('hidden');
       $('confirmation').classList.remove('hidden');
+      $('emailStatus').textContent = '';
+      $('emailStatus').className = 'small email-status';
+      $('resendEmailButton').classList.add('hidden');
       await loadAvailability();
+      void sendBookingEmail(booking);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       console.error('Buchungsfehler:', error);
@@ -331,11 +371,23 @@
 
   $('bookingForm').addEventListener('submit', submitBooking);
   $('pdfButton').addEventListener('click', generateContractPdf);
+  $('resendEmailButton').addEventListener('click', async () => {
+    if (!lastEmailPayload) return;
+    $('resendEmailButton').disabled = true;
+    $('resendEmailButton').textContent = 'E-Mail wird gesendet …';
+    try {
+      await sendBookingEmail({ buchung_id: lastEmailPayload.booking_id, email_token: lastEmailPayload.email_token });
+    } finally {
+      $('resendEmailButton').disabled = false;
+      $('resendEmailButton').textContent = 'E-Mail erneut senden';
+    }
+  });
   $('printButton').addEventListener('click', () => window.print());
 
   $('newBookingButton').addEventListener('click', async () => {
     $('bookingForm').reset();
     lastContract = null;
+    lastEmailPayload = null;
     clearError();
     updatePrice();
     $('confirmation').classList.add('hidden');
