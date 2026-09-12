@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Veranstalter - Basar Tischbörse</title>
-  <link rel="stylesheet" href="styles.css?v=21">
+  <link rel="stylesheet" href="styles.css?v=22">
 </head>
 <body>
   <header class="site-header">
     <div class="container header-inner">
       <div><div class="brand">Basar Tischbörse</div><div class="subtitle">Veranstalterbereich</div></div>
       <div class="header-actions">
-        <a class="header-link" href="index.html?v=21">Zur Buchungsseite</a>
+        <a class="header-link" href="index.html?v=22">Zur Buchungsseite</a>
         <button class="secondary hidden" id="topLogoutButton" type="button">Abmelden</button>
       </div>
     </div>
@@ -70,9 +70,13 @@
           <div class="field"><label for="profileCity">Ort</label><input id="profileCity" required></div>
           <div class="field"><label for="profilePhone">Telefon</label><input id="profilePhone"></div>
           <div class="field"><label for="profileEmail">E-Mail</label><input id="profileEmail" type="email" required></div>
-          <div class="field"><label for="profileAccountHolder">Kontoinhaber</label><input id="profileAccountHolder" placeholder="optional"></div>
-          <div class="field"><label for="profileIban">IBAN</label><input id="profileIban" placeholder="optional"></div>
-          <div class="field full"><label for="profilePaypal">PayPal-E-Mail</label><input id="profilePaypal" type="email" placeholder="optional"></div>
+          <div class="field full payment-settings"><strong>Zahlungsarten für deine Basare</strong><span class="hint">Aktiviere nur Zahlungsarten, die Teilnehmer wirklich verwenden dürfen.</span></div>
+          <div class="field full"><label class="checkbox-row"><input id="profileTransferActive" type="checkbox"><span>Überweisung anbieten</span></label></div>
+          <div class="field"><label for="profileAccountHolder">Kontoinhaber</label><input id="profileAccountHolder" placeholder="z. B. Max Mustermann"></div>
+          <div class="field"><label for="profileIban">IBAN</label><input id="profileIban" placeholder="DE…" autocomplete="off"></div>
+          <div class="field full"><label class="checkbox-row"><input id="profilePaypalLinkActive" type="checkbox"><span>Eigenen PayPal-Link anbieten</span></label></div>
+          <div class="field full"><label for="profilePaypalLink">PayPal-Link / PayPal.Me-Link</label><input id="profilePaypalLink" type="url" placeholder="https://paypal.me/deinname"><span class="hint">Das Geld geht direkt an das PayPal-Konto des Veranstalters. Zahlungsstatus wird dabei manuell gepflegt.</span></div>
+          <div class="field full info-box"><strong>Direkter PayPal-Checkout</strong><span id="profileApiPayPalStatus" data-active="false">Wird geladen …</span><span class="hint">Diese Freischaltung kann aus Sicherheitsgründen nicht selbst aktiviert werden.</span></div>
           <div class="form-error hidden full" id="profileError" role="alert"></div>
           <div class="field full"><button class="primary" id="saveProfileButton" type="submit">Veranstalterdaten speichern</button></div>
         </form>
@@ -155,7 +159,7 @@
 
   <footer class="footer"><div class="container">Basar Tischbörse</div></footer>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=21"></script>
-  <script src="admin.js?v=21"></script>
+  <script src="config.js?v=22"></script>
+  <script src="admin.js?v=22"></script>
 </body>
 </html>

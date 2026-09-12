@@ -17,6 +17,7 @@
   let lastContract = null;
   let lastEmailPayload = null;
   let paypalSdkPromise = null;
+  let paymentConfigured = false;
 
   function selectedValue(name) {
     const el = document.querySelector(`input[name="${name}"]:checked`);
@@ -98,8 +99,8 @@
       updatePrice();
     }
 
-    $('submitButton').disabled = safeFree < 1;
-    $('submitButton').textContent = safeFree < 1 ? 'Ausgebucht' : 'Verbindlich buchen';
+    $('submitButton').disabled = safeFree < 1 || !paymentConfigured;
+    $('submitButton').textContent = safeFree < 1 ? 'Ausgebucht' : (!paymentConfigured ? 'Keine Zahlungsart verfügbar' : 'Verbindlich buchen');
   }
 
   function showError(message) {
@@ -129,11 +130,7 @@
   }
 
   async function loadBasare() {
-    const { data, error } = await supabaseClient
-      .from('basare')
-      .select('id,name,ort,veranstaltungsdatum,max_tische,aktiv,preis_1_tisch,preis_2_tische,preis_3_tische,kuchenrabatt,zahlungsfrist_tage,kurzfristig_ab_tage,kurzfristige_zahlungsfrist_tage,stornofrist_tage,kuchennachgebuehr,uebertragung_erlaubt,zusatzregeln')
-      .eq('aktiv', true)
-      .order('veranstaltungsdatum', { ascending: true });
+    const { data, error } = await supabaseClient.rpc('get_public_basare');
     if (error) throw error;
     basare = data || [];
     if (!basare.length) throw new Error('Noch kein aktiver Basar angelegt.');
@@ -145,12 +142,26 @@
     await showCurrentBasar();
   }
 
+  function updatePaymentOptions() {
+    const select = $('payment');
+    const options = [];
+    if (currentBasar?.zahlung_paypal_api_aktiv) options.push(['paypal', 'PayPal (direkt online)']);
+    if (currentBasar?.zahlung_paypal_link_aktiv && currentBasar?.zahlung_paypal_link) options.push(['paypal_link', 'PayPal']);
+    if (currentBasar?.zahlung_ueberweisung_aktiv && currentBasar?.zahlung_iban_vorhanden) options.push(['ueberweisung', 'Überweisung']);
+    select.innerHTML = options.length ? options.map(([value, label]) => `<option value="${value}">${label}</option>`).join('') : '<option value="">Keine Zahlungsart verfügbar</option>';
+    select.disabled = !options.length;
+    paymentConfigured = options.length > 0;
+    $('formError').classList.add('hidden');
+    if (!paymentConfigured) showError('Dieser Veranstalter hat für den Basar noch keine Zahlungsart eingerichtet. Eine Buchung ist derzeit nicht möglich.');
+  }
+
   async function showCurrentBasar() {
     if (!currentBasar) return;
     clearError();
     $('basarName').textContent = currentBasar.name;
     $('basarDetails').textContent = `${formatDate(currentBasar.veranstaltungsdatum)} · ${currentBasar.ort || ''}`.replace(/ · $/, '');
     updateBookingRules();
+    updatePaymentOptions();
     $('price1Label').textContent = euro(currentBasar.preis_1_tisch ?? 12);
     $('price2Label').textContent = euro(currentBasar.preis_2_tische ?? 20);
     $('price3Label').textContent = euro(currentBasar.preis_3_tische ?? 25);
@@ -170,21 +181,23 @@
   }
 
   function setLoading(loading) {
-    $('submitButton').disabled = loading;
-    $('submitButton').textContent = loading ? 'Buchung wird gespeichert …' : 'Verbindlich buchen';
+    $('submitButton').disabled = loading || !paymentConfigured || currentFreeTables < 1;
+    $('submitButton').textContent = loading ? 'Buchung wird gespeichert …' : (currentFreeTables < 1 ? 'Ausgebucht' : (!paymentConfigured ? 'Keine Zahlungsart verfügbar' : 'Verbindlich buchen'));
   }
 
   function paymentInfoText(booking, paymentMethod) {
     if (paymentMethod === 'paypal') {
       return `Zahlungsfrist: ${formatDate(booking.zahlungsfrist)}. Bitte bezahle über den PayPal-Button auf dieser Seite. Die Buchungsnummer ${booking.buchungsnummer} wird automatisch zugeordnet.`;
     }
+    if (paymentMethod === 'paypal_link') {
+      return `Zahlungsfrist: ${formatDate(booking.zahlungsfrist)}. Bitte bezahle über den PayPal-Link des Veranstalters. Verwendungszweck: ${booking.buchungsnummer}.`;
+    }
     if (booking.veranstalter_iban) {
       const owner = booking.veranstalter_kontoinhaber || booking.veranstalter_name;
       return `Zahlungsfrist: ${formatDate(booking.zahlungsfrist)}. Überweisung an ${owner}, IBAN ${booking.veranstalter_iban}. Verwendungszweck: ${booking.buchungsnummer}.`;
     }
-    return `Zahlungsfrist: ${formatDate(booking.zahlungsfrist)}. Die Bankverbindung wird vom Veranstalter separat mitgeteilt. Verwendungszweck: ${booking.buchungsnummer}.`;
+    return `Zahlungsfrist: ${formatDate(booking.zahlungsfrist)}. Die Zahlungsdaten werden vom Veranstalter separat mitgeteilt.`;
   }
-
 
   function setPayPalStatus(message, type = '') {
     const el = $('paypalStatus');
@@ -229,7 +242,7 @@
       await loadPayPalSdk();
 
       const { data: tokenResult, error: tokenError } = await supabaseClient.functions.invoke('paypal-client-token', {
-        body: { origin: window.location.origin }
+        body: { origin: window.location.origin, booking_id: booking.buchung_id, email_token: booking.email_token }
       });
       if (tokenError) throw tokenError;
       if (tokenResult?.error) throw new Error(tokenResult.error);
@@ -413,10 +426,15 @@
       $('resendEmailButton').classList.add('hidden');
       $('paypalSection').classList.add('hidden');
       $('paypalButtonContainer').innerHTML = '';
+      $('externalPaypalButton').classList.add('hidden');
+      $('externalPaypalButton').removeAttribute('href');
       setPayPalStatus('');
       await loadAvailability();
       if (payload.p_zahlungsart === 'paypal') {
         await renderPayPalButtons(booking);
+      } else if (payload.p_zahlungsart === 'paypal_link' && booking.veranstalter_paypal_email) {
+        $('externalPaypalButton').href = booking.veranstalter_paypal_email;
+        $('externalPaypalButton').classList.remove('hidden');
       }
       await sendBookingEmail(booking);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -499,7 +517,7 @@
     doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.text('Buchung', left, y); y += 7;
     doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
     const category = p.p_verkaufsbereich === 'kinder' ? 'Kinder' : 'Erwachsene';
-    const payment = p.p_zahlungsart === 'paypal' ? 'PayPal' : 'Ueberweisung';
+    const payment = p.p_zahlungsart === 'paypal' ? 'PayPal (online)' : p.p_zahlungsart === 'paypal_link' ? 'PayPal-Link' : 'Ueberweisung';
     const bookingLines = [
       `Tische: ${p.p_anzahl_tische}`,
       `Verkaufsbereich: ${category}`,
@@ -569,6 +587,8 @@
     lastEmailPayload = null;
     $('paypalSection').classList.add('hidden');
     $('paypalButtonContainer').innerHTML = '';
+    $('externalPaypalButton').classList.add('hidden');
+    $('externalPaypalButton').removeAttribute('href');
     setPayPalStatus('');
     clearError();
     updatePrice();

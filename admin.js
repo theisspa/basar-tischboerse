@@ -51,6 +51,10 @@
     if (!data) {
       $('profileForm').reset();
       $('profileEmail').value = currentUser.email || '';
+      $('profileTransferActive').checked = false;
+      $('profilePaypalLinkActive').checked = false;
+      $('profileApiPayPalStatus').dataset.active = 'false';
+      $('profileApiPayPalStatus').textContent = 'Direkter PayPal-Checkout ist für dieses Konto nicht freigeschaltet.';
       return false;
     }
     $('profileName').value = data.name || '';
@@ -62,7 +66,11 @@
     $('profileEmail').value = data.email || currentUser.email || '';
     $('profileAccountHolder').value = data.kontoinhaber || '';
     $('profileIban').value = data.iban || '';
-    $('profilePaypal').value = data.paypal_email || '';
+    $('profileTransferActive').checked = data.ueberweisung_aktiv === true;
+    $('profilePaypalLinkActive').checked = data.paypal_link_aktiv === true;
+    $('profilePaypalLink').value = data.paypal_link || '';
+    $('profileApiPayPalStatus').dataset.active = data.paypal_api_aktiv ? 'true' : 'false';
+    $('profileApiPayPalStatus').textContent = data.paypal_api_aktiv ? 'Direkter PayPal-Checkout ist für dieses Konto freigeschaltet.' : 'Direkter PayPal-Checkout ist für dieses Konto nicht freigeschaltet.';
     return true;
   }
 
@@ -73,11 +81,19 @@
       name: $('profileName').value.trim(), strasse: $('profileStreet').value.trim(), hausnummer: $('profileHouseNumber').value.trim(),
       plz: $('profileZip').value.trim(), ort: $('profileCity').value.trim(), telefon: $('profilePhone').value.trim() || null,
       email: $('profileEmail').value.trim(), kontoinhaber: $('profileAccountHolder').value.trim() || null,
-      iban: $('profileIban').value.trim() || null, paypal_email: $('profilePaypal').value.trim() || null, updated_at: new Date().toISOString()
+      iban: $('profileIban').value.trim() || null,
+      ueberweisung_aktiv: $('profileTransferActive').checked,
+      paypal_link_aktiv: $('profilePaypalLinkActive').checked,
+      paypal_link: $('profilePaypalLink').value.trim() || null,
+      updated_at: new Date().toISOString()
     };
     if (!payload.name || !payload.strasse || !payload.hausnummer || !payload.plz || !payload.ort || !payload.email) {
       return showError('profileError', 'Bitte alle Pflichtfelder der Veranstalterdaten ausfüllen.');
     }
+    if (payload.ueberweisung_aktiv && !payload.iban) return showError('profileError', 'Für Überweisung bitte eine IBAN hinterlegen.');
+    if (payload.paypal_link_aktiv && !/^https:\/\/(?:www\.)?(?:paypal\.me|paypal\.com)\//i.test(payload.paypal_link || '')) return showError('profileError', 'Bitte einen gültigen HTTPS-PayPal-Link (paypal.me oder paypal.com) hinterlegen.');
+    const apiPayPalActive = $('profileApiPayPalStatus').dataset.active === 'true';
+    if (!payload.ueberweisung_aktiv && !payload.paypal_link_aktiv && !apiPayPalActive) return showError('profileError', 'Bitte mindestens eine Zahlungsart aktivieren.');
     const wasOnboarding = onboardingMode;
     const button=$('saveProfileButton'); button.disabled=true; button.textContent='Speichert …';
     try {
@@ -154,13 +170,13 @@
     const filter=$('bookingFilter').value;
     const filtered=bookings.filter(r=>{ if(['offen','bezahlt','abgelaufen'].includes(filter))return r.zahlungsstatus===filter; if(filter==='kuchen')return r.kuchenspende; if(filter==='kinder')return r.verkaufsbereich==='kinder'; if(filter==='erwachsene')return r.verkaufsbereich==='erwachsene'; return true; });
     const rows=$('bookingRows'); if(!filtered.length){rows.innerHTML='<tr><td colspan="10">Keine passenden Buchungen vorhanden.</td></tr>';return;}
-    rows.innerHTML=filtered.map(r=>{const [statusText,statusClass]=statusInfo(r.zahlungsstatus);return `<tr class="${['storniert','abgelaufen'].includes(r.zahlungsstatus)?'muted-row':''}"><td><strong>${escapeHtml(r.buchungsnummer)}</strong></td><td>${escapeHtml(`${r.vorname} ${r.nachname}`)}</td><td>${r.anzahl_tische}</td><td>${r.verkaufsbereich==='kinder'?'Kinder':'Erwachsene'}</td><td>${r.kuchenspende?'Ja':'Nein'}</td><td>${euro(r.preis)}</td><td>${r.zahlungsart==='paypal'?'PayPal':'Überweisung'}</td><td>${formatDate(r.zahlungsfrist)}</td><td><span class="badge status-${statusClass}">${statusText}</span></td><td><button class="table-button" type="button" data-booking-id="${r.id}" data-action="open-booking">Öffnen</button></td></tr>`;}).join('');
+    rows.innerHTML=filtered.map(r=>{const [statusText,statusClass]=statusInfo(r.zahlungsstatus);return `<tr class="${['storniert','abgelaufen'].includes(r.zahlungsstatus)?'muted-row':''}"><td><strong>${escapeHtml(r.buchungsnummer)}</strong></td><td>${escapeHtml(`${r.vorname} ${r.nachname}`)}</td><td>${r.anzahl_tische}</td><td>${r.verkaufsbereich==='kinder'?'Kinder':'Erwachsene'}</td><td>${r.kuchenspende?'Ja':'Nein'}</td><td>${euro(r.preis)}</td><td>${r.zahlungsart==='paypal'?'PayPal (online)':r.zahlungsart==='paypal_link'?'PayPal-Link':'Überweisung'}</td><td>${formatDate(r.zahlungsfrist)}</td><td><span class="badge status-${statusClass}">${statusText}</span></td><td><button class="table-button" type="button" data-booking-id="${r.id}" data-action="open-booking">Öffnen</button></td></tr>`;}).join('');
   }
 
   function openBooking(id) {
     selectedBooking=bookings.find(b=>b.id===id)||null; if(!selectedBooking)return; const r=selectedBooking; const [status]=statusInfo(r.zahlungsstatus);
     $('bookingModalTitle').textContent=r.buchungsnummer;
-    $('bookingDetails').innerHTML=`<div class="detail-item"><span>Name</span><strong>${escapeHtml(`${r.vorname} ${r.nachname}`)}</strong></div><div class="detail-item"><span>Bereich</span><strong>${r.verkaufsbereich==='kinder'?'Kinder':'Erwachsene'}</strong></div><div class="detail-item"><span>Tische</span><strong>${r.anzahl_tische}</strong></div><div class="detail-item"><span>Kuchen</span><strong>${r.kuchenspende?'Ja':'Nein'}</strong></div><div class="detail-item"><span>Betrag</span><strong>${euro(r.preis)}</strong></div><div class="detail-item"><span>Zahlung</span><strong>${r.zahlungsart==='paypal'?'PayPal':'Überweisung'}</strong></div><div class="detail-item"><span>Status</span><strong>${status}</strong></div><div class="detail-item"><span>Zahlungsfrist</span><strong>${formatDate(r.zahlungsfrist)}</strong></div><div class="detail-item full"><span>Adresse</span><strong>${escapeHtml(`${r.strasse} ${r.hausnummer}, ${r.plz} ${r.ort}`)}</strong></div><div class="detail-item"><span>E-Mail</span><strong>${escapeHtml(r.email)}</strong></div><div class="detail-item"><span>Telefon</span><strong>${escapeHtml(r.telefon||'—')}</strong></div><div class="detail-item"><span>E-Mail an Teilnehmer</span><strong>${r.email_status==='sent'?'Versendet':r.email_status==='error'?'Fehler':r.email_status==='sending'?'Wird gesendet':'Ausstehend'}${r.email_sent_at?` · ${formatDateTime(r.email_sent_at)}`:''}</strong></div><div class="detail-item"><span>E-Mail an Veranstalter</span><strong>${r.veranstalter_email_status==='sent'?'Versendet':r.veranstalter_email_status==='error'?'Fehler':r.veranstalter_email_status==='sending'?'Wird gesendet':'Ausstehend'}${r.veranstalter_email_sent_at?` · ${formatDateTime(r.veranstalter_email_sent_at)}`:''}</strong></div><div class="detail-item full"><span>Buchung eingegangen</span><strong>${formatDateTime(r.created_at)}</strong></div>`;
+    $('bookingDetails').innerHTML=`<div class="detail-item"><span>Name</span><strong>${escapeHtml(`${r.vorname} ${r.nachname}`)}</strong></div><div class="detail-item"><span>Bereich</span><strong>${r.verkaufsbereich==='kinder'?'Kinder':'Erwachsene'}</strong></div><div class="detail-item"><span>Tische</span><strong>${r.anzahl_tische}</strong></div><div class="detail-item"><span>Kuchen</span><strong>${r.kuchenspende?'Ja':'Nein'}</strong></div><div class="detail-item"><span>Betrag</span><strong>${euro(r.preis)}</strong></div><div class="detail-item"><span>Zahlung</span><strong>${r.zahlungsart==='paypal'?'PayPal (online)':r.zahlungsart==='paypal_link'?'PayPal-Link':'Überweisung'}</strong></div><div class="detail-item"><span>Status</span><strong>${status}</strong></div><div class="detail-item"><span>Zahlungsfrist</span><strong>${formatDate(r.zahlungsfrist)}</strong></div><div class="detail-item full"><span>Adresse</span><strong>${escapeHtml(`${r.strasse} ${r.hausnummer}, ${r.plz} ${r.ort}`)}</strong></div><div class="detail-item"><span>E-Mail</span><strong>${escapeHtml(r.email)}</strong></div><div class="detail-item"><span>Telefon</span><strong>${escapeHtml(r.telefon||'—')}</strong></div><div class="detail-item"><span>E-Mail an Teilnehmer</span><strong>${r.email_status==='sent'?'Versendet':r.email_status==='error'?'Fehler':r.email_status==='sending'?'Wird gesendet':'Ausstehend'}${r.email_sent_at?` · ${formatDateTime(r.email_sent_at)}`:''}</strong></div><div class="detail-item"><span>E-Mail an Veranstalter</span><strong>${r.veranstalter_email_status==='sent'?'Versendet':r.veranstalter_email_status==='error'?'Fehler':r.veranstalter_email_status==='sending'?'Wird gesendet':'Ausstehend'}${r.veranstalter_email_sent_at?` · ${formatDateTime(r.veranstalter_email_sent_at)}`:''}</strong></div><div class="detail-item full"><span>Buchung eingegangen</span><strong>${formatDateTime(r.created_at)}</strong></div>`;
     $('markPaidButton').classList.toggle('hidden', ['bezahlt','storniert'].includes(r.zahlungsstatus)); $('markOpenButton').classList.toggle('hidden', r.zahlungsstatus!=='bezahlt'); $('cancelBookingButton').classList.toggle('hidden', r.zahlungsstatus==='storniert'); $('bookingModal').classList.remove('hidden');
   }
   function closeBooking(){ $('bookingModal').classList.add('hidden'); selectedBooking=null; }
@@ -206,7 +222,7 @@
     if (password !== repeat) return showError('registerError', 'Die beiden Passwörter stimmen nicht überein.');
     const button = $('registerButton'); button.disabled = true; button.textContent = 'Konto wird erstellt …';
     try {
-      const redirectTo = `${window.location.origin}${window.location.pathname}?v=21&onboarding=1`;
+      const redirectTo = `${window.location.origin}${window.location.pathname}?v=22&onboarding=1`;
       const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo } });
       if (error) throw error;
       if (data.session) {
