@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Basar Tischbörse</title>
-  <link rel="stylesheet" href="styles.css?v=16">
+  <link rel="stylesheet" href="styles.css?v=20">
 </head>
 <body>
   <header class="site-header">
@@ -89,8 +89,9 @@
           <strong>Wichtige Buchungsregeln</strong>
           <ul>
             <li id="paymentRule">Die Zahlungsfrist wird anhand des Veranstaltungstermins berechnet.</li>
-            <li>Kostenlose Stornierung bis 14 Tage vor Veranstaltungsbeginn; danach keine Rückzahlung. Eine Übertragung auf eine andere Person ist nach Information an den Veranstalter möglich.</li>
-            <li>Bei zugesagter, aber nicht erbrachter Kuchenspende wird nachträglich eine Gebühr von 10 € fällig.</li>
+            <li id="cancellationRule">Die Stornierungsregel wird geladen.</li>
+            <li id="cakePenaltyRule">Die Kuchenregel wird geladen.</li>
+            <li id="additionalRule" class="hidden"></li>
           </ul>
         </div>
 
@@ -132,6 +133,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
   <script src="config.js?v=18"></script>
-  <script src="app.js?v=19"></script>
+  <script src="app.js?v=20"></script>
 </body>
 </html>

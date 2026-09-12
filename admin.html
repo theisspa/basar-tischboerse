@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Veranstalter - Basar Tischbörse</title>
-  <link rel="stylesheet" href="styles.css?v=13">
+  <link rel="stylesheet" href="styles.css?v=20">
 </head>
 <body>
   <header class="site-header">
@@ -80,6 +80,13 @@
           <div class="field"><label for="preis2Tische">Preis 2 Tische (€)</label><input id="preis2Tische" type="number" min="0" step="0.01" required></div>
           <div class="field"><label for="preis3Tische">Preis 3 Tische (€)</label><input id="preis3Tische" type="number" min="0" step="0.01" required></div>
           <div class="field"><label for="kuchenrabatt">Kuchenrabatt (€)</label><input id="kuchenrabatt" type="number" min="0" step="0.01" required></div>
+          <div class="field"><label for="zahlungsfristTage">Zahlungsfrist normal (Tage)</label><input id="zahlungsfristTage" type="number" min="0" max="365" required></div>
+          <div class="field"><label for="kurzfristigAbTage">Kurzfristige Buchung ab weniger als (Tage)</label><input id="kurzfristigAbTage" type="number" min="0" max="365" required></div>
+          <div class="field"><label for="kurzfristigeZahlungsfristTage">Zahlungsfrist bei kurzfristiger Buchung (Tage)</label><input id="kurzfristigeZahlungsfristTage" type="number" min="0" max="365" required></div>
+          <div class="field"><label for="stornofristTage">Kostenlose Stornierung bis (Tage vor Termin)</label><input id="stornofristTage" type="number" min="0" max="365" required></div>
+          <div class="field"><label for="kuchennachgebuehr">Gebühr bei fehlender Kuchenspende (€)</label><input id="kuchennachgebuehr" type="number" min="0" step="0.01" required></div>
+          <div class="field"><label for="uebertragungErlaubt">Übertragung auf andere Person</label><select id="uebertragungErlaubt"><option value="true">Erlaubt nach Information an Veranstalter</option><option value="false">Nicht erlaubt</option></select></div>
+          <div class="field full"><label for="zusatzregeln">Zusätzliche Buchungsregeln</label><textarea id="zusatzregeln" rows="4" maxlength="2000" placeholder="Optionaler Zusatztext, der auf der Buchungsseite und in der Teilnahmevereinbarung erscheint."></textarea></div>
           <div class="field full"><button class="primary" id="saveBasarButton" type="submit">Basar speichern</button></div>
         </form>
       </section>
@@ -126,6 +133,6 @@
   <footer class="footer"><div class="container">Basar Tischbörse</div></footer>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js?v=13"></script>
-  <script src="admin.js?v=19"></script>
+  <script src="admin.js?v=20"></script>
 </body>
 </html>

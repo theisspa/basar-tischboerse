@@ -39,9 +39,24 @@
 
   function paymentRuleText() {
     const days = daysUntil(currentBasar?.veranstaltungsdatum);
+    const normal = Number(currentBasar?.zahlungsfrist_tage ?? 14);
+    const threshold = Number(currentBasar?.kurzfristig_ab_tage ?? 14);
+    const shortDays = Number(currentBasar?.kurzfristige_zahlungsfrist_tage ?? 3);
     if (days === null) return 'Die Zahlungsfrist wird anhand des Veranstaltungstermins berechnet.';
-    if (days >= 14) return 'Die Reservierung ist 14 Tage garantiert. Der Teilnahmebetrag ist innerhalb von 14 Tagen nach Buchung zu bezahlen.';
-    return 'Da der Basartermin weniger als 14 Tage entfernt ist, ist der Teilnahmebetrag innerhalb von 3 Tagen zu zahlen, spätestens jedoch am Veranstaltungstag. Danach besteht keine Garantie mehr auf den Tisch.';
+    if (days >= threshold) return `Die Reservierung ist ${normal} Tage garantiert. Der Teilnahmebetrag ist innerhalb von ${normal} Tagen nach Buchung zu bezahlen, spätestens jedoch am Veranstaltungstag.`;
+    return `Da der Basartermin weniger als ${threshold} Tage entfernt ist, ist der Teilnahmebetrag innerhalb von ${shortDays} Tagen zu zahlen, spätestens jedoch am Veranstaltungstag. Danach besteht keine Garantie mehr auf den Tisch.`;
+  }
+
+  function updateBookingRules() {
+    const storno = Number(currentBasar?.stornofrist_tage ?? 14);
+    const transfer = currentBasar?.uebertragung_erlaubt !== false;
+    const fee = Number(currentBasar?.kuchennachgebuehr ?? 10);
+    $('paymentRule').textContent = paymentRuleText();
+    $('cancellationRule').textContent = `Kostenlose Stornierung bis ${storno} Tage vor Veranstaltungsbeginn; danach keine Rückzahlung.${transfer ? ' Eine Übertragung auf eine andere Person ist nach Information an den Veranstalter möglich.' : ' Eine Übertragung auf eine andere Person ist nicht vorgesehen.'}`;
+    $('cakePenaltyRule').textContent = `Bei zugesagter, aber nicht erbrachter Kuchenspende wird nachträglich eine Gebühr von ${euro(fee)} fällig.`;
+    const extra = String(currentBasar?.zusatzregeln || '').trim();
+    $('additionalRule').textContent = extra;
+    $('additionalRule').classList.toggle('hidden', !extra);
   }
 
   function updatePrice() {
@@ -116,7 +131,7 @@
   async function loadBasare() {
     const { data, error } = await supabaseClient
       .from('basare')
-      .select('id,name,ort,veranstaltungsdatum,max_tische,aktiv,preis_1_tisch,preis_2_tische,preis_3_tische,kuchenrabatt')
+      .select('id,name,ort,veranstaltungsdatum,max_tische,aktiv,preis_1_tisch,preis_2_tische,preis_3_tische,kuchenrabatt,zahlungsfrist_tage,kurzfristig_ab_tage,kurzfristige_zahlungsfrist_tage,stornofrist_tage,kuchennachgebuehr,uebertragung_erlaubt,zusatzregeln')
       .eq('aktiv', true)
       .order('veranstaltungsdatum', { ascending: true });
     if (error) throw error;
@@ -135,7 +150,7 @@
     clearError();
     $('basarName').textContent = currentBasar.name;
     $('basarDetails').textContent = `${formatDate(currentBasar.veranstaltungsdatum)} · ${currentBasar.ort || ''}`.replace(/ · $/, '');
-    $('paymentRule').textContent = paymentRuleText();
+    updateBookingRules();
     $('price1Label').textContent = euro(currentBasar.preis_1_tisch ?? 12);
     $('price2Label').textContent = euro(currentBasar.preis_2_tische ?? 20);
     $('price3Label').textContent = euro(currentBasar.preis_3_tische ?? 25);
@@ -386,7 +401,7 @@
       const booking = Array.isArray(data) ? data[0] : data;
       if (!booking?.buchungsnummer) throw new Error('Keine Buchungsnummer erhalten.');
 
-      lastContract = { booking, payload, pricing: { kuchenrabatt: Number(currentBasar?.kuchenrabatt ?? 4) } };
+      lastContract = { booking, payload, pricing: { kuchenrabatt: Number(currentBasar?.kuchenrabatt ?? 4) }, rules: { zahlungsfrist_tage: Number(currentBasar?.zahlungsfrist_tage ?? 14), kurzfristig_ab_tage: Number(currentBasar?.kurzfristig_ab_tage ?? 14), kurzfristige_zahlungsfrist_tage: Number(currentBasar?.kurzfristige_zahlungsfrist_tage ?? 3), stornofrist_tage: Number(currentBasar?.stornofrist_tage ?? 14), kuchennachgebuehr: Number(currentBasar?.kuchennachgebuehr ?? 10), uebertragung_erlaubt: currentBasar?.uebertragung_erlaubt !== false, zusatzregeln: String(currentBasar?.zusatzregeln || '').trim() } };
       $('confirmationText').textContent = `${payload.p_vorname} ${payload.p_nachname}, ${tables === 1 ? '1 Tisch wurde' : `${tables} Tische wurden`} verbindlich reserviert. Gesamtbetrag: ${euro(booking.preis)}. Zahlungsfrist: ${formatDate(booking.zahlungsfrist)}.`;
       $('bookingNumber').textContent = booking.buchungsnummer;
       $('paymentInfo').textContent = paymentInfoText(booking, payload.p_zahlungsart);
@@ -441,8 +456,15 @@
       return;
     }
 
-    const { booking: b, payload: p, pricing } = lastContract;
+    const { booking: b, payload: p, pricing, rules = {} } = lastContract;
     const contractCakeDiscount = Number(pricing?.kuchenrabatt ?? 4);
+    const ruleNormalDays = Number(rules.zahlungsfrist_tage ?? 14);
+    const ruleThresholdDays = Number(rules.kurzfristig_ab_tage ?? 14);
+    const ruleShortDays = Number(rules.kurzfristige_zahlungsfrist_tage ?? 3);
+    const ruleStornoDays = Number(rules.stornofrist_tage ?? 14);
+    const ruleCakeFee = Number(rules.kuchennachgebuehr ?? 10);
+    const ruleTransfer = rules.uebertragung_erlaubt !== false;
+    const ruleExtra = String(rules.zusatzregeln || '').trim();
     const doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' });
     const left = 20;
     const width = 170;
@@ -498,11 +520,12 @@
     doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
     const clauses = [
       '1. Mit Abschluss der Buchung wird die angegebene Anzahl an Verkaufstischen verbindlich reserviert.',
-      `2. Der Teilnahmebetrag ist bis ${formatDate(b.zahlungsfrist)} zu bezahlen. Bei Buchungen mindestens 14 Tage vor der Veranstaltung betraegt die Zahlungsfrist 14 Tage. Bei spaeteren Buchungen betraegt sie 3 Tage, jedoch hoechstens bis zum Veranstaltungstag. Nach Ablauf der Zahlungsfrist besteht ohne Zahlung keine Garantie mehr auf den reservierten Tisch.`,
-      `3. Eine kostenlose Stornierung ist bis ${formatDate(b.stornierbar_bis)} (14 Tage vor Veranstaltungsbeginn) moeglich. Danach besteht kein Anspruch auf Rueckerstattung bereits geleisteter Zahlungen. Alternativ kann die Buchung auf eine andere Person uebertragen werden, sofern der Veranstalter vorab informiert wird.`,
+      `2. Der Teilnahmebetrag ist bis ${formatDate(b.zahlungsfrist)} zu bezahlen. Bei Buchungen mindestens ${ruleThresholdDays} Tage vor der Veranstaltung betraegt die regulaere Zahlungsfrist ${ruleNormalDays} Tage. Bei spaeteren Buchungen betraegt sie ${ruleShortDays} Tage, jeweils hoechstens bis zum Veranstaltungstag. Nach Ablauf der Zahlungsfrist besteht ohne Zahlung keine Garantie mehr auf den reservierten Tisch.`,
+      `3. Eine kostenlose Stornierung ist bis ${formatDate(b.stornierbar_bis)} (${ruleStornoDays} Tage vor Veranstaltungsbeginn) moeglich. Danach besteht kein Anspruch auf Rueckerstattung bereits geleisteter Zahlungen.${ruleTransfer ? ' Alternativ kann die Buchung auf eine andere Person uebertragen werden, sofern der Veranstalter vorab informiert wird.' : ' Eine Uebertragung auf eine andere Person ist nicht vorgesehen.'}`,
       '4. Pro Buchung ist nur ein Verkaufsbereich zulaessig: Kinderartikel oder Erwachsenenartikel. Fuer beide Bereiche sind zwei getrennte Buchungen erforderlich.',
-      `5. Bei ausgewaehlter Kuchenspende wird der Buchungspreis einmalig um ${contractCakeDiscount.toFixed(2).replace('.', ',')} EUR reduziert. Wird der zugesagte Kuchen am Veranstaltungstag nicht erbracht, wird nachtraeglich eine Gebuehr von 10 EUR faellig.`
+      `5. Bei ausgewaehlter Kuchenspende wird der Buchungspreis einmalig um ${contractCakeDiscount.toFixed(2).replace('.', ',')} EUR reduziert. Wird der zugesagte Kuchen am Veranstaltungstag nicht erbracht, wird nachtraeglich eine Gebuehr von ${ruleCakeFee.toFixed(2).replace('.', ',')} EUR faellig.`
     ];
+    if (ruleExtra) clauses.push(`6. Zusaetzliche Regel des Veranstalters: ${ruleExtra}`);
     for (const clause of clauses) { y = addWrapped(doc, clause, left, y, width, { lineHeight: 4.8 }); y += 2; }
 
     if (y > 265) { doc.addPage(); y = 20; }
