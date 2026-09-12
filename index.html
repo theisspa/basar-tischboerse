@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Basar Tischbörse</title>
-  <link rel="stylesheet" href="styles.css?v=13">
+  <link rel="stylesheet" href="styles.css?v=15">
 </head>
 <body>
   <header class="site-header">
@@ -13,7 +13,7 @@
         <div class="brand">Basar Tischbörse</div>
         <div class="subtitle">Tische einfach online buchen</div>
       </div>
-      <a class="header-link" href="admin.html?v=13">Für Veranstalter</a>
+      <a class="header-link" href="admin.html?v=15">Für Veranstalter</a>
     </div>
   </header>
 
@@ -112,6 +112,12 @@
       <p id="confirmationText"></p>
       <div class="booking-number" id="bookingNumber"></div>
       <p id="paymentInfo" class="small"></p>
+      <div id="paypalSection" class="paypal-section hidden">
+        <div class="paypal-heading">Jetzt sicher mit PayPal bezahlen</div>
+        <p class="small">Die Zahlung wird über PayPal Sandbox getestet. Es wird kein echtes Geld übertragen.</p>
+        <div id="paypalButtonContainer"></div>
+        <p id="paypalStatus" class="small paypal-status" aria-live="polite"></p>
+      </div>
       <p id="emailStatus" class="small email-status" aria-live="polite"></p>
       <button class="secondary hidden" id="resendEmailButton" type="button">E-Mail erneut senden</button>
       <div class="actions">
@@ -125,7 +131,7 @@
   <footer class="footer"><div class="container">Basar Tischbörse</div></footer>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
-  <script src="config.js?v=14"></script>
-  <script src="app.js?v=14"></script>
+  <script src="config.js?v=15"></script>
+  <script src="app.js?v=15"></script>
 </body>
 </html>

@@ -25,3 +25,7 @@
 .email-status.success { color: #16794b; font-weight: 700; }
 .email-status.warning { color: #9a5b00; font-weight: 700; }
 #resendEmailButton { margin: 6px auto 14px; }
+
+
+/* V15 PayPal Sandbox */
+.paypal-section{margin:22px auto 8px;max-width:520px;padding:18px;border:1px solid #d9e1ec;border-radius:14px;background:#fbfcfe;text-align:left}.paypal-heading{font-weight:800;margin-bottom:4px;text-align:center}.paypal-status{margin-top:10px;text-align:center}.paypal-status.success{color:#16794b;font-weight:700}.paypal-status.warning{color:#9a5b00;font-weight:700}.paypal-status.error{color:#8d1f1f;font-weight:700}#paypalButtonContainer{margin-top:14px;min-height:46px}
