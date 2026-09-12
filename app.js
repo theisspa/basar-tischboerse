@@ -248,7 +248,7 @@
       $('emailStatus').className = 'small email-status';
       $('resendEmailButton').classList.add('hidden');
       await loadAvailability();
-      void sendBookingEmail(booking);
+      await sendBookingEmail(booking);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       console.error('Buchungsfehler:', error);
