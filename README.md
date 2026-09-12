@@ -14,3 +14,6 @@ MVP für eine kostenlose Basar-Tischreservierungsplattform.
 
 ## MVP
 Die aktuelle Demo ist vollständig lokal nutzbar und speichert Testbuchungen im Browser. Für den echten Onlinebetrieb werden Datenbank, E-Mail, PayPal und PDF-Erstellung angeschlossen.
+
+
+V7: Robust booking modal close handling added.

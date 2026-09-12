@@ -215,9 +215,14 @@
   }
 
   function closeBooking() {
-    $('bookingModal').classList.add('hidden');
+    const modal = $('bookingModal');
+    if (!modal) return;
+    modal.classList.add('hidden');
     selectedBooking = null;
   }
+
+  // Expose a safe close handler for the modal and inline/browser fallbacks.
+  window.closeBookingModal = closeBooking;
 
   async function updateBookingStatus(status) {
     if (!selectedBooking) return;
@@ -368,8 +373,25 @@
     try { await loadBookings(); } catch (error) { console.error(error); showError('dashboardError', humanizeError(error)); }
   });
   $('bookingFilter').addEventListener('change', renderBookings);
-  $('closeBookingModal').addEventListener('click', closeBooking);
-  $('bookingModal').addEventListener('click', event => { if (event.target === $('bookingModal')) closeBooking(); });
+  $('closeBookingModal').addEventListener('click', event => {
+    event.preventDefault();
+    event.stopPropagation();
+    closeBooking();
+  });
+
+  // Also allow clicking the dark area outside the dialog to close it.
+  $('bookingModal').addEventListener('click', event => {
+    if (event.target === event.currentTarget) closeBooking();
+  });
+
+  // Fallback event delegation in case the button gets re-rendered.
+  document.addEventListener('click', event => {
+    const closeButton = event.target.closest?.('#closeBookingModal');
+    if (closeButton) {
+      event.preventDefault();
+      closeBooking();
+    }
+  });
   $('markPaidButton').addEventListener('click', () => updateBookingStatus('bezahlt'));
   $('markOpenButton').addEventListener('click', () => updateBookingStatus('offen'));
   $('cancelBookingButton').addEventListener('click', () => updateBookingStatus('storniert'));
