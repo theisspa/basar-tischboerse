@@ -271,17 +271,25 @@
       button.addEventListener('click', async () => {
         try {
           setPayPalStatus('PayPal-Zahlung wird vorbereitet …');
-          const { data, error } = await supabaseClient.functions.invoke('paypal-create-order', {
-            body: { booking_id: booking.buchung_id, email_token: booking.email_token }
-          });
-          if (error) throw error;
-          if (data?.error) throw new Error(data.error);
-          if (!data?.order_id) throw new Error('PayPal hat keine Order-ID geliefert.');
 
-          setPayPalStatus('Bitte bestätige die Zahlung im PayPal-Fenster.');
+          // PayPal Web SDK v6 erwartet als zweiten Parameter von start()
+          // zwingend ein Promise, das zu { orderId } aufloest.
+          // Die Order wird deshalb direkt als Promise erzeugt und an PayPal
+          // weitergereicht, statt erst auf die Order zu warten und ein Objekt
+          // zu uebergeben.
+          const orderPromise = supabaseClient.functions.invoke('paypal-create-order', {
+            body: { booking_id: booking.buchung_id, email_token: booking.email_token }
+          }).then(({ data, error }) => {
+            if (error) throw error;
+            if (data?.error) throw new Error(data.error);
+            if (!data?.order_id) throw new Error('PayPal hat keine Order-ID geliefert.');
+            setPayPalStatus('Bitte bestaetige die Zahlung im PayPal-Fenster.');
+            return { orderId: data.order_id };
+          });
+
           await session.start(
             { presentationMode: 'auto' },
-            { orderId: data.order_id }
+            orderPromise
           );
         } catch (error) {
           console.error('PayPal-Start fehlgeschlagen:', error);
