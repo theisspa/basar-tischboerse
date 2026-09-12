@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Basar Tischbörse</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-inner">
+      <div>
+        <div class="brand">Basar Tischbörse</div>
+        <div class="subtitle">Tische einfach online buchen</div>
+      </div>
+      <a class="header-link" href="#veranstalter">Für Veranstalter</a>
+    </div>
+  </header>
+
+  <main class="container main">
+    <section class="hero">
+      <span class="eyebrow">ONLINE-TISCHRESERVIERUNG</span>
+      <h1>Verkaufsplatz für deinen Basar sichern.</h1>
+      <p>Wähle deinen Basar, reserviere bis zu drei Tische und erhalte deine Buchungsunterlagen direkt nach der Anmeldung.</p>
+    </section>
+
+    <section class="card booking-card" id="booking">
+      <div class="card-head">
+        <div>
+          <h2>Sommerbasar Alsenborn</h2>
+          <p>Samstag, 10. Oktober 2026 · Bürgerhaus Alsenborn</p>
+        </div>
+        <div class="availability"><strong id="availableTables">37</strong><span>Tische frei</span></div>
+      </div>
+
+      <form id="bookingForm">
+        <div class="section-grid">
+          <div class="field full">
+            <label for="tables">Anzahl Tische</label>
+            <div class="choices choices-3">
+              <label class="choice"><input type="radio" name="tables" value="1" checked><span>1 Tisch<strong>12 €</strong></span></label>
+              <label class="choice"><input type="radio" name="tables" value="2"><span>2 Tische<strong>20 €</strong></span></label>
+              <label class="choice"><input type="radio" name="tables" value="3"><span>3 Tische<strong>25 €</strong></span></label>
+            </div>
+          </div>
+
+          <div class="field full">
+            <label>Was möchtest du anbieten?</label>
+            <div class="choices choices-2">
+              <label class="choice"><input type="radio" name="category" value="Kinder" checked><span>Kinder</span></label>
+              <label class="choice"><input type="radio" name="category" value="Erwachsene"><span>Erwachsene</span></label>
+            </div>
+            <div class="hint">Kinder und Erwachsene müssen getrennt gebucht werden.</div>
+          </div>
+
+          <div class="field full cake-field">
+            <label class="checkbox-row"><input id="cake" type="checkbox"><span>Ich bringe einen Kuchen mit und erhalte 4 € Rabatt.</span></label>
+          </div>
+
+          <div class="field"><label for="firstName">Vorname</label><input id="firstName" required></div>
+          <div class="field"><label for="lastName">Nachname</label><input id="lastName" required></div>
+          <div class="field"><label for="street">Straße</label><input id="street" required></div>
+          <div class="field"><label for="houseNumber">Hausnummer</label><input id="houseNumber" required></div>
+          <div class="field"><label for="zip">PLZ</label><input id="zip" inputmode="numeric" required></div>
+          <div class="field"><label for="city">Ort</label><input id="city" required></div>
+          <div class="field"><label for="email">E-Mail</label><input id="email" type="email" required></div>
+          <div class="field"><label for="phone">Telefon</label><input id="phone" type="tel" required></div>
+
+          <div class="field full">
+            <label for="payment">Zahlungsart</label>
+            <select id="payment" required>
+              <option value="paypal">PayPal</option>
+              <option value="transfer">Überweisung</option>
+            </select>
+          </div>
+
+          <div class="field full legal">
+            <label class="checkbox-row"><input id="terms" type="checkbox" required><span>Ich akzeptiere die Teilnahmebedingungen und bestätige, dass die Buchung verbindlich ist.</span></label>
+            <label class="checkbox-row"><input id="privacy" type="checkbox" required><span>Ich habe die Datenschutzerklärung gelesen.</span></label>
+          </div>
+        </div>
+
+        <div class="price-box">
+          <div><span>Grundpreis</span><strong id="basePrice">12,00 €</strong></div>
+          <div><span>Kuchenrabatt</span><strong id="discount">0,00 €</strong></div>
+          <div class="total"><span>Gesamt</span><strong id="totalPrice">12,00 €</strong></div>
+        </div>
+
+        <button class="primary" type="submit">Verbindlich buchen</button>
+        <p class="small">Zahlungsfrist: innerhalb von 14 Tagen nach Buchung. Bei zugesagter, aber vor Ort nicht erbrachter Kuchenspende wird nachträglich eine Gebühr von 10 € fällig.</p>
+      </form>
+    </section>
+
+    <section class="card confirmation hidden" id="confirmation">
+      <div class="success-mark">✓</div>
+      <span class="eyebrow">BUCHUNG ERFOLGREICH</span>
+      <h2>Dein Tisch ist reserviert.</h2>
+      <p id="confirmationText"></p>
+      <div class="booking-number" id="bookingNumber"></div>
+      <div class="actions"><button class="secondary" id="printButton">Buchung drucken</button><button class="secondary" id="newBookingButton">Neue Buchung</button></div>
+    </section>
+
+    <section class="card organizer" id="veranstalter">
+      <div class="card-head">
+        <div>
+          <span class="eyebrow">VERANSTALTER</span>
+          <h2>Übersicht</h2>
+        </div>
+        <span class="badge">MVP-Demo</span>
+      </div>
+      <div class="dashboard-grid">
+        <div class="stat"><span>Tische insgesamt</span><strong>50</strong></div>
+        <div class="stat"><span>Gebucht</span><strong id="dashboardBooked">13</strong></div>
+        <div class="stat"><span>Frei</span><strong id="dashboardFree">37</strong></div>
+      </div>
+      <p class="small">In der finalen Version wird diese Übersicht durch einen geschützten Veranstalter-Login ersetzt. Dort werden Buchungen, Zahlungen, Verträge und verfügbare Tische verwaltet.</p>
+    </section>
+  </main>
+
+  <footer class="footer"><div class="container">Basar Tischbörse · MVP</div></footer>
+  <script src="app.js"></script>
+</body>
+</html>
