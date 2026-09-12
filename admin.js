@@ -260,28 +260,100 @@
     $('dashboardCapacityFill').style.width=`${percent}%`;
   }
 
-  function renderBookings() {
-    const filter=$('bookingFilter').value;
-    const filtered=bookings.filter(r=>{
-      const deadline=deadlineInfo(r);
-      if(filter==='offen') return r.zahlungsstatus==='offen';
-      if(filter==='bezahlt') return r.zahlungsstatus==='bezahlt';
-      if(filter==='abgelaufen') return r.zahlungsstatus==='abgelaufen' || deadline.state==='overdue';
-      if(filter==='heute') return deadline.state==='today';
-      if(filter==='kuchen')return r.kuchenspende;
-      if(filter==='kinder')return r.verkaufsbereich==='kinder';
-      if(filter==='erwachsene')return r.verkaufsbereich==='erwachsene';
+  function paymentLabel(value) {
+    if (value === 'paypal') return 'PayPal (online)';
+    if (value === 'paypal_link') return 'PayPal-Link';
+    return 'Überweisung';
+  }
+
+  function getFilteredBookings() {
+    const statusFilter = $('bookingFilter').value;
+    const paymentFilter = $('paymentFilter').value;
+    const areaFilter = $('areaFilter').value;
+    const cakeFilter = $('cakeFilter').value;
+    const search = $('bookingSearch').value.trim().toLocaleLowerCase('de-DE');
+
+    return bookings.filter(r => {
+      const deadline = deadlineInfo(r);
+      const fullName = `${r.vorname || ''} ${r.nachname || ''}`.trim().toLocaleLowerCase('de-DE');
+      const bookingNumber = String(r.buchungsnummer || '').toLocaleLowerCase('de-DE');
+
+      if (search && !fullName.includes(search) && !bookingNumber.includes(search)) return false;
+
+      if (statusFilter === 'offen' && r.zahlungsstatus !== 'offen') return false;
+      if (statusFilter === 'bezahlt' && r.zahlungsstatus !== 'bezahlt') return false;
+      if (statusFilter === 'storniert' && r.zahlungsstatus !== 'storniert') return false;
+      if (statusFilter === 'abgelaufen' && !(r.zahlungsstatus === 'abgelaufen' || deadline.state === 'overdue')) return false;
+      if (statusFilter === 'heute' && deadline.state !== 'today') return false;
+
+      if (paymentFilter !== 'alle' && r.zahlungsart !== paymentFilter) return false;
+      if (areaFilter !== 'alle' && r.verkaufsbereich !== areaFilter) return false;
+      if (cakeFilter === 'ja' && !r.kuchenspende) return false;
+      if (cakeFilter === 'nein' && r.kuchenspende) return false;
+
       return true;
     });
-    const rows=$('bookingRows'); if(!filtered.length){rows.innerHTML='<tr><td colspan="10">Keine passenden Buchungen vorhanden.</td></tr>';return;}
+  }
+
+  function renderBookings() {
+    const filtered = getFilteredBookings();
+    $('bookingResultCount').textContent = filtered.length === bookings.length
+      ? `${bookings.length} Buchung${bookings.length === 1 ? '' : 'en'}`
+      : `${filtered.length} von ${bookings.length} Buchungen`;
+
+    const rows=$('bookingRows');
+    if(!filtered.length){rows.innerHTML='<tr><td colspan="10">Keine passenden Buchungen vorhanden.</td></tr>';return;}
     rows.innerHTML=filtered.map(r=>{
       const [statusText,statusClass]=bookingStatusInfo(r);
       const deadline=deadlineInfo(r);
       const rowClass = r.zahlungsstatus==='storniert' || r.zahlungsstatus==='abgelaufen' ? 'muted-row' : deadline.state==='overdue' ? 'overdue-row' : deadline.state==='today' ? 'due-today-row' : '';
       const deadlineClass = deadline.state==='overdue' ? 'deadline-overdue' : deadline.state==='today' ? 'deadline-today' : '';
       const deadlineSub = deadline.text ? `<small class="deadline-note ${deadlineClass}">${escapeHtml(deadline.text)}</small>` : '';
-      return `<tr class="${rowClass}"><td><strong>${escapeHtml(r.buchungsnummer)}</strong></td><td>${escapeHtml(`${r.vorname} ${r.nachname}`)}</td><td>${r.anzahl_tische}</td><td>${r.verkaufsbereich==='kinder'?'Kinder':'Erwachsene'}</td><td>${r.kuchenspende?'Ja':'Nein'}</td><td>${euro(r.preis)}</td><td>${r.zahlungsart==='paypal'?'PayPal (online)':r.zahlungsart==='paypal_link'?'PayPal-Link':'Überweisung'}</td><td>${formatDate(r.zahlungsfrist)}${deadlineSub}</td><td><span class="badge status-${statusClass}">${statusText}</span></td><td><button class="table-button" type="button" data-booking-id="${r.id}" data-action="open-booking">Öffnen</button></td></tr>`;
+      return `<tr class="${rowClass}"><td><strong>${escapeHtml(r.buchungsnummer)}</strong></td><td>${escapeHtml(`${r.vorname} ${r.nachname}`)}</td><td>${r.anzahl_tische}</td><td>${r.verkaufsbereich==='kinder'?'Kinder':'Erwachsene'}</td><td>${r.kuchenspende?'Ja':'Nein'}</td><td>${euro(r.preis)}</td><td>${paymentLabel(r.zahlungsart)}</td><td>${formatDate(r.zahlungsfrist)}${deadlineSub}</td><td><span class="badge status-${statusClass}">${statusText}</span></td><td><button class="table-button" type="button" data-booking-id="${r.id}" data-action="open-booking">Öffnen</button></td></tr>`;
     }).join('');
+  }
+
+  function csvCell(value) {
+    const text = String(value ?? '').replace(/\r?\n/g, ' ');
+    return `"${text.replaceAll('"','""')}"`;
+  }
+
+  function exportFilteredBookings() {
+    const rows = getFilteredBookings();
+    if (!rows.length) {
+      showError('dashboardError', 'Für die aktuelle Auswahl sind keine Buchungen zum Exportieren vorhanden.');
+      return;
+    }
+    clearError('dashboardError');
+    const header = ['Buchungsnummer','Vorname','Nachname','E-Mail','Telefon','Tische','Bereich','Kuchen','Betrag EUR','Zahlungsart','Zahlungsstatus','Zahlungsfrist','Buchung eingegangen'];
+    const lines = [header, ...rows.map(r => [
+      r.buchungsnummer,
+      r.vorname,
+      r.nachname,
+      r.email,
+      r.telefon || '',
+      r.anzahl_tische,
+      r.verkaufsbereich === 'kinder' ? 'Kinder' : 'Erwachsene',
+      r.kuchenspende ? 'Ja' : 'Nein',
+      Number(r.preis || 0).toFixed(2).replace('.', ','),
+      paymentLabel(r.zahlungsart),
+      bookingStatusInfo(r)[0],
+      r.zahlungsfrist || '',
+      r.created_at ? formatDateTime(r.created_at) : ''
+    ])].map(row => row.map(csvCell).join(';')).join('\r\n');
+
+    const basar = basare.find(b => b.id === selectedBasarId);
+    const safeName = String(basar?.name || 'basar').normalize('NFKD').replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'basar';
+    const date = new Date().toISOString().slice(0,10);
+    const blob = new Blob(['\ufeff' + lines], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `buchungen-${safeName}-${date}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   }
 
 
@@ -334,7 +406,7 @@
     if (password !== repeat) return showError('registerError', 'Die beiden Passwörter stimmen nicht überein.');
     const button = $('registerButton'); button.disabled = true; button.textContent = 'Konto wird erstellt …';
     try {
-      const redirectTo = `${window.location.origin}${window.location.pathname}?v=231&onboarding=1`;
+      const redirectTo = `${window.location.origin}${window.location.pathname}?v=232&onboarding=1`;
       const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo } });
       if (error) throw error;
       if (data.session) {
@@ -352,7 +424,7 @@
   });
   $('showLoginButton').addEventListener('click',()=>setAuthMode('login')); $('showRegisterButton').addEventListener('click',()=>setAuthMode('register'));
   $('profileForm').addEventListener('submit',saveProfile); $('topLogoutButton').addEventListener('click',logout); $('newBasarButton').addEventListener('click',startNewBasar); $('cancelBasarButton').addEventListener('click',()=> $('basarFormCard').classList.add('hidden')); $('basarForm').addEventListener('submit',saveBasar);
-  $('editCurrentButton').addEventListener('click',()=>{const b=basare.find(x=>x.id===selectedBasarId);if(b)editBasar(b);}); $('refreshButton').addEventListener('click',()=>loadBasare().catch(e=>showError('dashboardError',humanizeError(e)))); $('refreshBookingsButton').addEventListener('click',()=>loadBookings().catch(e=>showError('dashboardError',humanizeError(e)))); $('bookingFilter').addEventListener('change',renderBookings);
+  $('editCurrentButton').addEventListener('click',()=>{const b=basare.find(x=>x.id===selectedBasarId);if(b)editBasar(b);}); $('refreshButton').addEventListener('click',()=>loadBasare().catch(e=>showError('dashboardError',humanizeError(e)))); $('refreshBookingsButton').addEventListener('click',()=>loadBookings().catch(e=>showError('dashboardError',humanizeError(e)))); $('bookingFilter').addEventListener('change',renderBookings); $('paymentFilter').addEventListener('change',renderBookings); $('areaFilter').addEventListener('change',renderBookings); $('cakeFilter').addEventListener('change',renderBookings); $('bookingSearch').addEventListener('input',renderBookings); $('exportBookingsButton').addEventListener('click',exportFilteredBookings);
   supabase.auth.onAuthStateChange((_e,session)=>{if(session)setTimeout(()=>showDashboard().catch(console.error),0);});
   (async()=>{try{const {data:{session}}=await supabase.auth.getSession();if(session)await showDashboard();}catch(e){console.error(e);showError('loginError','Die Anmeldung konnte nicht geprüft werden.');}})();
 })();
