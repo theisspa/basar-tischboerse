@@ -353,3 +353,48 @@ html{scroll-behavior:smooth;scroll-padding-top:88px}.market-site-header{backgrou
 .legal-callout{padding:16px 18px;margin:20px 0;border-left:4px solid #c77959;border-radius:12px;background:#fff5eb;color:#4b5354;line-height:1.65}
 .legal .checkbox-row a{color:#9e5d46;text-decoration:underline;text-underline-offset:2px}
 @media(max-width:720px){.legal-toc{grid-template-columns:1fr}}
+
+
+/* V28.2 – reine Rechtschreibkorrektur im bestehenden Hero-Bild.
+   Das Originalmotiv bleibt unverändert; nur das falsch geschriebene Wort
+   auf dem grünen Herz wird auf der Website sauber überblendet. */
+.hero-stand-wrap{
+  position:relative;
+  display:block;
+  width:116%;
+  max-width:none;
+  margin-right:-9%;
+}
+.hero-stand-wrap .hero-mockup-stand{
+  width:100%!important;
+  max-width:none!important;
+  height:auto!important;
+  margin:0!important;
+}
+.hero-heart-spelling-fix{
+  position:absolute;
+  left:69.4%;
+  top:14.9%;
+  width:18.5%;
+  height:7.7%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transform:rotate(-14deg);
+  transform-origin:center;
+  border-radius:9px;
+  background:rgba(218,229,207,.84);
+  -webkit-backdrop-filter:blur(4px);
+  backdrop-filter:blur(4px);
+  color:#234c59;
+  font-family:"Segoe Print","Comic Sans MS","Bradley Hand",cursive;
+  font-size:clamp(13px,1.28vw,21px);
+  font-weight:400;
+  line-height:1;
+  letter-spacing:-.02em;
+  pointer-events:none;
+}
+@media(max-width:980px){
+  .hero-stand-wrap{width:100%;margin-right:0}
+  .hero-heart-spelling-fix{font-size:clamp(13px,2.1vw,20px)}
+}
