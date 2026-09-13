@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Veranstalter - Basar Tischbörse</title>
-  <link rel="stylesheet" href="styles.css?v=28">
+  <link rel="stylesheet" href="styles.css?v=281">
 </head>
 <body class="admin-page">
   <header class="admin-site-header">
     <div class="container admin-header-inner">
-      <a class="admin-brand-link" href="index.html?v=28" aria-label="Basar Tischbörse Startseite">
+      <a class="admin-brand-link" href="index.html?v=281" aria-label="Basar Tischbörse Startseite">
         <img src="logo-header-v263.png" alt="Basar Tischbörse – Tische einfach online buchen" class="admin-brand-logo">
       </a>
       <nav class="admin-nav hidden" id="adminNav" aria-label="Veranstalter-Navigation">
@@ -20,7 +20,7 @@
         <a class="hidden" id="platformNavLink" href="#platformAdminCard">Plattform</a>
       </nav>
       <div class="admin-header-actions">
-        <a class="admin-public-link" href="index.html?v=28" target="_blank" rel="noopener">Zur Buchungsseite</a>
+        <a class="admin-public-link" href="index.html?v=281" target="_blank" rel="noopener">Zur Buchungsseite</a>
         <button class="secondary hidden admin-logout" id="topLogoutButton" type="button">Abmelden</button>
       </div>
     </div>
@@ -71,6 +71,10 @@
               <div class="field full"><label for="registerEmail">E-Mail</label><input id="registerEmail" type="email" autocomplete="email" required></div>
               <div class="field"><label for="registerPassword">Passwort</label><input id="registerPassword" type="password" autocomplete="new-password" minlength="8" required><span class="hint">Mindestens 8 Zeichen.</span></div>
               <div class="field"><label for="registerPasswordRepeat">Passwort wiederholen</label><input id="registerPasswordRepeat" type="password" autocomplete="new-password" minlength="8" required></div>
+              <div class="field full legal">
+                <label class="checkbox-row"><input id="registerTerms" type="checkbox" required><span>Ich akzeptiere die <a href="nutzungsbedingungen.html?v=281" target="_blank" rel="noopener noreferrer">Nutzungsbedingungen</a>.</span></label>
+                <label class="checkbox-row"><input id="registerPrivacy" type="checkbox" required><span>Ich habe die <a href="datenschutz.html?v=281" target="_blank" rel="noopener noreferrer">Datenschutzerklärung</a> zur Kenntnis genommen.</span></label>
+              </div>
               <div class="form-error hidden full" id="registerError" role="alert"></div>
               <div class="auth-notice hidden full" id="registerSuccess" role="status"></div>
               <div class="field full"><button class="primary" id="registerButton" type="submit">Konto erstellen</button></div>
@@ -94,7 +98,7 @@
       <section class="dashboard-overview hidden" id="dashboardOverview" aria-label="Dashboard Übersicht">
         <div class="overview-head">
           <div><span class="eyebrow">ÜBERSICHT</span><h2>Dein Dashboard</h2><p>Die wichtigsten Zahlen deiner Basare auf einen Blick.</p></div>
-          <div class="overview-actions"><a class="secondary dashboard-link" href="index.html?v=28" target="_blank" rel="noopener">Buchungsseite öffnen</a></div>
+          <div class="overview-actions"><a class="secondary dashboard-link" href="index.html?v=281" target="_blank" rel="noopener">Buchungsseite öffnen</a></div>
         </div>
         <div class="overview-grid">
           <div class="overview-stat"><span>Aktive Basare</span><strong id="overviewActiveBasars">–</strong><small id="overviewNextBasar">Noch kein Termin</small></div>
@@ -270,18 +274,18 @@
 
   <footer class="admin-footer">
     <div class="container admin-footer-inner">
-      <a href="index.html?v=28" class="admin-footer-brand"><img src="logo-footer-v263.png" alt="Basar Tischbörse"></a>
+      <a href="index.html?v=281" class="admin-footer-brand"><img src="logo-footer-v263.png" alt="Basar Tischbörse"></a>
       <div class="admin-footer-links">
-        <a href="impressum.html">Impressum</a>
-        <a href="datenschutz.html">Datenschutz</a>
-        <a href="nutzungsbedingungen.html">Nutzungsbedingungen</a>
-        <a href="haftung.html">Hinweise &amp; Haftung</a>
+        <a href="impressum.html?v=281">Impressum</a>
+        <a href="datenschutz.html?v=281">Datenschutz</a>
+        <a href="nutzungsbedingungen.html?v=281">Nutzungsbedingungen</a>
+        <a href="haftung.html?v=281">Hinweise &amp; Haftung</a><a href="rechtswidrige-inhalte.html?v=281">Rechtswidrige Inhalte melden</a>
       </div>
       <div class="admin-footer-copy">© 2026 Basar Tischbörse · Veranstalterbereich</div>
     </div>
   </footer>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=28"></script>
-  <script src="admin.js?v=28"></script>
+  <script src="config.js?v=281"></script>
+  <script src="admin.js?v=281"></script>
 </body>
 </html>

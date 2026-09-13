@@ -338,3 +338,18 @@ html{scroll-behavior:smooth;scroll-padding-top:88px}.market-site-header{backgrou
 
 @media(max-width:850px){.platform-review-item{grid-template-columns:1fr}.platform-review-actions{flex-direction:row;flex-wrap:wrap;min-width:0}.platform-review-actions .primary,.platform-review-actions .secondary,.platform-review-actions .danger{width:auto}.platform-summary-grid{grid-template-columns:1fr 1fr 1fr}}
 @media(max-width:620px){.account-status-banner{grid-template-columns:auto 1fr}.account-status-chip{grid-column:1/-1;justify-self:start}.platform-summary-grid{grid-template-columns:1fr}.platform-review-title{flex-direction:column}.platform-review-actions{flex-direction:column}.platform-review-actions .primary,.platform-review-actions .secondary,.platform-review-actions .danger{width:100%}}
+
+/* V28.1 Legal hardening */
+.legal-card h3{margin:24px 0 8px;color:#334a58;font-size:18px}
+.legal-card ul,.legal-card ol{padding-left:22px;line-height:1.7}
+.legal-card li+li{margin-top:6px}
+.legal-card p{line-height:1.72}
+.legal-card a{color:#9e5d46;text-decoration:underline;text-underline-offset:2px}
+.legal-meta{display:inline-flex;align-items:center;padding:7px 11px;border-radius:999px;background:#f4ede4;color:#77685d;font-size:11px;font-weight:800;letter-spacing:.03em;margin-bottom:14px}
+.legal-toc{display:grid;grid-template-columns:1fr 1fr;gap:7px 18px;padding:18px 20px;margin:24px 0 32px;border:1px solid #e5d8ca;border-radius:16px;background:#faf6ef}
+.legal-toc strong{grid-column:1/-1;color:#354c5a;margin-bottom:4px}
+.legal-toc a{text-decoration:none;font-size:13px;color:#6a716f}
+.legal-toc a:hover{text-decoration:underline;color:#9e5d46}
+.legal-callout{padding:16px 18px;margin:20px 0;border-left:4px solid #c77959;border-radius:12px;background:#fff5eb;color:#4b5354;line-height:1.65}
+.legal .checkbox-row a{color:#9e5d46;text-decoration:underline;text-underline-offset:2px}
+@media(max-width:720px){.legal-toc{grid-template-columns:1fr}}
