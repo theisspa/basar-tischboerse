@@ -204,6 +204,8 @@
     return {
       rows,
       reserved: blocking.reduce((sum,r)=>sum+Number(r.anzahl_tische||0),0),
+      childrenReserved: blocking.filter(r=>r.verkaufsbereich==='kinder').reduce((sum,r)=>sum+Number(r.anzahl_tische||0),0),
+      adultsReserved: blocking.filter(r=>r.verkaufsbereich==='erwachsene').reduce((sum,r)=>sum+Number(r.anzahl_tische||0),0),
       open: rows.filter(r=>r.zahlungsstatus==='offen').length,
       paid: rows.filter(r=>r.zahlungsstatus==='bezahlt').length,
       paidAmount: rows.filter(r=>r.zahlungsstatus==='bezahlt').reduce((sum,r)=>sum+Number(r.preis||0),0)
@@ -253,7 +255,7 @@
   async function loadDashboardOverview() {
     if (!basare.length) { allBookings = []; renderDashboardOverview(); renderBasarList(); return; }
     const ids = basare.map(b=>b.id);
-    const { data, error } = await supabase.from('buchungen').select('id,basar_id,anzahl_tische,preis,zahlungsstatus,zahlungsfrist,created_at').in('basar_id', ids);
+    const { data, error } = await supabase.from('buchungen').select('id,basar_id,anzahl_tische,verkaufsbereich,preis,zahlungsstatus,zahlungsfrist,created_at').in('basar_id', ids);
     if (error) throw error;
     allBookings = data || [];
     renderDashboardOverview();
@@ -262,7 +264,7 @@
 
   async function loadBasare() {
     clearError('basarError');
-    const { data, error } = await supabase.from('basare').select('id,name,ort,plz,stadt,latitude,longitude,veranstaltungsdatum,max_tische,aktiv,veroeffentlicht,veroeffentlicht_at,created_at,veranstalter_id,preis_1_tisch,preis_2_tische,preis_3_tische,kuchenrabatt,zahlungsfrist_tage,kurzfristig_ab_tage,kurzfristige_zahlungsfrist_tage,stornofrist_tage,kuchennachgebuehr,uebertragung_erlaubt,zusatzregeln').eq('veranstalter_id', currentUser.id).order('veranstaltungsdatum', { ascending: true });
+    const { data, error } = await supabase.from('basare').select('id,name,ort,plz,stadt,latitude,longitude,veranstaltungsdatum,max_tische,aktiv,veroeffentlicht,veroeffentlicht_at,created_at,veranstalter_id,preis_1_tisch,preis_2_tische,preis_3_tische,kuchenrabatt,zahlungsfrist_tage,kurzfristig_ab_tage,kurzfristige_zahlungsfrist_tage,stornofrist_tage,kuchennachgebuehr,uebertragung_erlaubt,zusatzregeln,verkaufsbereiche,kontingent_modus,max_tische_kinder,max_tische_erwachsene').eq('veranstalter_id', currentUser.id).order('veranstaltungsdatum', { ascending: true });
     if (error) throw error;
     basare=data || [];
     if (!selectedBasarId || !basare.some(b => b.id === selectedBasarId)) { const active=basare.find(b=>b.aktiv) || basare[0]; selectedBasarId=active?.id || null; }
@@ -294,7 +296,8 @@
       else if (full) { statusText='Ausgebucht'; statusClass='full'; }
       else { statusText='Öffentlich'; statusClass='active'; }
       const publication = b.veroeffentlicht ? 'Veröffentlichung aktiviert' : 'Nicht öffentlich';
-      return `<button class="basar-list-item ${b.id===selectedBasarId?'selected':''}" data-basar-id="${b.id}" type="button"><div class="basar-list-main"><strong>${escapeHtml(b.name)}</strong><span>${escapeHtml(formatDate(b.veranstaltungsdatum))}${b.ort?' · '+escapeHtml(b.ort):''}</span><small>${st.reserved} von ${max} Tischen reserviert · ${st.open} offen · ${st.paid} bezahlt · ${publication}${hasValidCoordinates(b)?' · 📍 Umkreissuche bereit':' · ⚠ Standort neu speichern'}</small></div><span class="status-chip ${statusClass}">${statusText}</span></button>`;
+      const areaText = b.verkaufsbereiche === 'kinder' ? 'Nur Kinder' : b.verkaufsbereiche === 'erwachsene' ? 'Nur Erwachsene' : (b.kontingent_modus === 'getrennt' ? `Kinder ${Number(b.max_tische_kinder||0)} · Erwachsene ${Number(b.max_tische_erwachsene||0)}` : 'Kinder & Erwachsene · gemeinsamer Pool');
+      return `<button class="basar-list-item ${b.id===selectedBasarId?'selected':''}" data-basar-id="${b.id}" type="button"><div class="basar-list-main"><strong>${escapeHtml(b.name)}</strong><span>${escapeHtml(formatDate(b.veranstaltungsdatum))}${b.ort?' · '+escapeHtml(b.ort):''}</span><small>${st.reserved} von ${max} Tischen reserviert · ${escapeHtml(areaText)} · ${st.open} offen · ${st.paid} bezahlt · ${publication}${hasValidCoordinates(b)?' · 📍 Umkreissuche bereit':' · ⚠ Standort neu speichern'}</small></div><span class="status-chip ${statusClass}">${statusText}</span></button>`;
     }).join('');
     el.querySelectorAll('[data-basar-id]').forEach(btn=>btn.addEventListener('click', async()=>{ selectedBasarId=Number(btn.dataset.basarId); renderBasarList(); try{await loadSelectedBasar();}catch(e){console.error(e);showError('basarError',humanizeError(e));} }));
   }
@@ -330,6 +333,19 @@
     $('dashboardPaid').textContent=paidRows.length; $('dashboardRevenue').textContent=euro(paidAmount);
     $('dashboardCapacityText').textContent=`${booked} von ${max} · ${percent} %`;
     $('dashboardCapacityFill').style.width=`${percent}%`;
+    const childrenBooked=blocking.filter(r=>r.verkaufsbereich==='kinder').reduce((sum,r)=>sum+Number(r.anzahl_tische||0),0);
+    const adultsBooked=blocking.filter(r=>r.verkaufsbereich==='erwachsene').reduce((sum,r)=>sum+Number(r.anzahl_tische||0),0);
+    const areaBox=$('dashboardAreaCapacity');
+    if (basar.verkaufsbereiche==='kinder') {
+      areaBox.innerHTML=`<span><strong>Kinder</strong>${childrenBooked} reserviert · ${Math.max(0,max-childrenBooked)} frei</span>`;
+    } else if (basar.verkaufsbereiche==='erwachsene') {
+      areaBox.innerHTML=`<span><strong>Erwachsene</strong>${adultsBooked} reserviert · ${Math.max(0,max-adultsBooked)} frei</span>`;
+    } else if (basar.kontingent_modus==='getrennt') {
+      const childMax=Number(basar.max_tische_kinder||0), adultMax=Number(basar.max_tische_erwachsene||0);
+      areaBox.innerHTML=`<span><strong>🧸 Kinder</strong>${childrenBooked} / ${childMax} reserviert · ${Math.max(0,childMax-childrenBooked)} frei</span><span><strong>👕 Erwachsene</strong>${adultsBooked} / ${adultMax} reserviert · ${Math.max(0,adultMax-adultsBooked)} frei</span>`;
+    } else {
+      areaBox.innerHTML=`<span><strong>Kinder & Erwachsene</strong>Gemeinsamer Pool mit ${max} Tischen · ${free} frei</span>`;
+    }
   }
 
   function paymentLabel(value) {
@@ -461,13 +477,37 @@
   document.addEventListener('click', async e=>{ const b=e.target.closest('[data-action]'); if(!b)return; const a=b.dataset.action; if(a==='open-booking')openBooking(Number(b.dataset.bookingId)); else if(a==='close-booking')closeBooking(); else if(a==='mark-paid')await updateBookingStatus('bezahlt'); else if(a==='mark-open')await updateBookingStatus('offen'); else if(a==='cancel-booking')await updateBookingStatus('storniert'); }, true);
   document.addEventListener('click',e=>{if(e.target===$('bookingModal'))closeBooking();}); document.addEventListener('keydown',e=>{if(e.key==='Escape')closeBooking();});
 
-  function startNewBasar(){ clearError('basarError'); $('basarForm').reset(); $('basarId').value=''; $('basarFormTitle').textContent='Neuen Basar anlegen'; $('basarTische').value='50'; $('preis1Tisch').value='12.00'; $('preis2Tische').value='20.00'; $('preis3Tische').value='25.00'; $('kuchenrabatt').value='4.00'; $('zahlungsfristTage').value='14'; $('kurzfristigAbTage').value='14'; $('kurzfristigeZahlungsfristTage').value='3'; $('stornofristTage').value='14'; $('kuchennachgebuehr').value='10.00'; $('uebertragungErlaubt').value='true'; $('zusatzregeln').value=''; $('basarAktiv').value='true'; $('basarPublished').checked=false; updatePublicationControls(); $('basarFormCard').classList.remove('hidden'); $('basarFormCard').scrollIntoView({behavior:'smooth',block:'start'}); }
-  function editBasar(b){ clearError('basarError'); $('basarId').value=b.id; $('basarName').value=b.name||''; $('basarOrt').value=b.ort||''; $('basarPlz').value=b.plz||''; $('basarStadt').value=b.stadt||''; $('basarDatum').value=b.veranstaltungsdatum||''; $('basarTische').value=b.max_tische||''; $('preis1Tisch').value=Number(b.preis_1_tisch ?? 12).toFixed(2); $('preis2Tische').value=Number(b.preis_2_tische ?? 20).toFixed(2); $('preis3Tische').value=Number(b.preis_3_tische ?? 25).toFixed(2); $('kuchenrabatt').value=Number(b.kuchenrabatt ?? 4).toFixed(2); $('zahlungsfristTage').value=Number(b.zahlungsfrist_tage ?? 14); $('kurzfristigAbTage').value=Number(b.kurzfristig_ab_tage ?? 14); $('kurzfristigeZahlungsfristTage').value=Number(b.kurzfristige_zahlungsfrist_tage ?? 3); $('stornofristTage').value=Number(b.stornofrist_tage ?? 14); $('kuchennachgebuehr').value=Number(b.kuchennachgebuehr ?? 10).toFixed(2); $('uebertragungErlaubt').value=String(b.uebertragung_erlaubt ?? true); $('zusatzregeln').value=b.zusatzregeln || ''; $('basarAktiv').value=String(!!b.aktiv); $('basarPublished').checked=!!b.veroeffentlicht; updatePublicationControls(); $('basarFormTitle').textContent='Basar bearbeiten'; $('basarFormCard').classList.remove('hidden'); $('basarFormCard').scrollIntoView({behavior:'smooth',block:'start'}); }
+  function updateBasarCapacityFields() {
+    const areas=$('basarBereiche').value;
+    const both=areas==='beide';
+    $('kontingentModusField').classList.toggle('hidden', !both);
+    if (!both) $('kontingentModus').value='gemeinsam';
+    const split=both && $('kontingentModus').value==='getrennt';
+    $('basarTischeKinderField').classList.toggle('hidden', !split);
+    $('basarTischeErwachseneField').classList.toggle('hidden', !split);
+    $('basarTische').readOnly=split;
+    $('basarTischeLabel').textContent=split ? 'Tische insgesamt (automatisch)' : areas==='kinder' ? 'Tische für Kinder' : areas==='erwachsene' ? 'Tische für Erwachsene' : 'Maximale Tischanzahl';
+    $('basarTischeHint').textContent=split ? 'Gesamtzahl wird automatisch aus Kinder- und Erwachsenentischen berechnet.' : both ? 'Kinder und Erwachsene teilen sich diese Tischanzahl.' : 'Diese Tischanzahl steht nur für den ausgewählten Bereich zur Verfügung.';
+    if (split) {
+      const children=Math.max(0,Number($('basarTischeKinder').value)||0);
+      const adults=Math.max(0,Number($('basarTischeErwachsene').value)||0);
+      $('basarTische').value=children+adults || '';
+    }
+  }
+
+  function startNewBasar(){ clearError('basarError'); $('basarForm').reset(); $('basarId').value=''; $('basarFormTitle').textContent='Neuen Basar anlegen'; $('basarBereiche').value='beide'; $('kontingentModus').value='gemeinsam'; $('basarTische').value='50'; $('basarTischeKinder').value='30'; $('basarTischeErwachsene').value='20'; $('preis1Tisch').value='12.00'; $('preis2Tische').value='20.00'; $('preis3Tische').value='25.00'; $('kuchenrabatt').value='4.00'; $('zahlungsfristTage').value='14'; $('kurzfristigAbTage').value='14'; $('kurzfristigeZahlungsfristTage').value='3'; $('stornofristTage').value='14'; $('kuchennachgebuehr').value='10.00'; $('uebertragungErlaubt').value='true'; $('zusatzregeln').value=''; $('basarAktiv').value='true'; $('basarPublished').checked=false; updateBasarCapacityFields(); updatePublicationControls(); $('basarFormCard').classList.remove('hidden'); $('basarFormCard').scrollIntoView({behavior:'smooth',block:'start'}); }
+  function editBasar(b){ clearError('basarError'); $('basarId').value=b.id; $('basarName').value=b.name||''; $('basarOrt').value=b.ort||''; $('basarPlz').value=b.plz||''; $('basarStadt').value=b.stadt||''; $('basarDatum').value=b.veranstaltungsdatum||''; $('basarBereiche').value=b.verkaufsbereiche||'beide'; $('kontingentModus').value=b.kontingent_modus||'gemeinsam'; $('basarTische').value=b.max_tische||''; $('basarTischeKinder').value=Number(b.max_tische_kinder||0) || ''; $('basarTischeErwachsene').value=Number(b.max_tische_erwachsene||0) || ''; $('preis1Tisch').value=Number(b.preis_1_tisch ?? 12).toFixed(2); $('preis2Tische').value=Number(b.preis_2_tische ?? 20).toFixed(2); $('preis3Tische').value=Number(b.preis_3_tische ?? 25).toFixed(2); $('kuchenrabatt').value=Number(b.kuchenrabatt ?? 4).toFixed(2); $('zahlungsfristTage').value=Number(b.zahlungsfrist_tage ?? 14); $('kurzfristigAbTage').value=Number(b.kurzfristig_ab_tage ?? 14); $('kurzfristigeZahlungsfristTage').value=Number(b.kurzfristige_zahlungsfrist_tage ?? 3); $('stornofristTage').value=Number(b.stornofrist_tage ?? 14); $('kuchennachgebuehr').value=Number(b.kuchennachgebuehr ?? 10).toFixed(2); $('uebertragungErlaubt').value=String(b.uebertragung_erlaubt ?? true); $('zusatzregeln').value=b.zusatzregeln || ''; $('basarAktiv').value=String(!!b.aktiv); $('basarPublished').checked=!!b.veroeffentlicht; updateBasarCapacityFields(); updatePublicationControls(); $('basarFormTitle').textContent='Basar bearbeiten'; $('basarFormCard').classList.remove('hidden'); $('basarFormCard').scrollIntoView({behavior:'smooth',block:'start'}); }
 
   async function saveBasar(event) {
     event.preventDefault(); clearError('basarError'); const id=$('basarId').value?Number($('basarId').value):null;
-    const payload={name:$('basarName').value.trim(),ort:$('basarOrt').value.trim()||null,plz:$('basarPlz').value.trim()||null,stadt:$('basarStadt').value.trim()||null,veranstaltungsdatum:$('basarDatum').value,max_tische:Number($('basarTische').value),preis_1_tisch:Number($('preis1Tisch').value),preis_2_tische:Number($('preis2Tische').value),preis_3_tische:Number($('preis3Tische').value),kuchenrabatt:Number($('kuchenrabatt').value),zahlungsfrist_tage:Number($('zahlungsfristTage').value),kurzfristig_ab_tage:Number($('kurzfristigAbTage').value),kurzfristige_zahlungsfrist_tage:Number($('kurzfristigeZahlungsfristTage').value),stornofrist_tage:Number($('stornofristTage').value),kuchennachgebuehr:Number($('kuchennachgebuehr').value),uebertragung_erlaubt:$('uebertragungErlaubt').value==='true',zusatzregeln:$('zusatzregeln').value.trim()||null,aktiv:$('basarAktiv').value==='true',veroeffentlicht:$('basarPublished').checked,veranstalter_id:currentUser.id};
-    if(!payload.name||!payload.veranstaltungsdatum||!payload.max_tische)return showError('basarError','Bitte Name, Datum und Tischanzahl ausfüllen.');
+    const areas=$('basarBereiche').value;
+    const split=areas==='beide' && $('kontingentModus').value==='getrennt';
+    const childrenTables=split?Number($('basarTischeKinder').value):null;
+    const adultsTables=split?Number($('basarTischeErwachsene').value):null;
+    const totalTables=split?(childrenTables+adultsTables):Number($('basarTische').value);
+    const payload={name:$('basarName').value.trim(),ort:$('basarOrt').value.trim()||null,plz:$('basarPlz').value.trim()||null,stadt:$('basarStadt').value.trim()||null,veranstaltungsdatum:$('basarDatum').value,max_tische:totalTables,verkaufsbereiche:areas,kontingent_modus:split?'getrennt':'gemeinsam',max_tische_kinder:split?childrenTables:null,max_tische_erwachsene:split?adultsTables:null,preis_1_tisch:Number($('preis1Tisch').value),preis_2_tische:Number($('preis2Tische').value),preis_3_tische:Number($('preis3Tische').value),kuchenrabatt:Number($('kuchenrabatt').value),zahlungsfrist_tage:Number($('zahlungsfristTage').value),kurzfristig_ab_tage:Number($('kurzfristigAbTage').value),kurzfristige_zahlungsfrist_tage:Number($('kurzfristigeZahlungsfristTage').value),stornofrist_tage:Number($('stornofristTage').value),kuchennachgebuehr:Number($('kuchennachgebuehr').value),uebertragung_erlaubt:$('uebertragungErlaubt').value==='true',zusatzregeln:$('zusatzregeln').value.trim()||null,aktiv:$('basarAktiv').value==='true',veroeffentlicht:$('basarPublished').checked,veranstalter_id:currentUser.id};
+    if(!payload.name||!payload.veranstaltungsdatum||!Number.isInteger(payload.max_tische)||payload.max_tische<1)return showError('basarError','Bitte Name, Datum und eine gültige Tischanzahl ausfüllen.');
+    if(split && (!Number.isInteger(childrenTables)||childrenTables<1||!Number.isInteger(adultsTables)||adultsTables<1))return showError('basarError','Bitte für Kinder und Erwachsene jeweils mindestens 1 Tisch festlegen.');
     if([payload.preis_1_tisch,payload.preis_2_tische,payload.preis_3_tische,payload.kuchenrabatt,payload.kuchennachgebuehr].some(v=>!Number.isFinite(v)||v<0))return showError('basarError','Bitte gültige Preise und Gebühren eingeben.');
     if([payload.zahlungsfrist_tage,payload.kurzfristig_ab_tage,payload.kurzfristige_zahlungsfrist_tage,payload.stornofrist_tage].some(v=>!Number.isInteger(v)||v<0||v>365))return showError('basarError','Bitte gültige Fristen zwischen 0 und 365 Tagen eingeben.');
     const btn=$('saveBasarButton');btn.disabled=true;btn.textContent='Standort wird ermittelt …';
@@ -573,7 +613,7 @@
     if (password !== repeat) return showError('registerError', 'Die beiden Passwörter stimmen nicht überein.');
     const button = $('registerButton'); button.disabled = true; button.textContent = 'Konto wird erstellt …';
     try {
-      const redirectTo = `${window.location.origin}${window.location.pathname}?v=28&onboarding=1`;
+      const redirectTo = `${window.location.origin}${window.location.pathname}?v=284&onboarding=1`;
       const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo } });
       if (error) throw error;
       if (data.session) {
@@ -590,6 +630,7 @@
     } finally { button.disabled = false; button.textContent = 'Konto erstellen'; }
   });
   $('showLoginButton').addEventListener('click',()=>setAuthMode('login')); $('showRegisterButton').addEventListener('click',()=>setAuthMode('register'));
+  $('basarBereiche').addEventListener('change',updateBasarCapacityFields); $('kontingentModus').addEventListener('change',updateBasarCapacityFields); $('basarTischeKinder').addEventListener('input',updateBasarCapacityFields); $('basarTischeErwachsene').addEventListener('input',updateBasarCapacityFields);
   $('profileForm').addEventListener('submit',saveProfile); $('topLogoutButton').addEventListener('click',logout); $('newBasarButton').addEventListener('click',startNewBasar); $('cancelBasarButton').addEventListener('click',()=> $('basarFormCard').classList.add('hidden')); $('basarForm').addEventListener('submit',saveBasar);
   $('editCurrentButton').addEventListener('click',()=>{const b=basare.find(x=>x.id===selectedBasarId);if(b)editBasar(b);}); $('refreshButton').addEventListener('click',()=>loadBasare().catch(e=>showError('dashboardError',humanizeError(e)))); $('refreshBookingsButton').addEventListener('click',()=>loadBookings().catch(e=>showError('dashboardError',humanizeError(e)))); $('bookingFilter').addEventListener('change',renderBookings); $('paymentFilter').addEventListener('change',renderBookings); $('areaFilter').addEventListener('change',renderBookings); $('cakeFilter').addEventListener('change',renderBookings); $('bookingSearch').addEventListener('input',renderBookings); $('resetBookingFiltersButton').addEventListener('click',resetBookingFilters); $('exportBookingsButton').addEventListener('click',exportFilteredBookings);
   $('platformStatusFilter').addEventListener('change',renderPlatformAccounts); $('refreshPlatformButton').addEventListener('click',()=>loadPlatformAccounts().catch(e=>showError('platformError',humanizeError(e))));

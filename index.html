@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Basar Tischbörse</title>
-  <link rel="stylesheet" href="styles.css?v=283">
+  <link rel="stylesheet" href="styles.css?v=284">
 </head>
 <body id="top">
   <header class="site-header market-site-header">
@@ -122,11 +122,11 @@
 
               <div class="field full">
                 <label>Was möchtest du anbieten?</label>
-                <div class="choices choices-2">
-                  <label class="choice"><input type="radio" name="category" value="Kinder" checked><span>🧸 Kinder</span></label>
-                  <label class="choice"><input type="radio" name="category" value="Erwachsene"><span>👕 Erwachsene</span></label>
+                <div class="choices choices-2" id="categoryChoices">
+                  <label class="choice" id="categoryKinderChoice"><input type="radio" name="category" value="Kinder" checked><span>🧸 Kinder<small id="childrenAvailability" class="choice-availability"></small></span></label>
+                  <label class="choice" id="categoryErwachseneChoice"><input type="radio" name="category" value="Erwachsene"><span>👕 Erwachsene<small id="adultsAvailability" class="choice-availability"></small></span></label>
                 </div>
-                <div class="hint">Kinder und Erwachsene müssen getrennt gebucht werden.</div>
+                <div class="hint" id="categoryHint">Kinder und Erwachsene müssen getrennt gebucht werden.</div>
               </div>
 
               <div class="field full cake-field">
@@ -191,6 +191,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
   <script src="config.js?v=281"></script>
-  <script src="app.js?v=281"></script>
+  <script src="app.js?v=284"></script>
 </body>
 </html>

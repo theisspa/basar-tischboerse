@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Veranstalter - Basar Tischbörse</title>
-  <link rel="stylesheet" href="styles.css?v=281">
+  <link rel="stylesheet" href="styles.css?v=284">
 </head>
 <body class="admin-page">
   <header class="admin-site-header">
@@ -154,7 +154,11 @@
           <div class="field"><label for="basarPlz">PLZ des Basars</label><input id="basarPlz" inputmode="numeric" maxlength="10" placeholder="z. B. 67677"></div>
           <div class="field"><label for="basarStadt">Stadt / Gemeinde</label><input id="basarStadt" maxlength="120" placeholder="z. B. Enkenbach-Alsenborn"><span class="hint">Die Position für die Umkreissuche wird beim Speichern automatisch aus PLZ und Ort ermittelt.</span></div>
           <div class="field"><label for="basarDatum">Veranstaltungsdatum</label><input id="basarDatum" type="date" required></div>
-          <div class="field"><label for="basarTische">Maximale Tischanzahl</label><input id="basarTische" type="number" min="1" max="10000" required></div>
+          <div class="field"><label for="basarBereiche">Welche Verkaufsbereiche sind erlaubt?</label><select id="basarBereiche"><option value="beide">Kinder & Erwachsene</option><option value="kinder">Nur Kinder</option><option value="erwachsene">Nur Erwachsene</option></select></div>
+          <div class="field" id="kontingentModusField"><label for="kontingentModus">Tischkontingente bei Kinder & Erwachsene</label><select id="kontingentModus"><option value="gemeinsam">Gemeinsamer Tischpool</option><option value="getrennt">Getrennte Kontingente</option></select><span class="hint">Gemeinsam: alle Buchungen teilen sich dieselbe Gesamtzahl. Getrennt: feste Anzahl für Kinder und Erwachsene.</span></div>
+          <div class="field" id="basarTischeField"><label id="basarTischeLabel" for="basarTische">Maximale Tischanzahl</label><input id="basarTische" type="number" min="1" max="10000" required><span class="hint" id="basarTischeHint"></span></div>
+          <div class="field hidden" id="basarTischeKinderField"><label for="basarTischeKinder">Tische für Kinder</label><input id="basarTischeKinder" type="number" min="1" max="10000"><span class="hint">Eigenes Kontingent nur für Buchungen im Bereich Kinder.</span></div>
+          <div class="field hidden" id="basarTischeErwachseneField"><label for="basarTischeErwachsene">Tische für Erwachsene</label><input id="basarTischeErwachsene" type="number" min="1" max="10000"><span class="hint">Eigenes Kontingent nur für Buchungen im Bereich Erwachsene.</span></div>
           <div class="field"><label for="basarAktiv">Buchungsstatus</label><select id="basarAktiv"><option value="true">Aktiv / buchbar</option><option value="false">Inaktiv / nicht buchbar</option></select></div>
           <div class="field full publication-setting">
             <label class="checkbox-row"><input id="basarPublished" type="checkbox"><span>Basar öffentlich auf der Basar Tischbörse anzeigen</span></label>
@@ -189,6 +193,7 @@
           <div class="stat"><span>Bezahlt gesamt</span><strong id="dashboardRevenue">–</strong></div>
         </div>
         <div class="capacity-row"><div><span>Auslastung</span><strong id="dashboardCapacityText">–</strong></div><div class="capacity-track" aria-hidden="true"><div class="capacity-fill" id="dashboardCapacityFill"></div></div></div>
+        <div id="dashboardAreaCapacity" class="area-capacity-summary"></div>
       </section>
 
       <section class="card admin-section-card" id="bookingCard">
@@ -286,6 +291,6 @@
   </footer>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="config.js?v=281"></script>
-  <script src="admin.js?v=281"></script>
+  <script src="admin.js?v=284"></script>
 </body>
 </html>

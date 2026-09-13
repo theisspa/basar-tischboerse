@@ -14,6 +14,7 @@
   let basare = [];
   let currentBasar = null;
   let currentFreeTables = 0;
+  let currentAvailability = null;
   let lastContract = null;
   let lastEmailPayload = null;
   let paypalSdkPromise = null;
@@ -88,10 +89,71 @@
     $('submitButton').textContent = enabled ? 'Verbindlich buchen' : 'Derzeit nicht verfügbar';
   }
 
-  function updateAvailability(free) {
-    const safeFree = Number.isFinite(Number(free)) ? Math.max(0, Number(free)) : 0;
+  function selectedCategoryKey() {
+    return selectedValue('category') === 'Erwachsene' ? 'erwachsene' : 'kinder';
+  }
+
+  function areaAllowed(area) {
+    const mode = currentBasar?.verkaufsbereiche || 'beide';
+    return mode === 'beide' || mode === area;
+  }
+
+  function areaFree(area) {
+    if (!currentAvailability) return 0;
+    return Math.max(0, Number(area === 'kinder' ? currentAvailability.children_free : currentAvailability.adults_free) || 0);
+  }
+
+  function configureCategoryOptions() {
+    if (!currentBasar) return;
+    const childAllowed = areaAllowed('kinder');
+    const adultAllowed = areaAllowed('erwachsene');
+    const childChoice = $('categoryKinderChoice');
+    const adultChoice = $('categoryErwachseneChoice');
+    const childInput = childChoice?.querySelector('input');
+    const adultInput = adultChoice?.querySelector('input');
+
+    childChoice?.classList.toggle('hidden', !childAllowed);
+    adultChoice?.classList.toggle('hidden', !adultAllowed);
+    if (childInput) childInput.disabled = !childAllowed;
+    if (adultInput) adultInput.disabled = !adultAllowed;
+
+    const selected = document.querySelector('input[name="category"]:checked');
+    if (!selected || selected.disabled || !areaAllowed(selected.value === 'Erwachsene' ? 'erwachsene' : 'kinder')) {
+      if (childAllowed && childInput) childInput.checked = true;
+      else if (adultAllowed && adultInput) adultInput.checked = true;
+    }
+
+    const childFree = areaFree('kinder');
+    const adultFree = areaFree('erwachsene');
+    if (currentAvailability && childAllowed && adultAllowed) {
+      const active = selectedCategoryKey();
+      if (active === 'kinder' && childFree < 1 && adultFree > 0 && adultInput) adultInput.checked = true;
+      else if (active === 'erwachsene' && adultFree < 1 && childFree > 0 && childInput) childInput.checked = true;
+    }
+    if ($('childrenAvailability')) $('childrenAvailability').textContent = currentAvailability && childAllowed ? `${childFree} frei` : '';
+    if ($('adultsAvailability')) $('adultsAvailability').textContent = currentAvailability && adultAllowed ? `${adultFree} frei` : '';
+
+    const hint = $('categoryHint');
+    if (hint) {
+      if (currentBasar.verkaufsbereiche === 'kinder') hint.textContent = 'Dieser Basar ist ausschließlich für Kinderartikel vorgesehen.';
+      else if (currentBasar.verkaufsbereiche === 'erwachsene') hint.textContent = 'Dieser Basar ist ausschließlich für Erwachsenenartikel vorgesehen.';
+      else if (currentBasar.kontingent_modus === 'getrennt') hint.textContent = `Getrennte Kontingente: Kinder ${childFree} frei · Erwachsene ${adultFree} frei. Kinder und Erwachsene werden getrennt gebucht.`;
+      else hint.textContent = 'Kinder und Erwachsene werden getrennt gebucht und nutzen einen gemeinsamen Tischpool.';
+    }
+  }
+
+  function updateAvailability(value) {
+    const row = value && typeof value === 'object'
+      ? value
+      : { free_tables: Number(value) || 0, children_free: Number(value) || 0, adults_free: Number(value) || 0 };
+    currentAvailability = row;
+    const overallFree = Math.max(0, Number(row.free_tables) || 0);
+    $('availableTables').textContent = overallFree;
+    configureCategoryOptions();
+
+    const selectedArea = selectedCategoryKey();
+    const safeFree = areaAllowed(selectedArea) ? areaFree(selectedArea) : 0;
     currentFreeTables = safeFree;
-    $('availableTables').textContent = safeFree;
 
     document.querySelectorAll('input[name="tables"]').forEach(input => {
       const disabled = Number(input.value) > safeFree;
@@ -107,7 +169,7 @@
     }
 
     $('submitButton').disabled = safeFree < 1 || !paymentConfigured;
-    $('submitButton').textContent = safeFree < 1 ? 'Ausgebucht' : (!paymentConfigured ? 'Keine Zahlungsart verfügbar' : 'Verbindlich buchen');
+    $('submitButton').textContent = safeFree < 1 ? 'Dieser Bereich ist ausgebucht' : (!paymentConfigured ? 'Keine Zahlungsart verfügbar' : 'Verbindlich buchen');
   }
 
   function showError(message) {
@@ -240,6 +302,7 @@
           ${distanceBadge}
           <h3>${escapeHtml(b.name)}</h3>
           <p class="basar-card-location">📍 ${escapeHtml(basarLocationText(b))}${b.ort && (b.stadt || b.plz) ? ` · ${escapeHtml(b.ort)}` : ''}</p>
+          <div class="basar-card-area">${b.verkaufsbereiche === 'kinder' ? '🧸 Nur Kinder' : b.verkaufsbereiche === 'erwachsene' ? '👕 Nur Erwachsene' : b.kontingent_modus === 'getrennt' ? '🧸 Kinder & 👕 Erwachsene · getrennte Kontingente' : '🧸 Kinder & 👕 Erwachsene'}</div>
           <div class="basar-card-facts"><span><small>ab</small><strong>${euro(minPrice)}</strong></span><span><small>freie Tische</small><strong>${Number.isFinite(free) ? free : '…'}</strong></span></div>
           <button class="market-card-button" type="button" data-discover-basar="${b.id}" ${soldOut ? 'disabled' : ''}>${soldOut ? 'Derzeit ausgebucht' : selected ? 'Ausgewählt · zur Buchung' : 'Details & Tisch buchen'}</button>
         </div>
@@ -385,6 +448,8 @@
     $('basarDetails').textContent = [formatDate(currentBasar.veranstaltungsdatum), publicLocation, currentBasar.ort].filter(Boolean).join(' · ');
     updateBookingRules();
     updatePaymentOptions();
+    currentAvailability = null;
+    configureCategoryOptions();
     $('price1Label').textContent = euro(currentBasar.preis_1_tisch ?? 12);
     $('price2Label').textContent = euro(currentBasar.preis_2_tische ?? 20);
     $('price3Label').textContent = euro(currentBasar.preis_3_tische ?? 25);
@@ -400,7 +465,7 @@
     if (error) throw error;
     const row = Array.isArray(data) ? data[0] : data;
     if (!row) throw new Error('Verfügbarkeit konnte nicht geladen werden.');
-    updateAvailability(Number(row.free_tables));
+    updateAvailability(row);
   }
 
   function setLoading(loading) {
@@ -612,7 +677,15 @@
     }
 
     const category = selectedValue('category');
-    if (!['Kinder', 'Erwachsene'].includes(category)) return showError('Bitte wähle Kinder oder Erwachsene.');
+    if (!['Kinder', 'Erwachsene'].includes(category)) return showError('Bitte wähle einen verfügbaren Verkaufsbereich.');
+    const categoryKey = category === 'Kinder' ? 'kinder' : 'erwachsene';
+    if (!areaAllowed(categoryKey)) return showError('Dieser Verkaufsbereich wird bei diesem Basar nicht angeboten.');
+    const selectedAreaFree = areaFree(categoryKey);
+    if (tables > selectedAreaFree) {
+      showError(`Für den Bereich ${category} sind nur noch ${selectedAreaFree} Tische frei.`);
+      await loadAvailability();
+      return;
+    }
 
     setLoading(true);
     const payload = {
@@ -637,7 +710,7 @@
       const booking = Array.isArray(data) ? data[0] : data;
       if (!booking?.buchungsnummer) throw new Error('Keine Buchungsnummer erhalten.');
 
-      lastContract = { booking, payload, pricing: { kuchenrabatt: Number(currentBasar?.kuchenrabatt ?? 4) }, rules: { zahlungsfrist_tage: Number(currentBasar?.zahlungsfrist_tage ?? 14), kurzfristig_ab_tage: Number(currentBasar?.kurzfristig_ab_tage ?? 14), kurzfristige_zahlungsfrist_tage: Number(currentBasar?.kurzfristige_zahlungsfrist_tage ?? 3), stornofrist_tage: Number(currentBasar?.stornofrist_tage ?? 14), kuchennachgebuehr: Number(currentBasar?.kuchennachgebuehr ?? 10), uebertragung_erlaubt: currentBasar?.uebertragung_erlaubt !== false, zusatzregeln: String(currentBasar?.zusatzregeln || '').trim() } };
+      lastContract = { booking, payload, pricing: { kuchenrabatt: Number(currentBasar?.kuchenrabatt ?? 4) }, rules: { zahlungsfrist_tage: Number(currentBasar?.zahlungsfrist_tage ?? 14), kurzfristig_ab_tage: Number(currentBasar?.kurzfristig_ab_tage ?? 14), kurzfristige_zahlungsfrist_tage: Number(currentBasar?.kurzfristige_zahlungsfrist_tage ?? 3), stornofrist_tage: Number(currentBasar?.stornofrist_tage ?? 14), kuchennachgebuehr: Number(currentBasar?.kuchennachgebuehr ?? 10), uebertragung_erlaubt: currentBasar?.uebertragung_erlaubt !== false, zusatzregeln: String(currentBasar?.zusatzregeln || '').trim(), verkaufsbereiche: currentBasar?.verkaufsbereiche || 'beide', kontingent_modus: currentBasar?.kontingent_modus || 'gemeinsam' } };
       $('confirmationText').textContent = `${payload.p_vorname} ${payload.p_nachname}, ${tables === 1 ? '1 Tisch wurde' : `${tables} Tische wurden`} verbindlich reserviert. Gesamtbetrag: ${euro(booking.preis)}. Zahlungsfrist: ${formatDate(booking.zahlungsfrist)}.`;
       $('bookingNumber').textContent = booking.buchungsnummer;
       $('paymentInfo').textContent = paymentInfoText(booking, payload.p_zahlungsart);
@@ -706,6 +779,7 @@
     const ruleCakeFee = Number(rules.kuchennachgebuehr ?? 10);
     const ruleTransfer = rules.uebertragung_erlaubt !== false;
     const ruleExtra = String(rules.zusatzregeln || '').trim();
+    const ruleAreas = String(rules.verkaufsbereiche || 'beide');
     const doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' });
     const left = 20;
     const width = 170;
@@ -763,7 +837,9 @@
       '1. Mit Abschluss der Buchung wird die angegebene Anzahl an Verkaufstischen verbindlich reserviert.',
       `2. Der Teilnahmebetrag ist bis ${formatDate(b.zahlungsfrist)} zu bezahlen. Bei Buchungen mindestens ${ruleThresholdDays} Tage vor der Veranstaltung betraegt die regulaere Zahlungsfrist ${ruleNormalDays} Tage. Bei spaeteren Buchungen betraegt sie ${ruleShortDays} Tage, jeweils hoechstens bis zum Veranstaltungstag. Nach Ablauf der Zahlungsfrist besteht ohne Zahlung keine Garantie mehr auf den reservierten Tisch.`,
       `3. Eine kostenlose Stornierung ist bis ${formatDate(b.stornierbar_bis)} (${ruleStornoDays} Tage vor Veranstaltungsbeginn) moeglich. Danach besteht kein Anspruch auf Rueckerstattung bereits geleisteter Zahlungen.${ruleTransfer ? ' Alternativ kann die Buchung auf eine andere Person uebertragen werden, sofern der Veranstalter vorab informiert wird.' : ' Eine Uebertragung auf eine andere Person ist nicht vorgesehen.'}`,
-      '4. Pro Buchung ist nur ein Verkaufsbereich zulaessig: Kinderartikel oder Erwachsenenartikel. Fuer beide Bereiche sind zwei getrennte Buchungen erforderlich.',
+      ruleAreas === 'beide'
+        ? '4. Pro Buchung ist nur ein Verkaufsbereich zulaessig: Kinderartikel oder Erwachsenenartikel. Fuer beide Bereiche sind zwei getrennte Buchungen erforderlich.'
+        : `4. Dieser Basar ist ausschliesslich fuer ${ruleAreas === 'kinder' ? 'Kinderartikel' : 'Erwachsenenartikel'} vorgesehen.`,
       `5. Bei ausgewaehlter Kuchenspende wird der Buchungspreis einmalig um ${contractCakeDiscount.toFixed(2).replace('.', ',')} EUR reduziert. Wird der zugesagte Kuchen am Veranstaltungstag nicht erbracht, wird nachtraeglich eine Gebuehr von ${ruleCakeFee.toFixed(2).replace('.', ',')} EUR faellig.`
     ];
     if (ruleExtra) clauses.push(`6. Zusaetzliche Regel des Veranstalters: ${ruleExtra}`);
@@ -779,6 +855,9 @@
   }
 
   document.querySelectorAll('input[name="tables"], #cake').forEach(el => el.addEventListener('change', updatePrice));
+  document.querySelectorAll('input[name="category"]').forEach(el => el.addEventListener('change', () => {
+    if (currentAvailability) updateAvailability(currentAvailability);
+  }));
 
   $('searchBasarButton')?.addEventListener('click', () => applyDiscoverySearch());
   $('useLocationButton')?.addEventListener('click', useCurrentLocation);
@@ -829,6 +908,7 @@
     $('externalPaypalButton').removeAttribute('href');
     setPayPalStatus('');
     clearError();
+    configureCategoryOptions();
     updatePrice();
     $('confirmation').classList.add('hidden');
     $('booking').classList.remove('hidden');
@@ -841,7 +921,7 @@
       setBookingEnabled(false);
       await loadBasare();
       setBookingEnabled(true);
-      updateAvailability(currentFreeTables);
+      if (currentAvailability) updateAvailability(currentAvailability);
       updatePrice();
     } catch (error) {
       console.error('Initialisierungsfehler:', error);
