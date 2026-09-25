@@ -1,0 +1,6 @@
+# Basar Tischbörse – Testphase
+# Crawling ist erlaubt, die öffentlichen HTML-Seiten tragen bis zum Go-Live ein noindex-Meta-Tag.
+User-agent: *
+Allow: /
+
+Sitemap: https://theisspa.github.io/basar-tischboerse/sitemap.xml

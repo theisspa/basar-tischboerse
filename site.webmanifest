@@ -1,0 +1,16 @@
+{
+  "name": "Basar Tischbörse",
+  "short_name": "Basar Tischbörse",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#fbf5ea",
+  "theme_color": "#fbf5ea",
+  "lang": "de-DE",
+  "icons": [
+    {
+      "src": "favicon-v285.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

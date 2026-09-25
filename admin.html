@@ -1,296 +1,284 @@
 <!doctype html>
+
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Veranstalter - Basar Tischbörse</title>
-  <link rel="stylesheet" href="styles.css?v=284">
-</head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Veranstalterbereich | Basar Tischbörse</title>
+<link href="styles.css?v=285" rel="stylesheet"/>
+<meta content="Geschützter Veranstalterbereich der Basar Tischbörse." name="description"/><meta content="noindex,nofollow,noarchive" name="robots"/><meta content="noindex,nofollow,noarchive" name="googlebot"/><meta content="#fbf5ea" name="theme-color"/><meta content="Basar Tischbörse" name="application-name"/><meta content="Basar Tischbörse" name="apple-mobile-web-app-title"/><link href="favicon-v285.png" rel="icon" type="image/png"/><link href="favicon-v285.png" rel="apple-touch-icon"/><link href="site.webmanifest" rel="manifest"/><link crossorigin="anonymous" href="https://cdn.jsdelivr.net" rel="preconnect"/><link crossorigin="anonymous" href="https://byvvsockfobnrqzkxvap.supabase.co" rel="preconnect"/></head>
 <body class="admin-page">
-  <header class="admin-site-header">
-    <div class="container admin-header-inner">
-      <a class="admin-brand-link" href="index.html?v=281" aria-label="Basar Tischbörse Startseite">
-        <img src="logo-header-v263.png" alt="Basar Tischbörse – Tische einfach online buchen" class="admin-brand-logo">
-      </a>
-      <nav class="admin-nav hidden" id="adminNav" aria-label="Veranstalter-Navigation">
-        <a href="#dashboardOverview">Dashboard</a>
-        <a href="#basarListCard">Basare</a>
-        <a href="#bookingCard">Buchungen</a>
-        <a href="#profileCard">Profil</a>
-        <a class="hidden" id="platformNavLink" href="#platformAdminCard">Plattform</a>
-      </nav>
-      <div class="admin-header-actions">
-        <a class="admin-public-link" href="index.html?v=281" target="_blank" rel="noopener">Zur Buchungsseite</a>
-        <button class="secondary hidden admin-logout" id="topLogoutButton" type="button">Abmelden</button>
-      </div>
-    </div>
-  </header>
-
-  <main class="container main">
-    <section class="admin-intro">
-      <div>
-        <span class="eyebrow">VERANSTALTERBEREICH</span>
-        <h1>Deine Basare. Einfach im Blick.</h1>
-        <p>Basare planen, Buchungen verwalten und Zahlungen im Blick behalten – im gleichen freundlichen Stil wie deine Buchungsseite.</p>
-      </div>
-      <div class="admin-intro-mark" aria-hidden="true">
-        <span class="admin-intro-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5.5" width="17" height="15" rx="2"></rect><path d="M8 3.5v4M16 3.5v4M3.5 10h17M8 14h3M13 14h3M8 17.5h3"></path></svg></span>
-        <div><strong>Alles an einem Ort</strong><small>Basare · Buchungen · Zahlungen</small></div>
-      </div>
-    </section>
-
-    <section class="card admin-auth-card" id="loginCard">
-      <div class="admin-auth-grid">
-        <aside class="auth-brand-panel">
-          <span class="eyebrow">WILLKOMMEN</span>
-          <h2>Dein Veranstalterbereich</h2>
-          <p>Verwalte deinen Basar einfach und übersichtlich – von der Veröffentlichung bis zur letzten Zahlung.</p>
-          <div class="auth-benefits">
-            <div><span>✓</span><div><strong>Basare verwalten</strong><small>Termine, Preise und Regeln zentral pflegen.</small></div></div>
-            <div><span>✓</span><div><strong>Buchungen im Blick</strong><small>Teilnehmer, Zahlungen und Fristen schnell sehen.</small></div></div>
-            <div><span>✓</span><div><strong>Direkt startklar</strong><small>Registrieren, Profil anlegen und ersten Basar vorbereiten.</small></div></div>
-          </div>
-        </aside>
-        <div class="auth-form-panel">
-          <div class="auth-tabs" role="tablist" aria-label="Veranstalter-Zugang">
-            <button class="auth-tab active" id="showLoginButton" type="button">Anmelden</button>
-            <button class="auth-tab" id="showRegisterButton" type="button">Neu registrieren</button>
-          </div>
-          <div id="loginPanel">
-            <div class="card-head auth-head"><div><h2>Anmelden</h2><p>Mit deinem Veranstalter-Konto einloggen.</p></div></div>
-            <form id="loginForm" class="section-grid">
-              <div class="field full"><label for="loginEmail">E-Mail</label><input id="loginEmail" type="email" autocomplete="username" required></div>
-              <div class="field full"><label for="loginPassword">Passwort</label><input id="loginPassword" type="password" autocomplete="current-password" required></div>
-              <div class="form-error hidden full" id="loginError" role="alert"></div>
-              <div class="field full"><button class="primary" id="loginButton" type="submit">Anmelden</button></div>
-            </form>
-          </div>
-          <div class="hidden" id="registerPanel">
-            <div class="card-head auth-head"><div><h2>Veranstalter-Konto erstellen</h2><p>Nach der Registrierung richtest du dein Profil und anschließend deinen ersten Basar ein.</p></div></div>
-            <form id="registerForm" class="section-grid">
-              <div class="field full"><label for="registerEmail">E-Mail</label><input id="registerEmail" type="email" autocomplete="email" required></div>
-              <div class="field"><label for="registerPassword">Passwort</label><input id="registerPassword" type="password" autocomplete="new-password" minlength="8" required><span class="hint">Mindestens 8 Zeichen.</span></div>
-              <div class="field"><label for="registerPasswordRepeat">Passwort wiederholen</label><input id="registerPasswordRepeat" type="password" autocomplete="new-password" minlength="8" required></div>
-              <div class="field full legal">
-                <label class="checkbox-row"><input id="registerTerms" type="checkbox" required><span>Ich akzeptiere die <a href="nutzungsbedingungen.html?v=281" target="_blank" rel="noopener noreferrer">Nutzungsbedingungen</a>.</span></label>
-                <label class="checkbox-row"><input id="registerPrivacy" type="checkbox" required><span>Ich habe die <a href="datenschutz.html?v=281" target="_blank" rel="noopener noreferrer">Datenschutzerklärung</a> zur Kenntnis genommen.</span></label>
-              </div>
-              <div class="form-error hidden full" id="registerError" role="alert"></div>
-              <div class="auth-notice hidden full" id="registerSuccess" role="status"></div>
-              <div class="field full"><button class="primary" id="registerButton" type="submit">Konto erstellen</button></div>
-            </form>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="hidden" id="dashboard">
-      <section class="onboarding-banner hidden" id="onboardingBanner" aria-live="polite">
-        <div><span class="eyebrow">ERSTE SCHRITTE</span><h2 id="onboardingTitle">Willkommen bei der Basar Tischbörse</h2><p id="onboardingText">Schritt 1 von 2: Vervollständige zuerst deine Veranstalterdaten. Danach legst du deinen ersten Basar an.</p></div>
-      </section>
-
-      <section class="account-status-banner hidden" id="accountStatusBanner" aria-live="polite">
-        <div class="account-status-icon" id="accountStatusIcon" aria-hidden="true">✓</div>
-        <div class="account-status-copy"><span class="eyebrow">PLATTFORMSTATUS</span><h2 id="accountStatusTitle">Veranstalterkonto</h2><p id="accountStatusText"></p></div>
-        <span class="account-status-chip" id="accountStatusChip">–</span>
-      </section>
-
-      <section class="dashboard-overview hidden" id="dashboardOverview" aria-label="Dashboard Übersicht">
-        <div class="overview-head">
-          <div><span class="eyebrow">ÜBERSICHT</span><h2>Dein Dashboard</h2><p>Die wichtigsten Zahlen deiner Basare auf einen Blick.</p></div>
-          <div class="overview-actions"><a class="secondary dashboard-link" href="index.html?v=281" target="_blank" rel="noopener">Buchungsseite öffnen</a></div>
-        </div>
-        <div class="overview-grid">
-          <div class="overview-stat"><span>Aktive Basare</span><strong id="overviewActiveBasars">–</strong><small id="overviewNextBasar">Noch kein Termin</small></div>
-          <div class="overview-stat attention"><span>Offene Zahlungen</span><strong id="overviewOpenPayments">–</strong><small id="overviewOpenAmount">–</small></div>
-          <div class="overview-stat success"><span>Bezahlte Buchungen</span><strong id="overviewPaidBookings">–</strong><small id="overviewPaidAmount">–</small></div>
-          <div class="overview-stat"><span>Reservierte Tische</span><strong id="overviewReservedTables">–</strong><small id="overviewTotalCapacity">–</small></div>
-        </div>
-        <div class="dashboard-health" id="dashboardHealth"></div>
-      </section>
-
-      <section class="card admin-section-card" id="profileCard">
-        <div class="card-head">
-          <div><span class="eyebrow">VERTRAGSPARTNER</span><h2>Meine Veranstalterdaten</h2><p>Diese Daten erscheinen in den Buchungsunterlagen deiner Basare.</p></div>
-        </div>
-        <form id="profileForm" class="section-grid">
-          <div class="field full"><label for="profileName">Name / Verein / Organisation</label><input id="profileName" required></div>
-          <div class="field"><label for="profileStreet">Straße</label><input id="profileStreet" required></div>
-          <div class="field"><label for="profileHouseNumber">Hausnummer</label><input id="profileHouseNumber" required></div>
-          <div class="field"><label for="profileZip">PLZ</label><input id="profileZip" required></div>
-          <div class="field"><label for="profileCity">Ort</label><input id="profileCity" required></div>
-          <div class="field"><label for="profilePhone">Telefon</label><input id="profilePhone"></div>
-          <div class="field"><label for="profileEmail">E-Mail</label><input id="profileEmail" type="email" required></div>
-          <div class="field full payment-settings"><strong>Zahlungsarten für deine Basare</strong><span class="hint">Aktiviere nur Zahlungsarten, die Teilnehmer wirklich verwenden dürfen.</span></div>
-          <div class="field full"><label class="checkbox-row"><input id="profileTransferActive" type="checkbox"><span>Überweisung anbieten</span></label></div>
-          <div class="field"><label for="profileAccountHolder">Kontoinhaber</label><input id="profileAccountHolder" placeholder="z. B. Max Mustermann"></div>
-          <div class="field"><label for="profileIban">IBAN</label><input id="profileIban" placeholder="DE…" autocomplete="off"></div>
-          <div class="field full"><label class="checkbox-row"><input id="profilePaypalLinkActive" type="checkbox"><span>Eigenen PayPal-Link anbieten</span></label></div>
-          <div class="field full"><label for="profilePaypalLink">PayPal-Link / PayPal.Me-Link</label><input id="profilePaypalLink" type="url" placeholder="https://paypal.me/deinname"><span class="hint">Das Geld geht direkt an das PayPal-Konto des Veranstalters. Zahlungsstatus wird dabei manuell gepflegt.</span></div>
-          <div class="field full info-box"><strong>Direkter PayPal-Checkout</strong><span id="profileApiPayPalStatus" data-active="false">Wird geladen …</span><span class="hint">Diese Freischaltung kann aus Sicherheitsgründen nicht selbst aktiviert werden.</span></div>
-          <div class="form-error hidden full" id="profileError" role="alert"></div>
-          <div class="field full"><button class="primary" id="saveProfileButton" type="submit">Veranstalterdaten speichern</button></div>
-        </form>
-      </section>
-
-      <section class="card admin-section-card" id="basarListCard">
-        <div class="card-head">
-          <div><span class="eyebrow">BASARE</span><h2>Meine Basare</h2><p>Basare anlegen, bearbeiten und verwalten.</p></div>
-          <button class="primary inline-button" id="newBasarButton" type="button">+ Neuer Basar</button>
-        </div>
-        <div class="form-error hidden" id="basarError" role="alert"></div>
-        <div id="basarList" class="basar-list"></div>
-      </section>
-
-      <section class="card hidden admin-section-card" id="basarFormCard">
-        <div class="card-head">
-          <div><span class="eyebrow">BASAR</span><h2 id="basarFormTitle">Neuen Basar anlegen</h2><p>Diese Daten werden nach Freigabe und Veröffentlichung den Teilnehmern auf der Buchungsseite angezeigt.</p></div>
-          <button class="secondary" id="cancelBasarButton" type="button">Abbrechen</button>
-        </div>
-        <form id="basarForm" class="section-grid">
-          <input id="basarId" type="hidden">
-          <div class="field full"><label for="basarName">Name des Basars</label><input id="basarName" required maxlength="120" placeholder="z. B. Herbstbasar"></div>
-          <div class="field"><label for="basarOrt">Veranstaltungsort / Halle</label><input id="basarOrt" maxlength="160" placeholder="z. B. Alsenzhalle TVA"></div>
-          <div class="field"><label for="basarPlz">PLZ des Basars</label><input id="basarPlz" inputmode="numeric" maxlength="10" placeholder="z. B. 67677"></div>
-          <div class="field"><label for="basarStadt">Stadt / Gemeinde</label><input id="basarStadt" maxlength="120" placeholder="z. B. Enkenbach-Alsenborn"><span class="hint">Die Position für die Umkreissuche wird beim Speichern automatisch aus PLZ und Ort ermittelt.</span></div>
-          <div class="field"><label for="basarDatum">Veranstaltungsdatum</label><input id="basarDatum" type="date" required></div>
-          <div class="field"><label for="basarBereiche">Welche Verkaufsbereiche sind erlaubt?</label><select id="basarBereiche"><option value="beide">Kinder & Erwachsene</option><option value="kinder">Nur Kinder</option><option value="erwachsene">Nur Erwachsene</option></select></div>
-          <div class="field" id="kontingentModusField"><label for="kontingentModus">Tischkontingente bei Kinder & Erwachsene</label><select id="kontingentModus"><option value="gemeinsam">Gemeinsamer Tischpool</option><option value="getrennt">Getrennte Kontingente</option></select><span class="hint">Gemeinsam: alle Buchungen teilen sich dieselbe Gesamtzahl. Getrennt: feste Anzahl für Kinder und Erwachsene.</span></div>
-          <div class="field" id="basarTischeField"><label id="basarTischeLabel" for="basarTische">Maximale Tischanzahl</label><input id="basarTische" type="number" min="1" max="10000" required><span class="hint" id="basarTischeHint"></span></div>
-          <div class="field hidden" id="basarTischeKinderField"><label for="basarTischeKinder">Tische für Kinder</label><input id="basarTischeKinder" type="number" min="1" max="10000"><span class="hint">Eigenes Kontingent nur für Buchungen im Bereich Kinder.</span></div>
-          <div class="field hidden" id="basarTischeErwachseneField"><label for="basarTischeErwachsene">Tische für Erwachsene</label><input id="basarTischeErwachsene" type="number" min="1" max="10000"><span class="hint">Eigenes Kontingent nur für Buchungen im Bereich Erwachsene.</span></div>
-          <div class="field"><label for="basarAktiv">Buchungsstatus</label><select id="basarAktiv"><option value="true">Aktiv / buchbar</option><option value="false">Inaktiv / nicht buchbar</option></select></div>
-          <div class="field full publication-setting">
-            <label class="checkbox-row"><input id="basarPublished" type="checkbox"><span>Basar öffentlich auf der Basar Tischbörse anzeigen</span></label>
-            <span class="hint" id="basarPublicationHint">Die Veröffentlichung ist nach Freigabe deines Veranstalterkontos möglich.</span>
-          </div>
-          <div class="field"><label for="preis1Tisch">Preis 1 Tisch (€)</label><input id="preis1Tisch" type="number" min="0" step="0.01" required></div>
-          <div class="field"><label for="preis2Tische">Preis 2 Tische (€)</label><input id="preis2Tische" type="number" min="0" step="0.01" required></div>
-          <div class="field"><label for="preis3Tische">Preis 3 Tische (€)</label><input id="preis3Tische" type="number" min="0" step="0.01" required></div>
-          <div class="field"><label for="kuchenrabatt">Kuchenrabatt (€)</label><input id="kuchenrabatt" type="number" min="0" step="0.01" required></div>
-          <div class="field"><label for="zahlungsfristTage">Zahlungsfrist normal (Tage)</label><input id="zahlungsfristTage" type="number" min="0" max="365" required></div>
-          <div class="field"><label for="kurzfristigAbTage">Kurzfristige Buchung ab weniger als (Tage)</label><input id="kurzfristigAbTage" type="number" min="0" max="365" required></div>
-          <div class="field"><label for="kurzfristigeZahlungsfristTage">Zahlungsfrist bei kurzfristiger Buchung (Tage)</label><input id="kurzfristigeZahlungsfristTage" type="number" min="0" max="365" required></div>
-          <div class="field"><label for="stornofristTage">Kostenlose Stornierung bis (Tage vor Termin)</label><input id="stornofristTage" type="number" min="0" max="365" required></div>
-          <div class="field"><label for="kuchennachgebuehr">Gebühr bei fehlender Kuchenspende (€)</label><input id="kuchennachgebuehr" type="number" min="0" step="0.01" required></div>
-          <div class="field"><label for="uebertragungErlaubt">Übertragung auf andere Person</label><select id="uebertragungErlaubt"><option value="true">Erlaubt nach Information an Veranstalter</option><option value="false">Nicht erlaubt</option></select></div>
-          <div class="field full"><label for="zusatzregeln">Zusätzliche Buchungsregeln</label><textarea id="zusatzregeln" rows="4" maxlength="2000" placeholder="Optionaler Zusatztext, der auf der Buchungsseite und in der Teilnahmevereinbarung erscheint."></textarea></div>
-          <div class="field full"><button class="primary" id="saveBasarButton" type="submit">Basar speichern</button></div>
-        </form>
-      </section>
-
-      <section class="card admin-section-card" id="selectedBasarCard">
-        <div class="card-head">
-          <div><span class="eyebrow">AUSGEWÄHLTER BASAR</span><h2 id="dashboardTitle">Dein Basar</h2><p id="dashboardDetails"></p></div>
-          <div class="button-row"><button class="secondary" id="editCurrentButton" type="button">Basar bearbeiten</button><button class="secondary" id="refreshButton" type="button">Aktualisieren</button></div>
-        </div>
-        <div class="dashboard-grid dashboard-grid-6">
-          <div class="stat"><span>Tische insgesamt</span><strong id="dashboardTotal">–</strong></div>
-          <div class="stat"><span>Reserviert</span><strong id="dashboardBooked">–</strong></div>
-          <div class="stat"><span>Frei</span><strong id="dashboardFree">–</strong></div>
-          <div class="stat attention"><span>Offene Zahlungen</span><strong id="dashboardOpen">–</strong></div>
-          <div class="stat success"><span>Bezahlte Buchungen</span><strong id="dashboardPaid">–</strong></div>
-          <div class="stat"><span>Bezahlt gesamt</span><strong id="dashboardRevenue">–</strong></div>
-        </div>
-        <div class="capacity-row"><div><span>Auslastung</span><strong id="dashboardCapacityText">–</strong></div><div class="capacity-track" aria-hidden="true"><div class="capacity-fill" id="dashboardCapacityFill"></div></div></div>
-        <div id="dashboardAreaCapacity" class="area-capacity-summary"></div>
-      </section>
-
-      <section class="card admin-section-card" id="bookingCard">
-        <div class="card-head booking-card-head">
-          <div><span class="eyebrow">BUCHUNGEN</span><h2>Teilnehmerübersicht</h2><p>Öffne Buchungen, markiere Zahlungen und storniere Buchungen.</p></div>
-          <div class="booking-tools" aria-label="Buchungen suchen und filtern">
-            <div class="booking-filter-grid">
-              <div class="booking-search-wrap">
-                <label class="sr-only" for="bookingSearch">Name oder Buchungsnummer suchen</label>
-                <input id="bookingSearch" class="booking-search" type="search" placeholder="Name oder Buchungsnummer suchen …" autocomplete="off">
-              </div>
-              <select id="bookingFilter" class="compact-select" aria-label="Zahlungsstatus filtern">
-                <option value="alle">Alle Status</option>
-                <option value="offen">Offene Zahlungen</option>
-                <option value="heute">Heute fällig</option>
-                <option value="abgelaufen">Überfällig / Frist abgelaufen</option>
-                <option value="bezahlt">Bezahlt</option>
-                <option value="storniert">Storniert</option>
-              </select>
-              <select id="paymentFilter" class="compact-select" aria-label="Zahlungsart filtern">
-                <option value="alle">Alle Zahlungsarten</option>
-                <option value="ueberweisung">Überweisung</option>
-                <option value="paypal_link">PayPal-Link</option>
-                <option value="paypal">PayPal online</option>
-              </select>
-              <select id="areaFilter" class="compact-select" aria-label="Verkaufsbereich filtern">
-                <option value="alle">Alle Bereiche</option>
-                <option value="kinder">Kinder</option>
-                <option value="erwachsene">Erwachsene</option>
-              </select>
-              <select id="cakeFilter" class="compact-select" aria-label="Kuchenspende filtern">
-                <option value="alle">Kuchen: alle</option>
-                <option value="ja">Kuchen: ja</option>
-                <option value="nein">Kuchen: nein</option>
-              </select>
-            </div>
-            <div class="booking-action-row">
-              <button class="secondary compact-action" id="resetBookingFiltersButton" type="button">Filter zurücksetzen</button>
-              <button class="secondary compact-action" id="exportBookingsButton" type="button">CSV exportieren</button>
-              <button class="secondary compact-action" id="refreshBookingsButton" type="button">Aktualisieren</button>
-            </div>
-          </div>
-        </div>
-        <div class="form-error hidden" id="dashboardError" role="alert"></div>
-        <div class="booking-result-meta"><span id="bookingResultCount">–</span></div>
-        <div class="table-wrap">
-          <table class="booking-table"><thead><tr><th>Buchungsnr.</th><th>Name</th><th>Tische</th><th>Bereich</th><th>Kuchen</th><th>Betrag</th><th>Zahlung</th><th>Frist</th><th>Status</th><th>Aktion</th></tr></thead><tbody id="bookingRows"><tr><td colspan="10">Buchungen werden geladen …</td></tr></tbody></table>
-        </div>
-        <p class="small">Offene Zahlungen werden nach Frist hervorgehoben: offen = orange, heute fällig = kräftig orange, überfällig = rot. Bereits als „Frist abgelaufen“ markierte Buchungen blockieren keine Tische mehr.</p>
-      </section>
-
-      <section class="card admin-section-card hidden platform-admin-card" id="platformAdminCard">
-        <div class="card-head platform-admin-head">
-          <div><span class="eyebrow">PLATTFORMVERWALTUNG</span><h2>Veranstalter-Freigaben</h2><p>Neue Veranstalter prüfen, freigeben oder bei Bedarf sperren. Nur freigegebene Veranstalter können Basare öffentlich veröffentlichen.</p></div>
-          <div class="button-row">
-            <select id="platformStatusFilter" class="compact-select" aria-label="Veranstalter nach Status filtern">
-              <option value="alle">Alle Status</option>
-              <option value="ausstehend">Ausstehend</option>
-              <option value="freigegeben">Freigegeben</option>
-              <option value="gesperrt">Gesperrt</option>
-            </select>
-            <button class="secondary" id="refreshPlatformButton" type="button">Aktualisieren</button>
-          </div>
-        </div>
-        <div class="platform-summary-grid">
-          <div class="platform-summary"><span>Ausstehend</span><strong id="platformPendingCount">–</strong></div>
-          <div class="platform-summary success"><span>Freigegeben</span><strong id="platformApprovedCount">–</strong></div>
-          <div class="platform-summary blocked"><span>Gesperrt</span><strong id="platformBlockedCount">–</strong></div>
-        </div>
-        <div class="form-error hidden" id="platformError" role="alert"></div>
-        <div class="platform-review-list" id="platformReviewList"><div class="empty-state">Veranstalter werden geladen …</div></div>
-      </section>
-    </section>
-  </main>
-
-  <div class="modal hidden" id="bookingModal" role="dialog" aria-modal="true" aria-labelledby="bookingModalTitle">
-    <div class="modal-panel">
-      <div class="modal-head"><div><span class="eyebrow">BUCHUNG</span><h2 id="bookingModalTitle">Buchung</h2></div><button class="icon-button" id="closeBookingModal" type="button" aria-label="Schließen" data-action="close-booking">×</button></div>
-      <div id="bookingDetails" class="detail-grid"></div>
-      <div class="modal-actions"><button class="secondary hidden" id="markOpenButton" type="button" data-action="mark-open">Als offen markieren</button><button class="secondary" id="markPaidButton" type="button" data-action="mark-paid">Als bezahlt markieren</button><button class="danger" id="cancelBookingButton" type="button" data-action="cancel-booking">Buchung stornieren</button></div>
-    </div>
-  </div>
-
-  <footer class="admin-footer">
-    <div class="container admin-footer-inner">
-      <a href="index.html?v=281" class="admin-footer-brand"><img src="logo-footer-v263.png" alt="Basar Tischbörse"></a>
-      <div class="admin-footer-links">
-        <a href="impressum.html?v=281">Impressum</a>
-        <a href="datenschutz.html?v=281">Datenschutz</a>
-        <a href="nutzungsbedingungen.html?v=281">Nutzungsbedingungen</a>
-        <a href="haftung.html?v=281">Hinweise &amp; Haftung</a><a href="rechtswidrige-inhalte.html?v=281">Rechtswidrige Inhalte melden</a>
-      </div>
-      <div class="admin-footer-copy">© 2026 Basar Tischbörse · Veranstalterbereich</div>
-    </div>
-  </footer>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=281"></script>
-  <script src="admin.js?v=284"></script>
+<header class="admin-site-header">
+<div class="container admin-header-inner">
+<a aria-label="Basar Tischbörse Startseite" class="admin-brand-link" href="index.html?v=285">
+<img alt="Basar Tischbörse – Tische einfach online buchen" class="admin-brand-logo" src="logo-header-v263.png"/>
+</a>
+<nav aria-label="Veranstalter-Navigation" class="admin-nav hidden" id="adminNav">
+<a href="#dashboardOverview">Dashboard</a>
+<a href="#basarListCard">Basare</a>
+<a href="#bookingCard">Buchungen</a>
+<a href="#profileCard">Profil</a>
+<a class="hidden" href="#platformAdminCard" id="platformNavLink">Plattform</a>
+</nav>
+<div class="admin-header-actions">
+<a class="admin-public-link" href="index.html?v=285" rel="noopener" target="_blank">Zur Buchungsseite</a>
+<button class="secondary hidden admin-logout" id="topLogoutButton" type="button">Abmelden</button>
+</div>
+</div>
+</header>
+<main class="container main">
+<section class="admin-intro">
+<div>
+<span class="eyebrow">VERANSTALTERBEREICH</span>
+<h1>Deine Basare. Einfach im Blick.</h1>
+<p>Basare planen, Buchungen verwalten und Zahlungen im Blick behalten – im gleichen freundlichen Stil wie deine Buchungsseite.</p>
+</div>
+<div aria-hidden="true" class="admin-intro-mark">
+<span class="admin-intro-icon"><svg aria-hidden="true" viewbox="0 0 24 24"><rect height="15" rx="2" width="17" x="3.5" y="5.5"></rect><path d="M8 3.5v4M16 3.5v4M3.5 10h17M8 14h3M13 14h3M8 17.5h3"></path></svg></span>
+<div><strong>Alles an einem Ort</strong><small>Basare · Buchungen · Zahlungen</small></div>
+</div>
+</section>
+<section class="card admin-auth-card" id="loginCard">
+<div class="admin-auth-grid">
+<aside class="auth-brand-panel">
+<span class="eyebrow">WILLKOMMEN</span>
+<h2>Dein Veranstalterbereich</h2>
+<p>Verwalte deinen Basar einfach und übersichtlich – von der Veröffentlichung bis zur letzten Zahlung.</p>
+<div class="auth-benefits">
+<div><span>✓</span><div><strong>Basare verwalten</strong><small>Termine, Preise und Regeln zentral pflegen.</small></div></div>
+<div><span>✓</span><div><strong>Buchungen im Blick</strong><small>Teilnehmer, Zahlungen und Fristen schnell sehen.</small></div></div>
+<div><span>✓</span><div><strong>Direkt startklar</strong><small>Registrieren, Profil anlegen und ersten Basar vorbereiten.</small></div></div>
+</div>
+</aside>
+<div class="auth-form-panel">
+<div aria-label="Veranstalter-Zugang" class="auth-tabs" role="tablist">
+<button class="auth-tab active" id="showLoginButton" type="button">Anmelden</button>
+<button class="auth-tab" id="showRegisterButton" type="button">Neu registrieren</button>
+</div>
+<div id="loginPanel">
+<div class="card-head auth-head"><div><h2>Anmelden</h2><p>Mit deinem Veranstalter-Konto einloggen.</p></div></div>
+<form class="section-grid" id="loginForm">
+<div class="field full"><label for="loginEmail">E-Mail</label><input autocomplete="username" id="loginEmail" required="" type="email"/></div>
+<div class="field full"><label for="loginPassword">Passwort</label><input autocomplete="current-password" id="loginPassword" required="" type="password"/></div>
+<div class="form-error hidden full" id="loginError" role="alert"></div>
+<div class="field full"><button class="primary" id="loginButton" type="submit">Anmelden</button></div>
+</form>
+</div>
+<div class="hidden" id="registerPanel">
+<div class="card-head auth-head"><div><h2>Veranstalter-Konto erstellen</h2><p>Nach der Registrierung richtest du dein Profil und anschließend deinen ersten Basar ein.</p></div></div>
+<form class="section-grid" id="registerForm">
+<div class="field full"><label for="registerEmail">E-Mail</label><input autocomplete="email" id="registerEmail" required="" type="email"/></div>
+<div class="field"><label for="registerPassword">Passwort</label><input autocomplete="new-password" id="registerPassword" minlength="8" required="" type="password"/><span class="hint">Mindestens 8 Zeichen.</span></div>
+<div class="field"><label for="registerPasswordRepeat">Passwort wiederholen</label><input autocomplete="new-password" id="registerPasswordRepeat" minlength="8" required="" type="password"/></div>
+<div class="field full legal">
+<label class="checkbox-row"><input id="registerTerms" required="" type="checkbox"/><span>Ich akzeptiere die <a href="nutzungsbedingungen.html?v=285" rel="noopener noreferrer" target="_blank">Nutzungsbedingungen</a>.</span></label>
+<label class="checkbox-row"><input id="registerPrivacy" required="" type="checkbox"/><span>Ich habe die <a href="datenschutz.html?v=285" rel="noopener noreferrer" target="_blank">Datenschutzerklärung</a> zur Kenntnis genommen.</span></label>
+</div>
+<div class="form-error hidden full" id="registerError" role="alert"></div>
+<div class="auth-notice hidden full" id="registerSuccess" role="status"></div>
+<div class="field full"><button class="primary" id="registerButton" type="submit">Konto erstellen</button></div>
+</form>
+</div>
+</div>
+</div>
+</section>
+<section class="hidden" id="dashboard">
+<section aria-live="polite" class="onboarding-banner hidden" id="onboardingBanner">
+<div><span class="eyebrow">ERSTE SCHRITTE</span><h2 id="onboardingTitle">Willkommen bei der Basar Tischbörse</h2><p id="onboardingText">Schritt 1 von 2: Vervollständige zuerst deine Veranstalterdaten. Danach legst du deinen ersten Basar an.</p></div>
+</section>
+<section aria-live="polite" class="account-status-banner hidden" id="accountStatusBanner">
+<div aria-hidden="true" class="account-status-icon" id="accountStatusIcon">✓</div>
+<div class="account-status-copy"><span class="eyebrow">PLATTFORMSTATUS</span><h2 id="accountStatusTitle">Veranstalterkonto</h2><p id="accountStatusText"></p></div>
+<span class="account-status-chip" id="accountStatusChip">–</span>
+</section>
+<section aria-label="Dashboard Übersicht" class="dashboard-overview hidden" id="dashboardOverview">
+<div class="overview-head">
+<div><span class="eyebrow">ÜBERSICHT</span><h2>Dein Dashboard</h2><p>Die wichtigsten Zahlen deiner Basare auf einen Blick.</p></div>
+<div class="overview-actions"><a class="secondary dashboard-link" href="index.html?v=285" rel="noopener" target="_blank">Buchungsseite öffnen</a></div>
+</div>
+<div class="overview-grid">
+<div class="overview-stat"><span>Aktive Basare</span><strong id="overviewActiveBasars">–</strong><small id="overviewNextBasar">Noch kein Termin</small></div>
+<div class="overview-stat attention"><span>Offene Zahlungen</span><strong id="overviewOpenPayments">–</strong><small id="overviewOpenAmount">–</small></div>
+<div class="overview-stat success"><span>Bezahlte Buchungen</span><strong id="overviewPaidBookings">–</strong><small id="overviewPaidAmount">–</small></div>
+<div class="overview-stat"><span>Reservierte Tische</span><strong id="overviewReservedTables">–</strong><small id="overviewTotalCapacity">–</small></div>
+</div>
+<div class="dashboard-health" id="dashboardHealth"></div>
+</section>
+<section class="card admin-section-card" id="profileCard">
+<div class="card-head">
+<div><span class="eyebrow">VERTRAGSPARTNER</span><h2>Meine Veranstalterdaten</h2><p>Diese Daten erscheinen in den Buchungsunterlagen deiner Basare.</p></div>
+</div>
+<form class="section-grid" id="profileForm">
+<div class="field full"><label for="profileName">Name / Verein / Organisation</label><input id="profileName" required=""/></div>
+<div class="field"><label for="profileStreet">Straße</label><input id="profileStreet" required=""/></div>
+<div class="field"><label for="profileHouseNumber">Hausnummer</label><input id="profileHouseNumber" required=""/></div>
+<div class="field"><label for="profileZip">PLZ</label><input id="profileZip" required=""/></div>
+<div class="field"><label for="profileCity">Ort</label><input id="profileCity" required=""/></div>
+<div class="field"><label for="profilePhone">Telefon</label><input id="profilePhone"/></div>
+<div class="field"><label for="profileEmail">E-Mail</label><input id="profileEmail" required="" type="email"/></div>
+<div class="field full payment-settings"><strong>Zahlungsarten für deine Basare</strong><span class="hint">Aktiviere nur Zahlungsarten, die Teilnehmer wirklich verwenden dürfen.</span></div>
+<div class="field full"><label class="checkbox-row"><input id="profileTransferActive" type="checkbox"/><span>Überweisung anbieten</span></label></div>
+<div class="field"><label for="profileAccountHolder">Kontoinhaber</label><input id="profileAccountHolder" placeholder="z. B. Max Mustermann"/></div>
+<div class="field"><label for="profileIban">IBAN</label><input autocomplete="off" id="profileIban" placeholder="DE…"/></div>
+<div class="field full"><label class="checkbox-row"><input id="profilePaypalLinkActive" type="checkbox"/><span>Eigenen PayPal-Link anbieten</span></label></div>
+<div class="field full"><label for="profilePaypalLink">PayPal-Link / PayPal.Me-Link</label><input id="profilePaypalLink" placeholder="https://paypal.me/deinname" type="url"/><span class="hint">Das Geld geht direkt an das PayPal-Konto des Veranstalters. Zahlungsstatus wird dabei manuell gepflegt.</span></div>
+<div class="field full info-box"><strong>Direkter PayPal-Checkout</strong><span data-active="false" id="profileApiPayPalStatus">Wird geladen …</span><span class="hint">Diese Freischaltung kann aus Sicherheitsgründen nicht selbst aktiviert werden.</span></div>
+<div class="form-error hidden full" id="profileError" role="alert"></div>
+<div class="field full"><button class="primary" id="saveProfileButton" type="submit">Veranstalterdaten speichern</button></div>
+</form>
+</section>
+<section class="card admin-section-card" id="basarListCard">
+<div class="card-head">
+<div><span class="eyebrow">BASARE</span><h2>Meine Basare</h2><p>Basare anlegen, bearbeiten und verwalten.</p></div>
+<button class="primary inline-button" id="newBasarButton" type="button">+ Neuer Basar</button>
+</div>
+<div class="form-error hidden" id="basarError" role="alert"></div>
+<div class="basar-list" id="basarList"></div>
+</section>
+<section class="card hidden admin-section-card" id="basarFormCard">
+<div class="card-head">
+<div><span class="eyebrow">BASAR</span><h2 id="basarFormTitle">Neuen Basar anlegen</h2><p>Diese Daten werden nach Freigabe und Veröffentlichung den Teilnehmern auf der Buchungsseite angezeigt.</p></div>
+<button class="secondary" id="cancelBasarButton" type="button">Abbrechen</button>
+</div>
+<form class="section-grid" id="basarForm">
+<input id="basarId" type="hidden"/>
+<div class="field full"><label for="basarName">Name des Basars</label><input id="basarName" maxlength="120" placeholder="z. B. Herbstbasar" required=""/></div>
+<div class="field"><label for="basarOrt">Veranstaltungsort / Halle</label><input id="basarOrt" maxlength="160" placeholder="z. B. Alsenzhalle TVA"/></div>
+<div class="field"><label for="basarPlz">PLZ des Basars</label><input id="basarPlz" inputmode="numeric" maxlength="10" placeholder="z. B. 67677"/></div>
+<div class="field"><label for="basarStadt">Stadt / Gemeinde</label><input id="basarStadt" maxlength="120" placeholder="z. B. Enkenbach-Alsenborn"/><span class="hint">Die Position für die Umkreissuche wird beim Speichern automatisch aus PLZ und Ort ermittelt.</span></div>
+<div class="field"><label for="basarDatum">Veranstaltungsdatum</label><input id="basarDatum" required="" type="date"/></div>
+<div class="field"><label for="basarBereiche">Welche Verkaufsbereiche sind erlaubt?</label><select id="basarBereiche"><option value="beide">Kinder &amp; Erwachsene</option><option value="kinder">Nur Kinder</option><option value="erwachsene">Nur Erwachsene</option></select></div>
+<div class="field" id="kontingentModusField"><label for="kontingentModus">Tischkontingente bei Kinder &amp; Erwachsene</label><select id="kontingentModus"><option value="gemeinsam">Gemeinsamer Tischpool</option><option value="getrennt">Getrennte Kontingente</option></select><span class="hint">Gemeinsam: alle Buchungen teilen sich dieselbe Gesamtzahl. Getrennt: feste Anzahl für Kinder und Erwachsene.</span></div>
+<div class="field" id="basarTischeField"><label for="basarTische" id="basarTischeLabel">Maximale Tischanzahl</label><input id="basarTische" max="10000" min="1" required="" type="number"/><span class="hint" id="basarTischeHint"></span></div>
+<div class="field hidden" id="basarTischeKinderField"><label for="basarTischeKinder">Tische für Kinder</label><input id="basarTischeKinder" max="10000" min="1" type="number"/><span class="hint">Eigenes Kontingent nur für Buchungen im Bereich Kinder.</span></div>
+<div class="field hidden" id="basarTischeErwachseneField"><label for="basarTischeErwachsene">Tische für Erwachsene</label><input id="basarTischeErwachsene" max="10000" min="1" type="number"/><span class="hint">Eigenes Kontingent nur für Buchungen im Bereich Erwachsene.</span></div>
+<div class="field"><label for="basarAktiv">Buchungsstatus</label><select id="basarAktiv"><option value="true">Aktiv / buchbar</option><option value="false">Inaktiv / nicht buchbar</option></select></div>
+<div class="field full publication-setting">
+<label class="checkbox-row"><input id="basarPublished" type="checkbox"/><span>Basar öffentlich auf der Basar Tischbörse anzeigen</span></label>
+<span class="hint" id="basarPublicationHint">Die Veröffentlichung ist nach Freigabe deines Veranstalterkontos möglich.</span>
+</div>
+<div class="field"><label for="preis1Tisch">Preis 1 Tisch (€)</label><input id="preis1Tisch" min="0" required="" step="0.01" type="number"/></div>
+<div class="field"><label for="preis2Tische">Preis 2 Tische (€)</label><input id="preis2Tische" min="0" required="" step="0.01" type="number"/></div>
+<div class="field"><label for="preis3Tische">Preis 3 Tische (€)</label><input id="preis3Tische" min="0" required="" step="0.01" type="number"/></div>
+<div class="field"><label for="kuchenrabatt">Kuchenrabatt (€)</label><input id="kuchenrabatt" min="0" required="" step="0.01" type="number"/></div>
+<div class="field"><label for="zahlungsfristTage">Zahlungsfrist normal (Tage)</label><input id="zahlungsfristTage" max="365" min="0" required="" type="number"/></div>
+<div class="field"><label for="kurzfristigAbTage">Kurzfristige Buchung ab weniger als (Tage)</label><input id="kurzfristigAbTage" max="365" min="0" required="" type="number"/></div>
+<div class="field"><label for="kurzfristigeZahlungsfristTage">Zahlungsfrist bei kurzfristiger Buchung (Tage)</label><input id="kurzfristigeZahlungsfristTage" max="365" min="0" required="" type="number"/></div>
+<div class="field"><label for="stornofristTage">Kostenlose Stornierung bis (Tage vor Termin)</label><input id="stornofristTage" max="365" min="0" required="" type="number"/></div>
+<div class="field"><label for="kuchennachgebuehr">Gebühr bei fehlender Kuchenspende (€)</label><input id="kuchennachgebuehr" min="0" required="" step="0.01" type="number"/></div>
+<div class="field"><label for="uebertragungErlaubt">Übertragung auf andere Person</label><select id="uebertragungErlaubt"><option value="true">Erlaubt nach Information an Veranstalter</option><option value="false">Nicht erlaubt</option></select></div>
+<div class="field full"><label for="zusatzregeln">Zusätzliche Buchungsregeln</label><textarea id="zusatzregeln" maxlength="2000" placeholder="Optionaler Zusatztext, der auf der Buchungsseite und in der Teilnahmevereinbarung erscheint." rows="4"></textarea></div>
+<div class="field full"><button class="primary" id="saveBasarButton" type="submit">Basar speichern</button></div>
+</form>
+</section>
+<section class="card admin-section-card" id="selectedBasarCard">
+<div class="card-head">
+<div><span class="eyebrow">AUSGEWÄHLTER BASAR</span><h2 id="dashboardTitle">Dein Basar</h2><p id="dashboardDetails"></p></div>
+<div class="button-row"><button class="secondary" id="editCurrentButton" type="button">Basar bearbeiten</button><button class="secondary" id="refreshButton" type="button">Aktualisieren</button></div>
+</div>
+<div class="dashboard-grid dashboard-grid-6">
+<div class="stat"><span>Tische insgesamt</span><strong id="dashboardTotal">–</strong></div>
+<div class="stat"><span>Reserviert</span><strong id="dashboardBooked">–</strong></div>
+<div class="stat"><span>Frei</span><strong id="dashboardFree">–</strong></div>
+<div class="stat attention"><span>Offene Zahlungen</span><strong id="dashboardOpen">–</strong></div>
+<div class="stat success"><span>Bezahlte Buchungen</span><strong id="dashboardPaid">–</strong></div>
+<div class="stat"><span>Bezahlt gesamt</span><strong id="dashboardRevenue">–</strong></div>
+</div>
+<div class="capacity-row"><div><span>Auslastung</span><strong id="dashboardCapacityText">–</strong></div><div aria-hidden="true" class="capacity-track"><div class="capacity-fill" id="dashboardCapacityFill"></div></div></div>
+<div class="area-capacity-summary" id="dashboardAreaCapacity"></div>
+</section>
+<section class="card admin-section-card" id="bookingCard">
+<div class="card-head booking-card-head">
+<div><span class="eyebrow">BUCHUNGEN</span><h2>Teilnehmerübersicht</h2><p>Öffne Buchungen, markiere Zahlungen und storniere Buchungen.</p></div>
+<div aria-label="Buchungen suchen und filtern" class="booking-tools">
+<div class="booking-filter-grid">
+<div class="booking-search-wrap">
+<label class="sr-only" for="bookingSearch">Name oder Buchungsnummer suchen</label>
+<input autocomplete="off" class="booking-search" id="bookingSearch" placeholder="Name oder Buchungsnummer suchen …" type="search"/>
+</div>
+<select aria-label="Zahlungsstatus filtern" class="compact-select" id="bookingFilter">
+<option value="alle">Alle Status</option>
+<option value="offen">Offene Zahlungen</option>
+<option value="heute">Heute fällig</option>
+<option value="abgelaufen">Überfällig / Frist abgelaufen</option>
+<option value="bezahlt">Bezahlt</option>
+<option value="storniert">Storniert</option>
+</select>
+<select aria-label="Zahlungsart filtern" class="compact-select" id="paymentFilter">
+<option value="alle">Alle Zahlungsarten</option>
+<option value="ueberweisung">Überweisung</option>
+<option value="paypal_link">PayPal-Link</option>
+<option value="paypal">PayPal online</option>
+</select>
+<select aria-label="Verkaufsbereich filtern" class="compact-select" id="areaFilter">
+<option value="alle">Alle Bereiche</option>
+<option value="kinder">Kinder</option>
+<option value="erwachsene">Erwachsene</option>
+</select>
+<select aria-label="Kuchenspende filtern" class="compact-select" id="cakeFilter">
+<option value="alle">Kuchen: alle</option>
+<option value="ja">Kuchen: ja</option>
+<option value="nein">Kuchen: nein</option>
+</select>
+</div>
+<div class="booking-action-row">
+<button class="secondary compact-action" id="resetBookingFiltersButton" type="button">Filter zurücksetzen</button>
+<button class="secondary compact-action" id="exportBookingsButton" type="button">CSV exportieren</button>
+<button class="secondary compact-action" id="refreshBookingsButton" type="button">Aktualisieren</button>
+</div>
+</div>
+</div>
+<div class="form-error hidden" id="dashboardError" role="alert"></div>
+<div class="booking-result-meta"><span id="bookingResultCount">–</span></div>
+<div class="table-wrap">
+<table class="booking-table"><thead><tr><th>Buchungsnr.</th><th>Name</th><th>Tische</th><th>Bereich</th><th>Kuchen</th><th>Betrag</th><th>Zahlung</th><th>Frist</th><th>Status</th><th>Aktion</th></tr></thead><tbody id="bookingRows"><tr><td colspan="10">Buchungen werden geladen …</td></tr></tbody></table>
+</div>
+<p class="small">Offene Zahlungen werden nach Frist hervorgehoben: offen = orange, heute fällig = kräftig orange, überfällig = rot. Bereits als „Frist abgelaufen“ markierte Buchungen blockieren keine Tische mehr.</p>
+</section>
+<section class="card admin-section-card hidden platform-admin-card" id="platformAdminCard">
+<div class="card-head platform-admin-head">
+<div><span class="eyebrow">PLATTFORMVERWALTUNG</span><h2>Veranstalter-Freigaben</h2><p>Neue Veranstalter prüfen, freigeben oder bei Bedarf sperren. Nur freigegebene Veranstalter können Basare öffentlich veröffentlichen.</p></div>
+<div class="button-row">
+<select aria-label="Veranstalter nach Status filtern" class="compact-select" id="platformStatusFilter">
+<option value="alle">Alle Status</option>
+<option value="ausstehend">Ausstehend</option>
+<option value="freigegeben">Freigegeben</option>
+<option value="gesperrt">Gesperrt</option>
+</select>
+<button class="secondary" id="refreshPlatformButton" type="button">Aktualisieren</button>
+</div>
+</div>
+<div class="platform-summary-grid">
+<div class="platform-summary"><span>Ausstehend</span><strong id="platformPendingCount">–</strong></div>
+<div class="platform-summary success"><span>Freigegeben</span><strong id="platformApprovedCount">–</strong></div>
+<div class="platform-summary blocked"><span>Gesperrt</span><strong id="platformBlockedCount">–</strong></div>
+</div>
+<div class="form-error hidden" id="platformError" role="alert"></div>
+<div class="platform-review-list" id="platformReviewList"><div class="empty-state">Veranstalter werden geladen …</div></div>
+</section>
+</section>
+</main>
+<div aria-labelledby="bookingModalTitle" aria-modal="true" class="modal hidden" id="bookingModal" role="dialog">
+<div class="modal-panel">
+<div class="modal-head"><div><span class="eyebrow">BUCHUNG</span><h2 id="bookingModalTitle">Buchung</h2></div><button aria-label="Schließen" class="icon-button" data-action="close-booking" id="closeBookingModal" type="button">×</button></div>
+<div class="detail-grid" id="bookingDetails"></div>
+<div class="modal-actions"><button class="secondary hidden" data-action="mark-open" id="markOpenButton" type="button">Als offen markieren</button><button class="secondary" data-action="mark-paid" id="markPaidButton" type="button">Als bezahlt markieren</button><button class="danger" data-action="cancel-booking" id="cancelBookingButton" type="button">Buchung stornieren</button></div>
+</div>
+</div>
+<footer class="admin-footer">
+<div class="container admin-footer-inner">
+<a class="admin-footer-brand" href="index.html?v=285"><img alt="Basar Tischbörse" src="logo-footer-v263.png"/></a>
+<div class="admin-footer-links">
+<a href="impressum.html?v=285">Impressum</a>
+<a href="datenschutz.html?v=285">Datenschutz</a>
+<a href="nutzungsbedingungen.html?v=285">Nutzungsbedingungen</a>
+<a href="haftung.html?v=285">Hinweise &amp; Haftung</a><a href="rechtswidrige-inhalte.html?v=285">Rechtswidrige Inhalte melden</a>
+</div>
+<div class="admin-footer-copy">© 2026 Basar Tischbörse · Veranstalterbereich</div>
+</div>
+</footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js?v=285"></script>
+<script src="admin.js?v=285"></script>
 </body>
 </html>
