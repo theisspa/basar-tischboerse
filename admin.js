@@ -1,4 +1,4 @@
-// V28.7.4 - Zusatzplatz muss beim Speichern explizit gewählt werden.
+// V28.7.5 - verhindert automatische Dashboard-Neuladung bei Auth-Token-Refresh und schützt ungespeicherte Basar-Änderungen.
 (() => {
   'use strict';
   const config = window.BASAR_CONFIG;
@@ -11,6 +11,18 @@
   let currentUser = null, basare = [], bookings = [], allBookings = [], selectedBasarId = null, selectedBooking = null;
   let profileExists = false, onboardingMode = false, profileSnapshot = null;
   let isPlatformAdmin = false, platformAccounts = [];
+  let basarFormDirty = false;
+
+  function isBasarEditorOpen() {
+    const card = $('basarFormCard');
+    return !!card && !card.classList.contains('hidden');
+  }
+  function resetBasarFormDirty() { basarFormDirty = false; }
+  function markBasarFormDirty() { if (isBasarEditorOpen()) basarFormDirty = true; }
+  function confirmDiscardBasarChanges() {
+    if (!basarFormDirty) return true;
+    return window.confirm('Du hast noch ungespeicherte Änderungen am Basar. Möchtest du sie wirklich verwerfen?');
+  }
 
   function formatDate(value) { if (!value) return ''; return new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(`${value}T12:00:00`)); }
   function formatDateTime(value) { if (!value) return ''; return new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)); }
@@ -306,7 +318,13 @@
       const areaText = b.verkaufsbereiche === 'kinder' ? 'Nur Kinder' : b.verkaufsbereiche === 'erwachsene' ? 'Nur Erwachsene' : (b.kontingent_modus === 'getrennt' ? `Kinder ${Number(b.max_tische_kinder||0)} · Erwachsene ${Number(b.max_tische_erwachsene||0)}` : 'Kinder & Erwachsene · gemeinsamer Pool');
       return `<button class="basar-list-item ${b.id===selectedBasarId?'selected':''}" data-basar-id="${b.id}" type="button"><div class="basar-list-main"><strong>${escapeHtml(b.name)}</strong><span>${escapeHtml(formatDate(b.veranstaltungsdatum))}${b.ort?' · '+escapeHtml(b.ort):''}</span><small>${st.reserved} von ${max} Tischen reserviert · ${escapeHtml(areaText)} · ${st.open} offen · ${st.paid} bezahlt · ${publication}${hasValidCoordinates(b)?' · 📍 Umkreissuche bereit':' · ⚠ Standort neu speichern'}</small></div><span class="status-chip ${statusClass}">${statusText}</span></button>`;
     }).join('');
-    el.querySelectorAll('[data-basar-id]').forEach(btn=>btn.addEventListener('click', async()=>{ selectedBasarId=Number(btn.dataset.basarId); renderBasarList(); try{await loadSelectedBasar();}catch(e){console.error(e);showError('basarError',humanizeError(e));} }));
+    el.querySelectorAll('[data-basar-id]').forEach(btn=>btn.addEventListener('click', async()=>{
+      const nextId=Number(btn.dataset.basarId);
+      if (nextId !== selectedBasarId && isBasarEditorOpen() && !confirmDiscardBasarChanges()) return;
+      if (nextId !== selectedBasarId) { $('basarFormCard').classList.add('hidden'); resetBasarFormDirty(); }
+      selectedBasarId=nextId; renderBasarList();
+      try{await loadSelectedBasar();}catch(e){console.error(e);showError('basarError',humanizeError(e));}
+    }));
   }
 
   async function loadSelectedBasar() {
@@ -502,8 +520,8 @@
     }
   }
 
-  function startNewBasar(){ clearError('basarError'); $('basarForm').reset(); $('basarId').value=''; $('basarFormTitle').textContent='Neuen Basar anlegen'; $('basarBereiche').value='beide'; $('kontingentModus').value='gemeinsam'; $('basarTische').value='50'; $('basarTischeKinder').value='30'; $('basarTischeErwachsene').value='20'; $('preis1Tisch').value='12.00'; $('preis2Tische').value='20.00'; $('preis3Tische').value='25.00'; $('kuchenrabatt').value='4.00'; $('zahlungsfristTage').value='14'; $('kurzfristigAbTage').value='14'; $('kurzfristigeZahlungsfristTage').value='3'; $('stornofristTage').value='14'; $('kuchennachgebuehr').value='10.00'; $('uebertragungErlaubt').value='true'; $('basarAdresse').value=''; $('aufbauVon').value=''; $('aufbauBis').value=''; $('verkaufVon').value=''; $('verkaufBis').value=''; $('erlaubteWaren').value=''; $('kleiderstaenderErlaubt').value=''; $('zusatzplatzErlaubt').value=''; $('standregeln').value=''; $('zusatzregeln').value=''; $('basarAktiv').value='true'; $('basarPublished').checked=false; updateBasarCapacityFields(); updatePublicationControls(); $('basarFormCard').classList.remove('hidden'); $('basarFormCard').scrollIntoView({behavior:'smooth',block:'start'}); }
-  function editBasar(b){ clearError('basarError'); $('basarId').value=b.id; $('basarName').value=b.name||''; $('basarOrt').value=b.ort||''; $('basarPlz').value=b.plz||''; $('basarStadt').value=b.stadt||''; $('basarDatum').value=b.veranstaltungsdatum||''; $('basarBereiche').value=b.verkaufsbereiche||'beide'; $('kontingentModus').value=b.kontingent_modus||'gemeinsam'; $('basarTische').value=b.max_tische||''; $('basarTischeKinder').value=Number(b.max_tische_kinder||0) || ''; $('basarTischeErwachsene').value=Number(b.max_tische_erwachsene||0) || ''; $('preis1Tisch').value=Number(b.preis_1_tisch ?? 12).toFixed(2); $('preis2Tische').value=Number(b.preis_2_tische ?? 20).toFixed(2); $('preis3Tische').value=Number(b.preis_3_tische ?? 25).toFixed(2); $('kuchenrabatt').value=Number(b.kuchenrabatt ?? 4).toFixed(2); $('zahlungsfristTage').value=Number(b.zahlungsfrist_tage ?? 14); $('kurzfristigAbTage').value=Number(b.kurzfristig_ab_tage ?? 14); $('kurzfristigeZahlungsfristTage').value=Number(b.kurzfristige_zahlungsfrist_tage ?? 3); $('stornofristTage').value=Number(b.stornofrist_tage ?? 14); $('kuchennachgebuehr').value=Number(b.kuchennachgebuehr ?? 10).toFixed(2); $('uebertragungErlaubt').value=String(b.uebertragung_erlaubt ?? true); $('basarAdresse').value=b.veranstaltungsadresse||''; $('aufbauVon').value=(b.aufbau_von||'').slice(0,5); $('aufbauBis').value=(b.aufbau_bis||'').slice(0,5); $('verkaufVon').value=(b.verkauf_von||'').slice(0,5); $('verkaufBis').value=(b.verkauf_bis||'').slice(0,5); $('erlaubteWaren').value=b.erlaubte_waren||''; $('kleiderstaenderErlaubt').value=b.kleiderstaender_erlaubt===true?'true':b.kleiderstaender_erlaubt===false?'false':''; $('zusatzplatzErlaubt').value=b.zusaetzlicher_platz_erlaubt===true?'true':b.zusaetzlicher_platz_erlaubt===false?'false':''; $('standregeln').value=b.standregeln||''; $('zusatzregeln').value=b.zusatzregeln || ''; $('basarAktiv').value=String(!!b.aktiv); $('basarPublished').checked=!!b.veroeffentlicht; updateBasarCapacityFields(); updatePublicationControls(); $('basarFormTitle').textContent='Basar bearbeiten'; $('basarFormCard').classList.remove('hidden'); $('basarFormCard').scrollIntoView({behavior:'smooth',block:'start'}); }
+  function startNewBasar(){ clearError('basarError'); $('basarForm').reset(); $('basarId').value=''; $('basarFormTitle').textContent='Neuen Basar anlegen'; $('basarBereiche').value='beide'; $('kontingentModus').value='gemeinsam'; $('basarTische').value='50'; $('basarTischeKinder').value='30'; $('basarTischeErwachsene').value='20'; $('preis1Tisch').value='12.00'; $('preis2Tische').value='20.00'; $('preis3Tische').value='25.00'; $('kuchenrabatt').value='4.00'; $('zahlungsfristTage').value='14'; $('kurzfristigAbTage').value='14'; $('kurzfristigeZahlungsfristTage').value='3'; $('stornofristTage').value='14'; $('kuchennachgebuehr').value='10.00'; $('uebertragungErlaubt').value='true'; $('basarAdresse').value=''; $('aufbauVon').value=''; $('aufbauBis').value=''; $('verkaufVon').value=''; $('verkaufBis').value=''; $('erlaubteWaren').value=''; $('kleiderstaenderErlaubt').value=''; $('zusatzplatzErlaubt').value=''; $('standregeln').value=''; $('zusatzregeln').value=''; $('basarAktiv').value='true'; $('basarPublished').checked=false; updateBasarCapacityFields(); updatePublicationControls(); $('basarFormCard').classList.remove('hidden'); resetBasarFormDirty(); $('basarFormCard').scrollIntoView({behavior:'smooth',block:'start'}); }
+  function editBasar(b){ clearError('basarError'); $('basarId').value=b.id; $('basarName').value=b.name||''; $('basarOrt').value=b.ort||''; $('basarPlz').value=b.plz||''; $('basarStadt').value=b.stadt||''; $('basarDatum').value=b.veranstaltungsdatum||''; $('basarBereiche').value=b.verkaufsbereiche||'beide'; $('kontingentModus').value=b.kontingent_modus||'gemeinsam'; $('basarTische').value=b.max_tische||''; $('basarTischeKinder').value=Number(b.max_tische_kinder||0) || ''; $('basarTischeErwachsene').value=Number(b.max_tische_erwachsene||0) || ''; $('preis1Tisch').value=Number(b.preis_1_tisch ?? 12).toFixed(2); $('preis2Tische').value=Number(b.preis_2_tische ?? 20).toFixed(2); $('preis3Tische').value=Number(b.preis_3_tische ?? 25).toFixed(2); $('kuchenrabatt').value=Number(b.kuchenrabatt ?? 4).toFixed(2); $('zahlungsfristTage').value=Number(b.zahlungsfrist_tage ?? 14); $('kurzfristigAbTage').value=Number(b.kurzfristig_ab_tage ?? 14); $('kurzfristigeZahlungsfristTage').value=Number(b.kurzfristige_zahlungsfrist_tage ?? 3); $('stornofristTage').value=Number(b.stornofrist_tage ?? 14); $('kuchennachgebuehr').value=Number(b.kuchennachgebuehr ?? 10).toFixed(2); $('uebertragungErlaubt').value=String(b.uebertragung_erlaubt ?? true); $('basarAdresse').value=b.veranstaltungsadresse||''; $('aufbauVon').value=(b.aufbau_von||'').slice(0,5); $('aufbauBis').value=(b.aufbau_bis||'').slice(0,5); $('verkaufVon').value=(b.verkauf_von||'').slice(0,5); $('verkaufBis').value=(b.verkauf_bis||'').slice(0,5); $('erlaubteWaren').value=b.erlaubte_waren||''; $('kleiderstaenderErlaubt').value=b.kleiderstaender_erlaubt===true?'true':b.kleiderstaender_erlaubt===false?'false':''; $('zusatzplatzErlaubt').value=b.zusaetzlicher_platz_erlaubt===true?'true':b.zusaetzlicher_platz_erlaubt===false?'false':''; $('standregeln').value=b.standregeln||''; $('zusatzregeln').value=b.zusatzregeln || ''; $('basarAktiv').value=String(!!b.aktiv); $('basarPublished').checked=!!b.veroeffentlicht; updateBasarCapacityFields(); updatePublicationControls(); $('basarFormTitle').textContent='Basar bearbeiten'; $('basarFormCard').classList.remove('hidden'); resetBasarFormDirty(); $('basarFormCard').scrollIntoView({behavior:'smooth',block:'start'}); }
 
   async function saveBasar(event) {
     event.preventDefault(); clearError('basarError'); const id=$('basarId').value?Number($('basarId').value):null;
@@ -529,7 +547,7 @@
       btn.textContent='Speichert …';
       if(id){const {error}=await supabase.from('basare').update(payload).eq('id',id).eq('veranstalter_id',currentUser.id);if(error)throw error;selectedBasarId=id;}
       else{const {data,error}=await supabase.from('basare').insert(payload).select('id').single();if(error)throw error;selectedBasarId=data.id;}
-      $('basarFormCard').classList.add('hidden'); await loadBasare(); $('onboardingBanner').classList.add('hidden');
+      resetBasarFormDirty(); $('basarFormCard').classList.add('hidden'); await loadBasare(); $('onboardingBanner').classList.add('hidden');
       if ((payload.plz || payload.stadt) && !hasValidCoordinates(payload) && (locationChanged || !existing)) {
         showError('basarError','Basar wurde gespeichert, aber der Standort konnte nicht automatisch für die Umkreissuche ermittelt werden. Bitte PLZ und Stadt prüfen und erneut speichern.');
       }
@@ -598,7 +616,15 @@
   }
 
   async function showDashboard() {
-    const { data:{user}, error }=await supabase.auth.getUser(); if(error||!user)throw error||new Error('Nicht angemeldet'); currentUser=user;
+    const { data:{user}, error }=await supabase.auth.getUser();
+    if(error||!user) throw error||new Error('Nicht angemeldet');
+
+    // Supabase meldet neben SIGNED_IN auch TOKEN_REFRESHED und INITIAL_SESSION.
+    // Wenn der gleiche Benutzer bereits im Dashboard ist, darf dadurch der
+    // geöffnete Bearbeitungsdialog nicht neu aufgebaut werden.
+    if (currentUser?.id === user.id && !$('dashboard').classList.contains('hidden')) return;
+
+    currentUser=user;
     $('loginCard').classList.add('hidden'); $('dashboard').classList.remove('hidden'); $('topLogoutButton').classList.remove('hidden'); $('adminNav').classList.remove('hidden');
     profileExists = await loadProfile();
     selectedBasarId = null; basare = []; bookings = []; allBookings = [];
@@ -620,7 +646,7 @@
     if (password !== repeat) return showError('registerError', 'Die beiden Passwörter stimmen nicht überein.');
     const button = $('registerButton'); button.disabled = true; button.textContent = 'Konto wird erstellt …';
     try {
-      const redirectTo = `${window.location.origin}${window.location.pathname}?v=2871&onboarding=1`;
+      const redirectTo = `${window.location.origin}${window.location.pathname}?v=2875&onboarding=1`;
       const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo } });
       if (error) throw error;
       if (data.session) {
@@ -638,10 +664,22 @@
   });
   $('showLoginButton').addEventListener('click',()=>setAuthMode('login')); $('showRegisterButton').addEventListener('click',()=>setAuthMode('register'));
   $('basarBereiche').addEventListener('change',updateBasarCapacityFields); $('kontingentModus').addEventListener('change',updateBasarCapacityFields); $('basarTischeKinder').addEventListener('input',updateBasarCapacityFields); $('basarTischeErwachsene').addEventListener('input',updateBasarCapacityFields);
-  $('profileForm').addEventListener('submit',saveProfile); $('topLogoutButton').addEventListener('click',logout); $('newBasarButton').addEventListener('click',startNewBasar); $('cancelBasarButton').addEventListener('click',()=> $('basarFormCard').classList.add('hidden')); $('basarForm').addEventListener('submit',saveBasar);
+  $('profileForm').addEventListener('submit',saveProfile); $('topLogoutButton').addEventListener('click',async()=>{ if(isBasarEditorOpen() && !confirmDiscardBasarChanges()) return; resetBasarFormDirty(); await logout(); });
+  $('newBasarButton').addEventListener('click',()=>{ if(isBasarEditorOpen() && !confirmDiscardBasarChanges()) return; startNewBasar(); });
+  $('cancelBasarButton').addEventListener('click',()=>{ if(!confirmDiscardBasarChanges()) return; resetBasarFormDirty(); $('basarFormCard').classList.add('hidden'); });
+  $('basarForm').addEventListener('submit',saveBasar);
+  $('basarForm').addEventListener('input',markBasarFormDirty);
+  $('basarForm').addEventListener('change',markBasarFormDirty);
+  window.addEventListener('beforeunload',e=>{ if(!basarFormDirty) return; e.preventDefault(); e.returnValue=''; });
   $('editCurrentButton').addEventListener('click',()=>{const b=basare.find(x=>x.id===selectedBasarId);if(b)editBasar(b);}); $('refreshButton').addEventListener('click',()=>loadBasare().catch(e=>showError('dashboardError',humanizeError(e)))); $('refreshBookingsButton').addEventListener('click',()=>loadBookings().catch(e=>showError('dashboardError',humanizeError(e)))); $('bookingFilter').addEventListener('change',renderBookings); $('paymentFilter').addEventListener('change',renderBookings); $('areaFilter').addEventListener('change',renderBookings); $('cakeFilter').addEventListener('change',renderBookings); $('bookingSearch').addEventListener('input',renderBookings); $('resetBookingFiltersButton').addEventListener('click',resetBookingFilters); $('exportBookingsButton').addEventListener('click',exportFilteredBookings);
   $('platformStatusFilter').addEventListener('change',renderPlatformAccounts); $('refreshPlatformButton').addEventListener('click',()=>loadPlatformAccounts().catch(e=>showError('platformError',humanizeError(e))));
   document.addEventListener('click', async e=>{ const btn=e.target.closest('[data-platform-action]'); if(!btn)return; const action=btn.dataset.platformAction; const status=action==='approve'?'freigegeben':action==='block'?'gesperrt':'ausstehend'; await changePlatformStatus(btn.dataset.userId,status); });
-  supabase.auth.onAuthStateChange((_e,session)=>{if(session)setTimeout(()=>showDashboard().catch(console.error),0);});
+  supabase.auth.onAuthStateChange((event,session)=>{
+    if (event === 'SIGNED_IN' && session && !currentUser) {
+      setTimeout(()=>{ if(!currentUser) showDashboard().catch(console.error); },0);
+    }
+    // TOKEN_REFRESHED und INITIAL_SESSION werden bewusst ignoriert.
+    // Sie dürfen ein geöffnetes Formular mit ungespeicherten Änderungen nicht zurücksetzen.
+  });
   (async()=>{try{const {data:{session}}=await supabase.auth.getSession();if(session)await showDashboard();}catch(e){console.error(e);showError('loginError','Die Anmeldung konnte nicht geprüft werden.');}})();
 })();
