@@ -147,6 +147,11 @@
 <div class="field"><label for="basarPlz">PLZ des Basars</label><input id="basarPlz" inputmode="numeric" maxlength="10" placeholder="z. B. 67677"/></div>
 <div class="field"><label for="basarStadt">Stadt / Gemeinde</label><input id="basarStadt" maxlength="120" placeholder="z. B. Enkenbach-Alsenborn"/><span class="hint">Die Position für die Umkreissuche wird beim Speichern automatisch aus PLZ und Ort ermittelt.</span></div>
 <div class="field"><label for="basarDatum">Veranstaltungsdatum</label><input id="basarDatum" required="" type="date"/></div>
+<div class="field"><label for="basarAdresse">Veranstaltungsadresse</label><input id="basarAdresse" maxlength="200" placeholder="z. B. Turnerstr. 12"/><span class="hint">Straße/Hausnummer des Veranstaltungsorts; PLZ und Stadt stehen oben separat.</span></div>
+<div class="field"><label for="aufbauVon">Aufbau von</label><input id="aufbauVon" type="time"/></div>
+<div class="field"><label for="aufbauBis">Aufbau bis</label><input id="aufbauBis" type="time"/></div>
+<div class="field"><label for="verkaufVon">Verkauf von</label><input id="verkaufVon" type="time"/></div>
+<div class="field"><label for="verkaufBis">Verkauf bis</label><input id="verkaufBis" type="time"/></div>
 <div class="field"><label for="basarBereiche">Welche Verkaufsbereiche sind erlaubt?</label><select id="basarBereiche"><option value="beide">Kinder &amp; Erwachsene</option><option value="kinder">Nur Kinder</option><option value="erwachsene">Nur Erwachsene</option></select></div>
 <div class="field" id="kontingentModusField"><label for="kontingentModus">Tischkontingente bei Kinder &amp; Erwachsene</label><select id="kontingentModus"><option value="gemeinsam">Gemeinsamer Tischpool</option><option value="getrennt">Getrennte Kontingente</option></select><span class="hint">Gemeinsam: alle Buchungen teilen sich dieselbe Gesamtzahl. Getrennt: feste Anzahl für Kinder und Erwachsene.</span></div>
 <div class="field" id="basarTischeField"><label for="basarTische" id="basarTischeLabel">Maximale Tischanzahl</label><input id="basarTische" max="10000" min="1" required="" type="number"/><span class="hint" id="basarTischeHint"></span></div>
@@ -167,6 +172,10 @@
 <div class="field"><label for="stornofristTage">Kostenlose Stornierung bis (Tage vor Termin)</label><input id="stornofristTage" max="365" min="0" required="" type="number"/></div>
 <div class="field"><label for="kuchennachgebuehr">Gebühr bei fehlender Kuchenspende (€)</label><input id="kuchennachgebuehr" min="0" required="" step="0.01" type="number"/></div>
 <div class="field"><label for="uebertragungErlaubt">Übertragung auf andere Person</label><select id="uebertragungErlaubt"><option value="true">Erlaubt nach Information an Veranstalter</option><option value="false">Nicht erlaubt</option></select></div>
+<div class="field full"><label for="erlaubteWaren">Welche Waren dürfen verkauft werden?</label><textarea id="erlaubteWaren" maxlength="2000" placeholder="z. B. Baby- und Kinderausstattung, Kleidung, Schuhe, Spielsachen und Bücher." rows="3"></textarea></div>
+<div class="field"><label for="kleiderstaenderErlaubt">Kleiderständer neben dem Tisch</label><select id="kleiderstaenderErlaubt"><option value="">Keine Angabe</option><option value="true">Erlaubt</option><option value="false">Nicht erlaubt</option></select></div>
+<div class="field"><label for="zusatzplatzErlaubt">Zusätzlicher Platz neben dem Tisch</label><select id="zusatzplatzErlaubt"><option value="">Keine Angabe</option><option value="true">Erlaubt</option><option value="false">Nicht erlaubt</option></select></div>
+<div class="field full"><label for="standregeln">Stand- und Verkaufsregeln</label><textarea id="standregeln" maxlength="3000" placeholder="z. B. Waren nur auf und unter dem Tisch; keine Gegenstände im Gang; Tische werden durch den Veranstalter zugewiesen." rows="4"></textarea></div>
 <div class="field full"><label for="zusatzregeln">Zusätzliche Buchungsregeln</label><textarea id="zusatzregeln" maxlength="2000" placeholder="Optionaler Zusatztext, der auf der Buchungsseite und in der Teilnahmevereinbarung erscheint." rows="4"></textarea></div>
 <div class="field full"><button class="primary" id="saveBasarButton" type="submit">Basar speichern</button></div>
 </form>
