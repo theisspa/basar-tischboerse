@@ -80,7 +80,8 @@
     if (currentBasar?.kleiderstaender_erlaubt === true) standParts.push('Kleiderständer neben dem Tisch erlaubt.');
     if (currentBasar?.kleiderstaender_erlaubt === false) standParts.push('Kleiderständer neben dem Tisch nicht erlaubt.');
     if (currentBasar?.zusaetzlicher_platz_erlaubt === true) standParts.push('Zusätzlicher Platz neben dem Tisch erlaubt.');
-    if (currentBasar?.zusaetzlicher_platz_erlaubt === false) standParts.push('Zusätzlicher Platz neben dem Tisch nicht erlaubt.');
+    else if (currentBasar?.zusaetzlicher_platz_erlaubt === false) standParts.push('Zusätzlicher Platz neben dem Tisch nicht erlaubt.');
+    else standParts.push('Zusätzlicher Platz neben dem Tisch: keine Angabe.');
     if (String(currentBasar?.standregeln || '').trim()) standParts.push(String(currentBasar.standregeln).trim());
     $('standRule').textContent = standParts.join(' ');
     $('standRule').classList.toggle('hidden', !standParts.length);
@@ -101,7 +102,8 @@
     if (currentBasar?.kleiderstaender_erlaubt === true) detailStand.push('Kleiderständer erlaubt');
     if (currentBasar?.kleiderstaender_erlaubt === false) detailStand.push('Kleiderständer nicht erlaubt');
     if (currentBasar?.zusaetzlicher_platz_erlaubt === true) detailStand.push('Zusätzlicher Platz erlaubt');
-    if (currentBasar?.zusaetzlicher_platz_erlaubt === false) detailStand.push('Zusätzlicher Platz nicht erlaubt');
+    else if (currentBasar?.zusaetzlicher_platz_erlaubt === false) detailStand.push('Zusätzlicher Platz nicht erlaubt');
+    else detailStand.push('Zusätzlicher Platz: keine Angabe');
     if (String(currentBasar?.standregeln || '').trim()) detailStand.push(String(currentBasar.standregeln).trim());
     const setEventInfo = (wrapId, textId, value) => {
       const wrap = $(wrapId), text = $(textId);
@@ -874,7 +876,8 @@
       if(rules.kleiderstaender_erlaubt===true) wrapped('Kleiderständer neben dem Tisch: erlaubt.');
       if(rules.kleiderstaender_erlaubt===false) wrapped('Kleiderständer neben dem Tisch: nicht erlaubt.');
       if(rules.zusaetzlicher_platz_erlaubt===true) wrapped('Zusätzlicher Platz neben dem Tisch: erlaubt.');
-      if(rules.zusaetzlicher_platz_erlaubt===false) wrapped('Zusätzlicher Platz neben dem Tisch: nicht erlaubt.');
+      else if(rules.zusaetzlicher_platz_erlaubt===false) wrapped('Zusätzlicher Platz neben dem Tisch: nicht erlaubt.');
+      else wrapped('Zusätzlicher Platz neben dem Tisch: keine Angabe.');
       if(String(rules.standregeln||'').trim()) wrapped(String(rules.standregeln).trim());
     }
 

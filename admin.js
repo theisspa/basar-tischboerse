@@ -1,3 +1,4 @@
+// V28.7.4 - Zusatzplatz muss beim Speichern explizit gewählt werden.
 (() => {
   'use strict';
   const config = window.BASAR_CONFIG;

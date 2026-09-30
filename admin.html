@@ -174,7 +174,7 @@
 <div class="field"><label for="uebertragungErlaubt">Übertragung auf andere Person</label><select id="uebertragungErlaubt"><option value="true">Erlaubt nach Information an Veranstalter</option><option value="false">Nicht erlaubt</option></select></div>
 <div class="field full"><label for="erlaubteWaren">Welche Waren dürfen verkauft werden?</label><textarea id="erlaubteWaren" maxlength="2000" placeholder="z. B. Baby- und Kinderausstattung, Kleidung, Schuhe, Spielsachen und Bücher." rows="3"></textarea></div>
 <div class="field"><label for="kleiderstaenderErlaubt">Kleiderständer neben dem Tisch</label><select id="kleiderstaenderErlaubt"><option value="">Keine Angabe</option><option value="true">Erlaubt</option><option value="false">Nicht erlaubt</option></select></div>
-<div class="field"><label for="zusatzplatzErlaubt">Zusätzlicher Platz neben dem Tisch</label><select id="zusatzplatzErlaubt"><option value="">Keine Angabe</option><option value="true">Erlaubt</option><option value="false">Nicht erlaubt</option></select></div>
+<div class="field"><label for="zusatzplatzErlaubt">Zusätzlicher Platz neben dem Tisch *</label><select id="zusatzplatzErlaubt" required><option value="">Bitte auswählen</option><option value="true">Erlaubt</option><option value="false">Nicht erlaubt</option></select></div>
 <div class="field full"><label for="standregeln">Stand- und Verkaufsregeln</label><textarea id="standregeln" maxlength="3000" placeholder="z. B. Waren nur auf und unter dem Tisch; keine Gegenstände im Gang; Tische werden durch den Veranstalter zugewiesen." rows="4"></textarea></div>
 <div class="field full"><label for="zusatzregeln">Zusätzliche Buchungsregeln</label><textarea id="zusatzregeln" maxlength="2000" placeholder="Optionaler Zusatztext, der auf der Buchungsseite und in der Teilnahmevereinbarung erscheint." rows="4"></textarea></div>
 <div class="field full"><button class="primary" id="saveBasarButton" type="submit">Basar speichern</button></div>
@@ -288,6 +288,6 @@
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=2871"></script>
-<script src="admin.js?v=2871"></script>
+<script src="admin.js?v=2874"></script>
 </body>
 </html>
