@@ -87,6 +87,30 @@
     const extra = String(currentBasar?.zusatzregeln || '').trim();
     $('additionalRule').textContent = extra;
     $('additionalRule').classList.toggle('hidden', !extra);
+
+    // V28.7.2: Veranstaltungsdetails zusätzlich prominent am ausgewählten Basar anzeigen.
+    const detailAddress = [currentBasar?.veranstaltungsadresse, [currentBasar?.plz, currentBasar?.stadt].filter(Boolean).join(' '), currentBasar?.ort].filter(Boolean).join(' · ');
+    const detailTimes = [];
+    if (currentBasar?.aufbau_von || currentBasar?.aufbau_bis) detailTimes.push(`Aufbau ${formatTime(currentBasar?.aufbau_von) || '–'}–${formatTime(currentBasar?.aufbau_bis) || '–'} Uhr`);
+    if (currentBasar?.verkauf_von || currentBasar?.verkauf_bis) detailTimes.push(`Verkauf ${formatTime(currentBasar?.verkauf_von) || '–'}–${formatTime(currentBasar?.verkauf_bis) || '–'} Uhr`);
+    const detailStand = [];
+    if (currentBasar?.kleiderstaender_erlaubt === true) detailStand.push('Kleiderständer erlaubt');
+    if (currentBasar?.kleiderstaender_erlaubt === false) detailStand.push('Kleiderständer nicht erlaubt');
+    if (currentBasar?.zusaetzlicher_platz_erlaubt === true) detailStand.push('Zusätzlicher Platz erlaubt');
+    if (currentBasar?.zusaetzlicher_platz_erlaubt === false) detailStand.push('Zusätzlicher Platz nicht erlaubt');
+    if (String(currentBasar?.standregeln || '').trim()) detailStand.push(String(currentBasar.standregeln).trim());
+    const setEventInfo = (wrapId, textId, value) => {
+      const wrap = $(wrapId), text = $(textId);
+      if (!wrap || !text) return;
+      text.textContent = value || '';
+      wrap.classList.toggle('hidden', !value);
+    };
+    setEventInfo('eventAddressInfo', 'eventAddressText', detailAddress);
+    setEventInfo('eventTimesInfo', 'eventTimesText', detailTimes.join(' · '));
+    setEventInfo('eventGoodsInfo', 'eventGoodsText', goods);
+    setEventInfo('eventStandInfo', 'eventStandText', detailStand.join(' · '));
+    const anyEventInfo = Boolean(detailAddress || detailTimes.length || goods || detailStand.length);
+    $('eventInfoPanel')?.classList.toggle('hidden', !anyEventInfo);
   }
 
   function updatePrice() {
@@ -797,8 +821,10 @@
     const ensure=n=>{ if(y+n>278) newPage(); };
     const wrapped=(text,size=9.5,gap=4.7,color=navy)=>{ doc.setFont('helvetica','normal'); doc.setFontSize(size); doc.setTextColor(...color); for(const line of doc.splitTextToSize(String(text||''),width)){ ensure(gap+2); doc.text(line,left,y); y+=gap; } };
     const section=title=>{ ensure(20); y+=7; doc.setFillColor(...light); doc.roundedRect(left,y,width,10,2,2,'F'); doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...navy); doc.text(title,left+4,y+6.5); y+=16; };
-    try { doc.addImage(PDF_LOGO_DATA,'PNG',left,y,66,13); } catch(e) { console.warn('PDF-Logo konnte nicht eingebettet werden',e); }
-    doc.setFont('helvetica','bold'); doc.setFontSize(15.5); doc.setTextColor(...navy); doc.text('Buchungsbestätigung & Teilnahmebedingungen',right,y+6,{align:'right'}); y+=19;
+    // Logo und Titel bewusst untereinander, damit es auf keinem Viewer zu Überlagerungen kommt.
+    try { doc.addImage(PDF_LOGO_DATA,'PNG',left,y,58,11.5); } catch(e) { console.warn('PDF-Logo konnte nicht eingebettet werden',e); }
+    y+=17;
+    doc.setFont('helvetica','bold'); doc.setFontSize(15.0); doc.setTextColor(...navy); doc.text('Buchungsbestätigung & Teilnahmebedingungen',left,y); y+=9;
     doc.setDrawColor(...terracotta); doc.setLineWidth(0.8); doc.line(left,y,right,y); y+=7;
     doc.setFontSize(10); doc.setTextColor(...navy); doc.text(`Buchungsnummer: ${b.buchungsnummer}`,left,y); doc.text(`Buchungsdatum: ${formatDate(b.buchungsdatum)}`,right,y,{align:'right'}); y+=7;
 
@@ -842,7 +868,9 @@
       `5. Bei ausgewählter Kuchenspende wird der Buchungspreis einmalig um ${discount.toFixed(2).replace('.',',')} EUR reduziert. Wird der zugesagte Kuchen am Veranstaltungstag nicht erbracht, wird nachträglich eine Gebühr von ${cakeFee.toFixed(2).replace('.',',')} EUR fällig.`
     ];
     if(extra) clauses.push(`6. Zusätzliche Regel des Veranstalters: ${extra}`);
-    clauses.forEach(c=>{ wrapped(c,9.1,4.5); y+=1.4; });
+    // Jede Klausel setzt Schrift, Größe und Farbe explizit neu - auch nach einem Seitenumbruch.
+    const drawClause=(c)=>{ doc.setFont('helvetica','normal'); doc.setFontSize(9.1); doc.setTextColor(...navy); const lines=doc.splitTextToSize(String(c),width); for(const line of lines){ ensure(6.5); doc.setFont('helvetica','normal'); doc.setFontSize(9.1); doc.setTextColor(...navy); doc.text(line,left,y); y+=4.5; } y+=1.4; };
+    clauses.forEach(drawClause);
 
     section('Verantwortung & Kontakt');
     wrapped('Für Durchführung, Organisation und Sicherheit der Veranstaltung sowie die veranstaltungsspezifischen Teilnahmebedingungen ist der jeweilige Veranstalter verantwortlich. Basar Tischbörse stellt die technische Buchungsplattform bereit.',8.8,4.4,[70,70,70]);
