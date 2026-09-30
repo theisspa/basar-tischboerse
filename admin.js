@@ -264,8 +264,14 @@
 
   async function loadBasare() {
     clearError('basarError');
-    const { data, error } = await supabase.from('basare').select('id,name,ort,plz,stadt,latitude,longitude,veranstaltungsdatum,max_tische,aktiv,veroeffentlicht,veroeffentlicht_at,created_at,veranstalter_id,preis_1_tisch,preis_2_tische,preis_3_tische,kuchenrabatt,zahlungsfrist_tage,kurzfristig_ab_tage,kurzfristige_zahlungsfrist_tage,stornofrist_tage,kuchennachgebuehr,uebertragung_erlaubt,zusatzregeln,verkaufsbereiche,kontingent_modus,max_tische_kinder,max_tische_erwachsene,veranstaltungsadresse,aufbau_von,aufbau_bis,verkauf_von,verkauf_bis,erlaubte_waren,kleiderstaender_erlaubt,zusaetzlicher_platz_erlaubt,standregeln').eq('veranstalter_id', currentUser.id).order('veranstaltungsdatum', { ascending: true });
-    if (error) throw error;
+    const { data, error } = await supabase.from('basare').select('*').eq('veranstalter_id', currentUser.id).order('veranstaltungsdatum', { ascending: true });
+    if (error) {
+      console.error('Basare konnten nicht geladen werden:', error);
+      const list = $('basarList');
+      if (list) list.innerHTML = '<div class="empty-state">Die Basare konnten gerade nicht geladen werden. Bitte Seite neu laden. Falls der Fehler bleibt, prüfe die Datenbank-Migration.</div>';
+      showError('dashboardError', humanizeError(error));
+      throw error;
+    }
     basare=data || [];
     if (!selectedBasarId || !basare.some(b => b.id === selectedBasarId)) { const active=basare.find(b=>b.aktiv) || basare[0]; selectedBasarId=active?.id || null; }
     await loadDashboardOverview();
@@ -613,7 +619,7 @@
     if (password !== repeat) return showError('registerError', 'Die beiden Passwörter stimmen nicht überein.');
     const button = $('registerButton'); button.disabled = true; button.textContent = 'Konto wird erstellt …';
     try {
-      const redirectTo = `${window.location.origin}${window.location.pathname}?v=284&onboarding=1`;
+      const redirectTo = `${window.location.origin}${window.location.pathname}?v=2871&onboarding=1`;
       const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo } });
       if (error) throw error;
       if (data.session) {
