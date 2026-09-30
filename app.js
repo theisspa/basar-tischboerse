@@ -88,11 +88,15 @@
     $('additionalRule').textContent = extra;
     $('additionalRule').classList.toggle('hidden', !extra);
 
-    // V28.7.2: Veranstaltungsdetails zusätzlich prominent am ausgewählten Basar anzeigen.
-    const detailAddress = [currentBasar?.veranstaltungsadresse, [currentBasar?.plz, currentBasar?.stadt].filter(Boolean).join(' '), currentBasar?.ort].filter(Boolean).join(' · ');
-    const detailTimes = [];
-    if (currentBasar?.aufbau_von || currentBasar?.aufbau_bis) detailTimes.push(`Aufbau ${formatTime(currentBasar?.aufbau_von) || '–'}–${formatTime(currentBasar?.aufbau_bis) || '–'} Uhr`);
-    if (currentBasar?.verkauf_von || currentBasar?.verkauf_bis) detailTimes.push(`Verkauf ${formatTime(currentBasar?.verkauf_von) || '–'}–${formatTime(currentBasar?.verkauf_bis) || '–'} Uhr`);
+    // V28.7.3: Ort, Adresse, Aufbau und Verkaufszeit getrennt und deutlich anzeigen.
+    const detailVenue = String(currentBasar?.ort || '').trim();
+    const detailAddress = [String(currentBasar?.veranstaltungsadresse || '').trim(), [currentBasar?.plz, currentBasar?.stadt].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    const detailSetup = (currentBasar?.aufbau_von || currentBasar?.aufbau_bis)
+      ? `${formatTime(currentBasar?.aufbau_von) || '–'} bis ${formatTime(currentBasar?.aufbau_bis) || '–'} Uhr`
+      : '';
+    const detailSale = (currentBasar?.verkauf_von || currentBasar?.verkauf_bis)
+      ? `${formatTime(currentBasar?.verkauf_von) || '–'} bis ${formatTime(currentBasar?.verkauf_bis) || '–'} Uhr`
+      : '';
     const detailStand = [];
     if (currentBasar?.kleiderstaender_erlaubt === true) detailStand.push('Kleiderständer erlaubt');
     if (currentBasar?.kleiderstaender_erlaubt === false) detailStand.push('Kleiderständer nicht erlaubt');
@@ -105,11 +109,13 @@
       text.textContent = value || '';
       wrap.classList.toggle('hidden', !value);
     };
+    setEventInfo('eventVenueInfo', 'eventVenueText', detailVenue);
     setEventInfo('eventAddressInfo', 'eventAddressText', detailAddress);
-    setEventInfo('eventTimesInfo', 'eventTimesText', detailTimes.join(' · '));
+    setEventInfo('eventSetupInfo', 'eventSetupText', detailSetup);
+    setEventInfo('eventSaleInfo', 'eventSaleText', detailSale);
     setEventInfo('eventGoodsInfo', 'eventGoodsText', goods);
     setEventInfo('eventStandInfo', 'eventStandText', detailStand.join(' · '));
-    const anyEventInfo = Boolean(detailAddress || detailTimes.length || goods || detailStand.length);
+    const anyEventInfo = Boolean(detailVenue || detailAddress || detailSetup || detailSale || goods || detailStand.length);
     $('eventInfoPanel')?.classList.toggle('hidden', !anyEventInfo);
   }
 
@@ -485,8 +491,20 @@
     if (!paymentConfigured) showError('Dieser Veranstalter hat für den Basar noch keine Zahlungsart eingerichtet. Eine Buchung ist derzeit nicht möglich.');
   }
 
+  async function loadCurrentBasarDetails() {
+    if (!currentBasar?.id) return;
+    const { data, error } = await supabaseClient.rpc('get_public_basar_details_v2873', { p_basar_id: currentBasar.id });
+    if (error) {
+      console.warn('Veranstaltungsdetails konnten nicht separat geladen werden:', error);
+      return;
+    }
+    const details = Array.isArray(data) ? data[0] : data;
+    if (details && typeof details === 'object') currentBasar = { ...currentBasar, ...details };
+  }
+
   async function showCurrentBasar() {
     if (!currentBasar) return;
+    await loadCurrentBasarDetails();
     clearError();
     $('basarName').textContent = currentBasar.name;
     const publicLocation = [currentBasar.plz, currentBasar.stadt].filter(Boolean).join(' ');
@@ -755,7 +773,7 @@
       const booking = Array.isArray(data) ? data[0] : data;
       if (!booking?.buchungsnummer) throw new Error('Keine Buchungsnummer erhalten.');
 
-      lastContract = { booking, payload, pricing: { kuchenrabatt: Number(currentBasar?.kuchenrabatt ?? 4) }, rules: { zahlungsfrist_tage: Number(currentBasar?.zahlungsfrist_tage ?? 14), kurzfristig_ab_tage: Number(currentBasar?.kurzfristig_ab_tage ?? 14), kurzfristige_zahlungsfrist_tage: Number(currentBasar?.kurzfristige_zahlungsfrist_tage ?? 3), stornofrist_tage: Number(currentBasar?.stornofrist_tage ?? 14), kuchennachgebuehr: Number(currentBasar?.kuchennachgebuehr ?? 10), uebertragung_erlaubt: currentBasar?.uebertragung_erlaubt !== false, zusatzregeln: String(currentBasar?.zusatzregeln || '').trim(), verkaufsbereiche: currentBasar?.verkaufsbereiche || 'beide', kontingent_modus: currentBasar?.kontingent_modus || 'gemeinsam', veranstaltungsadresse: currentBasar?.veranstaltungsadresse || '', aufbau_von: currentBasar?.aufbau_von || '', aufbau_bis: currentBasar?.aufbau_bis || '', verkauf_von: currentBasar?.verkauf_von || '', verkauf_bis: currentBasar?.verkauf_bis || '', erlaubte_waren: currentBasar?.erlaubte_waren || '', kleiderstaender_erlaubt: currentBasar?.kleiderstaender_erlaubt, zusaetzlicher_platz_erlaubt: currentBasar?.zusaetzlicher_platz_erlaubt, standregeln: currentBasar?.standregeln || '' } };
+      lastContract = { booking, payload, pricing: { kuchenrabatt: Number(currentBasar?.kuchenrabatt ?? 4) }, rules: { zahlungsfrist_tage: Number(currentBasar?.zahlungsfrist_tage ?? 14), kurzfristig_ab_tage: Number(currentBasar?.kurzfristig_ab_tage ?? 14), kurzfristige_zahlungsfrist_tage: Number(currentBasar?.kurzfristige_zahlungsfrist_tage ?? 3), stornofrist_tage: Number(currentBasar?.stornofrist_tage ?? 14), kuchennachgebuehr: Number(currentBasar?.kuchennachgebuehr ?? 10), uebertragung_erlaubt: currentBasar?.uebertragung_erlaubt !== false, zusatzregeln: String(currentBasar?.zusatzregeln || '').trim(), verkaufsbereiche: currentBasar?.verkaufsbereiche || 'beide', kontingent_modus: currentBasar?.kontingent_modus || 'gemeinsam', ort: currentBasar?.ort || '', plz: currentBasar?.plz || '', stadt: currentBasar?.stadt || '', veranstaltungsadresse: currentBasar?.veranstaltungsadresse || '', aufbau_von: currentBasar?.aufbau_von || '', aufbau_bis: currentBasar?.aufbau_bis || '', verkauf_von: currentBasar?.verkauf_von || '', verkauf_bis: currentBasar?.verkauf_bis || '', erlaubte_waren: currentBasar?.erlaubte_waren || '', kleiderstaender_erlaubt: currentBasar?.kleiderstaender_erlaubt, zusaetzlicher_platz_erlaubt: currentBasar?.zusaetzlicher_platz_erlaubt, standregeln: currentBasar?.standregeln || '' } };
       $('confirmationText').textContent = `${payload.p_vorname} ${payload.p_nachname}, ${tables === 1 ? '1 Tisch wurde' : `${tables} Tische wurden`} verbindlich reserviert. Gesamtbetrag: ${euro(booking.preis)}. Zahlungsfrist: ${formatDate(booking.zahlungsfrist)}.`;
       $('bookingNumber').textContent = booking.buchungsnummer;
       $('paymentInfo').textContent = paymentInfoText(booking, payload.p_zahlungsart);
@@ -830,11 +848,13 @@
 
     section('Veranstaltung');
     doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(...terracotta); doc.text(String(b.basar_name||''),left,y); y+=6;
-    const eventAddress=[rules.veranstaltungsadresse,b.basar_ort,rules.veranstaltungsadresse?null:null].filter(Boolean);
     wrapped(`Datum: ${formatDate(b.veranstaltungsdatum)}`);
-    if(rules.aufbau_von||rules.aufbau_bis) wrapped(`Aufbau: ${fmtTime(rules.aufbau_von)||'–'} bis ${fmtTime(rules.aufbau_bis)||'–'} Uhr`);
-    if(rules.verkauf_von||rules.verkauf_bis) wrapped(`Verkauf: ${fmtTime(rules.verkauf_von)||'–'} bis ${fmtTime(rules.verkauf_bis)||'–'} Uhr`);
-    const address=[rules.veranstaltungsadresse,b.basar_ort].filter(Boolean).join(' · '); if(address) wrapped(`Ort: ${address}`);
+    const venue=String(rules.ort || b.basar_ort || '').trim();
+    if(venue) wrapped(`Veranstaltungsort: ${venue}`);
+    const address=[String(rules.veranstaltungsadresse||'').trim(), [rules.plz,rules.stadt].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    if(address) wrapped(`Adresse: ${address}`);
+    if(rules.aufbau_von||rules.aufbau_bis) wrapped(`Aufbauzeit: ${fmtTime(rules.aufbau_von)||'–'} bis ${fmtTime(rules.aufbau_bis)||'–'} Uhr`);
+    if(rules.verkauf_von||rules.verkauf_bis) wrapped(`Verkaufszeit: ${fmtTime(rules.verkauf_von)||'–'} bis ${fmtTime(rules.verkauf_bis)||'–'} Uhr`);
 
     section('Veranstalter / Vertragspartner');
     wrapped(`${b.veranstalter_name}\n${b.veranstalter_strasse} ${b.veranstalter_hausnummer}\n${b.veranstalter_plz} ${b.veranstalter_ort}\nTelefon: ${b.veranstalter_telefon||'-'}\nE-Mail: ${b.veranstalter_email}`);

@@ -411,3 +411,6 @@ html{scroll-behavior:smooth;scroll-padding-top:88px}.market-site-header{backgrou
 
 /* V28.7.2 - sichtbare Veranstaltungsinformationen */
 .event-info-panel{margin-top:16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;max-width:760px}.event-info-panel.hidden{display:none}.event-info-item{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;border:1px solid #eadbc9;border-radius:13px;background:#fffdf8}.event-info-item.hidden{display:none}.event-info-icon{flex:none;font-size:18px;line-height:1.2}.event-info-item strong{display:block;color:#304654;font-size:12px}.event-info-item p{margin:3px 0 0!important;color:#6f6258!important;font-size:12px!important;line-height:1.45}.market-card-head>div:first-child{min-width:0;flex:1}@media(max-width:720px){.event-info-panel{grid-template-columns:1fr}.event-info-item{padding:10px 11px}}
+
+/* V28.7.3: Veranstaltungsdaten klar und einzeln darstellen */
+.event-info-panel{margin-top:14px}.event-info-item strong{font-size:12.5px}.event-info-item p{font-size:12.5px!important;color:#405363!important;font-weight:600}.event-info-item:nth-child(-n+4){background:#fffaf3;border-color:#e8cdb7}
