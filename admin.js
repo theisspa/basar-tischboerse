@@ -1,4 +1,4 @@
-// V28.8 - manuelle Teilnehmerbuchungen im Veranstalterbereich, auf Basis der stabilen V28.7.6.
+// V28.9 - druckbares Blanko-Reservierungsformular je Basar, auf Basis der stabilen V28.8.
 (() => {
   'use strict';
   const config = window.BASAR_CONFIG;
@@ -379,6 +379,140 @@
 
   function manualBookingBasar() { return basare.find(b => Number(b.id) === Number(selectedBasarId)) || null; }
 
+
+  function formatClock(value) {
+    if (!value) return '—';
+    return `${String(value).slice(0,5)} Uhr`;
+  }
+
+  function subtractDaysFromDate(dateValue, days) {
+    if (!dateValue) return '';
+    const [year, month, day] = String(dateValue).split('-').map(Number);
+    if (!year || !month || !day) return '';
+    const d = new Date(year, month - 1, day, 12, 0, 0);
+    d.setDate(d.getDate() - Number(days || 0));
+    return new Intl.DateTimeFormat('de-DE', { day:'2-digit', month:'long', year:'numeric' }).format(d);
+  }
+
+  function printBlankBookingForm() {
+    const basar = manualBookingBasar();
+    if (!basar) return window.alert('Bitte zuerst einen Basar auswählen.');
+    const p = profileSnapshot || {};
+    const popup = window.open('', '_blank');
+    if (!popup) return window.alert('Das Druckfenster wurde vom Browser blockiert. Bitte Pop-ups für diese Seite erlauben und erneut versuchen.');
+
+    const eventAddress = [basar.veranstaltungsadresse, [basar.plz, basar.stadt].filter(Boolean).join(' ')].filter(Boolean).join(', ') || '—';
+    const organizerAddress = [[p.strasse, p.hausnummer].filter(Boolean).join(' '), [p.plz, p.ort].filter(Boolean).join(' ')].filter(Boolean).join(', ') || '—';
+    const setup = basar.aufbau_von || basar.aufbau_bis ? `${formatClock(basar.aufbau_von)} bis ${formatClock(basar.aufbau_bis)}` : '—';
+    const sale = basar.verkauf_von || basar.verkauf_bis ? `${formatClock(basar.verkauf_von)} bis ${formatClock(basar.verkauf_bis)}` : '—';
+    const cancelDate = subtractDaysFromDate(basar.veranstaltungsdatum, basar.stornofrist_tage ?? 14);
+    const areas = basar.verkaufsbereiche === 'kinder'
+      ? '<span class="check">☐ Kinder</span>'
+      : basar.verkaufsbereiche === 'erwachsene'
+        ? '<span class="check">☐ Erwachsene</span>'
+        : '<span class="check">☐ Kinder</span><span class="check">☐ Erwachsene</span>';
+    const paymentChoices = [
+      p.ueberweisung_aktiv ? '<span class="check">☐ Überweisung</span>' : '',
+      p.paypal_link_aktiv ? '<span class="check">☐ PayPal-Link</span>' : '',
+      '<span class="check">☐ Bar / vor Ort</span>'
+    ].filter(Boolean).join('');
+    const transferRule = basar.uebertragung_erlaubt === false ? 'Eine Übertragung auf eine andere Person ist nicht erlaubt.' : 'Eine Übertragung auf eine andere Person ist nach vorheriger Information des Veranstalters möglich.';
+    const standExtras = [
+      basar.kleiderstaender_erlaubt === true ? 'Kleiderständer neben dem Tisch: erlaubt.' : basar.kleiderstaender_erlaubt === false ? 'Kleiderständer neben dem Tisch: nicht erlaubt.' : '',
+      basar.zusaetzlicher_platz_erlaubt === true ? 'Zusätzlicher Platz neben dem Tisch: erlaubt.' : basar.zusaetzlicher_platz_erlaubt === false ? 'Zusätzlicher Platz neben dem Tisch: nicht erlaubt.' : ''
+    ].filter(Boolean);
+    const priceRows = [
+      ['1 Tisch', euro(basar.preis_1_tisch || 0)],
+      ['2 Tische', euro(basar.preis_2_tische || 0)],
+      ['3 Tische', euro(basar.preis_3_tische || 0)]
+    ].map(([label, value]) => `<span><strong>${label}</strong>${escapeHtml(value)}</span>`).join('');
+    const logoUrl = new URL('logo-footer-v263.png', window.location.href).href;
+    const privacyUrl = new URL('datenschutz.html', window.location.href).href;
+
+    const terms = [
+      'Mit Unterzeichnung wird die eingetragene Anzahl an Verkaufstischen verbindlich reserviert.',
+      `Reguläre Zahlungsfrist: ${Number(basar.zahlungsfrist_tage ?? 14)} Tage. Bei einer Buchung weniger als ${Number(basar.kurzfristig_ab_tage ?? 14)} Tage vor der Veranstaltung beträgt die Zahlungsfrist ${Number(basar.kurzfristige_zahlungsfrist_tage ?? 3)} Tage, spätestens bis zum Veranstaltungstag.`,
+      cancelDate ? `Eine kostenlose Stornierung ist bis ${escapeHtml(cancelDate)} möglich. Danach besteht kein Anspruch auf Rückerstattung bereits geleisteter Zahlungen.` : '',
+      transferRule,
+      Number(basar.kuchenrabatt || 0) > 0 ? `Bei zugesagter Kuchenspende wird der Buchungspreis einmalig um ${escapeHtml(euro(basar.kuchenrabatt))} reduziert. Wird der zugesagte Kuchen nicht erbracht, wird eine Gebühr von ${escapeHtml(euro(basar.kuchennachgebuehr || 0))} fällig.` : ''
+    ].filter(Boolean).map((t, i) => `<li>${t}</li>`).join('');
+
+    const html = `<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Blanko-Reservierungsformular - ${escapeHtml(basar.name || 'Basar')}</title>
+<style>
+  :root{--navy:#1f3550;--terracotta:#b76045;--cream:#f7f1e7;--line:#cfc7bb;--text:#20262d;}
+  *{box-sizing:border-box} body{margin:0;background:#ece8e1;color:var(--text);font-family:Arial,Helvetica,sans-serif}
+  .toolbar{position:sticky;top:0;z-index:5;display:flex;gap:10px;justify-content:center;padding:12px;background:#1f3550}
+  .toolbar button{border:0;border-radius:8px;padding:10px 16px;font-size:15px;font-weight:700;cursor:pointer;background:#fff;color:#1f3550}
+  .page{width:210mm;min-height:297mm;margin:18px auto;background:#fff;padding:13mm 14mm 12mm;box-shadow:0 8px 28px rgba(0,0,0,.12)}
+  .head{display:flex;align-items:center;gap:18px;padding-bottom:11px;border-bottom:2px solid var(--terracotta)}
+  .head img{width:68px;height:68px;object-fit:contain}.head h1{margin:0;color:var(--navy);font-size:22px}.head p{margin:4px 0 0;color:#68717a;font-size:12px}
+  .section{margin-top:13px}.section-title{background:var(--cream);color:var(--navy);font-size:13px;font-weight:800;padding:7px 9px;border-left:4px solid var(--terracotta);margin-bottom:8px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px}.item{font-size:11.5px;line-height:1.35}.item span{display:block;color:#68717a;font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px}.item strong{font-size:11.5px}.full{grid-column:1/-1}
+  .fields{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}.field label{display:block;font-size:9.5px;color:#68717a;margin-bottom:2px}.line{height:22px;border-bottom:1px solid #4d555c}.field.full{grid-column:1/-1}
+  .checks{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:11.5px;min-height:22px;align-items:center}.check{white-space:nowrap}
+  .price-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.price-grid span{border:1px solid var(--line);border-radius:6px;padding:7px 8px;font-size:10.5px}.price-grid strong{display:block;color:var(--navy);margin-bottom:2px}
+  .note{font-size:10px;line-height:1.4;color:#4d555c}.rules{margin:0;padding-left:18px;font-size:9.7px;line-height:1.45}.rules li{margin:0 0 4px}.rule-box{border:1px solid var(--line);border-radius:7px;padding:8px 10px;font-size:9.7px;line-height:1.4;margin-top:7px}
+  .signatures{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:18px}.sig{padding-top:26px;border-bottom:1px solid #4d555c;font-size:9px;color:#68717a;padding-bottom:3px}
+  .admin-only{margin-top:12px;border:1px dashed #a8a095;padding:8px 10px;border-radius:7px}.admin-only strong{font-size:10px;color:var(--navy)}
+  .footer{margin-top:12px;padding-top:8px;border-top:1px solid #ddd;font-size:8.7px;color:#6f757b;line-height:1.35}
+  @media print{body{background:#fff}.toolbar{display:none}.page{margin:0;box-shadow:none;width:auto;min-height:auto;padding:10mm 12mm 9mm}@page{size:A4;margin:0}}
+</style></head><body>
+<div class="toolbar"><button onclick="window.print()">Drucken / als PDF speichern</button><button onclick="window.close()">Schließen</button></div>
+<main class="page">
+  <header class="head"><img src="${escapeHtml(logoUrl)}" alt="Basar Tischbörse"><div><h1>Reservierungsformular & Teilnahmevereinbarung</h1><p>Blanko-Formular zum handschriftlichen Ausfüllen</p></div></header>
+
+  <section class="section"><div class="section-title">Veranstaltung</div><div class="grid">
+    <div class="item"><span>Basar</span><strong>${escapeHtml(basar.name || '—')}</strong></div>
+    <div class="item"><span>Datum</span><strong>${escapeHtml(formatDate(basar.veranstaltungsdatum) || '—')}</strong></div>
+    <div class="item"><span>Veranstaltungsort</span><strong>${escapeHtml(basar.ort || '—')}</strong></div>
+    <div class="item"><span>Adresse</span><strong>${escapeHtml(eventAddress)}</strong></div>
+    <div class="item"><span>Aufbauzeit</span><strong>${escapeHtml(setup)}</strong></div>
+    <div class="item"><span>Verkaufszeit</span><strong>${escapeHtml(sale)}</strong></div>
+  </div></section>
+
+  <section class="section"><div class="section-title">Teilnehmerdaten</div><div class="fields">
+    <div class="field"><label>Vorname</label><div class="line"></div></div><div class="field"><label>Nachname</label><div class="line"></div></div>
+    <div class="field"><label>Straße</label><div class="line"></div></div><div class="field"><label>Hausnummer</label><div class="line"></div></div>
+    <div class="field"><label>PLZ</label><div class="line"></div></div><div class="field"><label>Ort</label><div class="line"></div></div>
+    <div class="field"><label>E-Mail</label><div class="line"></div></div><div class="field"><label>Telefon</label><div class="line"></div></div>
+  </div></section>
+
+  <section class="section"><div class="section-title">Reservierung</div><div class="grid">
+    <div class="item"><span>Anzahl Tische</span><div class="checks"><span class="check">☐ 1 Tisch</span><span class="check">☐ 2 Tische</span><span class="check">☐ 3 Tische</span></div></div>
+    <div class="item"><span>Verkaufsbereich</span><div class="checks">${areas}</div></div>
+    <div class="item"><span>Kuchenspende</span><div class="checks"><span class="check">☐ Ja</span><span class="check">☐ Nein</span></div></div>
+    <div class="item"><span>Zahlungsart</span><div class="checks">${paymentChoices}</div></div>
+    <div class="item"><span>Gesamtbetrag</span><div class="line"></div></div><div class="item"><span>Zahlungsfrist</span><div class="line"></div></div>
+  </div>
+  <div class="price-grid" style="margin-top:8px">${priceRows}<span><strong>Kuchenrabatt</strong>${escapeHtml(euro(basar.kuchenrabatt || 0))}</span></div></section>
+
+  <section class="section"><div class="section-title">Stand- und Verkaufsregeln</div>
+    ${basar.erlaubte_waren ? `<div class="rule-box"><strong>Erlaubte Waren:</strong> ${escapeHtml(basar.erlaubte_waren)}</div>` : ''}
+    ${standExtras.length ? `<div class="rule-box">${standExtras.map(escapeHtml).join('<br>')}</div>` : ''}
+    ${basar.standregeln ? `<div class="rule-box"><strong>Standregeln:</strong> ${escapeHtml(basar.standregeln).replaceAll('\n','<br>')}</div>` : ''}
+    ${basar.zusatzregeln ? `<div class="rule-box"><strong>Zusätzliche Regeln:</strong> ${escapeHtml(basar.zusatzregeln).replaceAll('\n','<br>')}</div>` : ''}
+  </section>
+
+  <section class="section"><div class="section-title">Teilnahmebedingungen</div><ol class="rules">${terms}</ol></section>
+
+  <section class="section"><div class="section-title">Veranstalter / Vertragspartner</div><div class="grid">
+    <div class="item"><span>Name</span><strong>${escapeHtml(p.name || '—')}</strong></div><div class="item"><span>Adresse</span><strong>${escapeHtml(organizerAddress)}</strong></div>
+    <div class="item"><span>Telefon</span><strong>${escapeHtml(p.telefon || '—')}</strong></div><div class="item"><span>E-Mail</span><strong>${escapeHtml(p.email || currentUser?.email || '—')}</strong></div>
+  </div></section>
+
+  <div class="signatures"><div class="sig">Ort, Datum</div><div class="sig">Unterschrift Teilnehmer</div></div>
+  <div class="admin-only"><strong>Nur für den Veranstalter:</strong><div class="checks" style="margin-top:5px"><span class="check">Buchungsnummer: __________________</span><span class="check">☐ offen</span><span class="check">☐ bezahlt</span><span class="check">☐ im System erfasst</span></div></div>
+  <div class="footer">Die auf diesem Formular erfassten Daten werden vom Veranstalter zur Reservierung und Organisation der Veranstaltung in der Basar Tischbörse verarbeitet. Datenschutzhinweise: ${escapeHtml(privacyUrl)}<br>Basar Tischbörse · Finden. Buchen. Veranstalten. · basar-tischboerse.pages.dev</div>
+</main></body></html>`;
+
+    popup.document.open();
+    popup.document.write(html);
+    popup.document.close();
+    popup.focus();
+  }
+
   function getManualAreaFree(basar, area) {
     const blocking = bookings.filter(bookingBlocksTable);
     const totalBooked = blocking.reduce((sum,r)=>sum+Number(r.anzahl_tische||0),0);
@@ -742,7 +876,7 @@
     if (password !== repeat) return showError('registerError', 'Die beiden Passwörter stimmen nicht überein.');
     const button = $('registerButton'); button.disabled = true; button.textContent = 'Konto wird erstellt …';
     try {
-      const redirectTo = `${window.location.origin}${window.location.pathname}?v=288&onboarding=1`;
+      const redirectTo = `${window.location.origin}${window.location.pathname}?v=289&onboarding=1`;
       const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo } });
       if (error) throw error;
       if (data.session) {
@@ -767,7 +901,7 @@
   $('basarForm').addEventListener('input',markBasarFormDirty);
   $('basarForm').addEventListener('change',markBasarFormDirty);
   window.addEventListener('beforeunload',e=>{ if(!basarFormDirty) return; e.preventDefault(); e.returnValue=''; });
-  $('editCurrentButton').addEventListener('click',()=>{const b=basare.find(x=>x.id===selectedBasarId);if(b)editBasar(b);}); $('refreshButton').addEventListener('click',()=>loadBasare().catch(e=>showError('dashboardError',humanizeError(e)))); $('refreshBookingsButton').addEventListener('click',()=>loadBookings().catch(e=>showError('dashboardError',humanizeError(e)))); $('bookingFilter').addEventListener('change',renderBookings); $('paymentFilter').addEventListener('change',renderBookings); $('areaFilter').addEventListener('change',renderBookings); $('cakeFilter').addEventListener('change',renderBookings); $('sourceFilter').addEventListener('change',renderBookings); $('bookingSearch').addEventListener('input',renderBookings); $('resetBookingFiltersButton').addEventListener('click',resetBookingFilters); $('exportBookingsButton').addEventListener('click',exportFilteredBookings);
+  $('printBlankFormButton').addEventListener('click',printBlankBookingForm); $('editCurrentButton').addEventListener('click',()=>{const b=basare.find(x=>x.id===selectedBasarId);if(b)editBasar(b);}); $('refreshButton').addEventListener('click',()=>loadBasare().catch(e=>showError('dashboardError',humanizeError(e)))); $('refreshBookingsButton').addEventListener('click',()=>loadBookings().catch(e=>showError('dashboardError',humanizeError(e)))); $('bookingFilter').addEventListener('change',renderBookings); $('paymentFilter').addEventListener('change',renderBookings); $('areaFilter').addEventListener('change',renderBookings); $('cakeFilter').addEventListener('change',renderBookings); $('sourceFilter').addEventListener('change',renderBookings); $('bookingSearch').addEventListener('input',renderBookings); $('resetBookingFiltersButton').addEventListener('click',resetBookingFilters); $('exportBookingsButton').addEventListener('click',exportFilteredBookings);
   $('openManualBookingButton').addEventListener('click',openManualBooking); $('closeManualBookingModal').addEventListener('click',closeManualBooking); $('cancelManualBookingButton').addEventListener('click',closeManualBooking); $('manualBookingForm').addEventListener('submit',saveManualBooking); ['manualTables','manualArea','manualCake'].forEach(id=>$(id).addEventListener('change',updateManualBookingSummary));
   $('platformStatusFilter').addEventListener('change',renderPlatformAccounts); $('refreshPlatformButton').addEventListener('click',()=>loadPlatformAccounts().catch(e=>showError('platformError',humanizeError(e))));
   document.addEventListener('click', async e=>{ const btn=e.target.closest('[data-platform-action]'); if(!btn)return; const action=btn.dataset.platformAction; const status=action==='approve'?'freigegeben':action==='block'?'gesperrt':'ausstehend'; await changePlatformStatus(btn.dataset.userId,status); });
