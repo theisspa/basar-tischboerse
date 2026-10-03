@@ -142,8 +142,6 @@
       $('profileEmail').value = currentUser.email || '';
       $('profileTransferActive').checked = false;
       $('profilePaypalLinkActive').checked = false;
-      $('profileApiPayPalStatus').dataset.active = 'false';
-      $('profileApiPayPalStatus').textContent = 'Direkter PayPal-Checkout ist für dieses Konto nicht freigeschaltet.';
       profileSnapshot = null;
       return false;
     }
@@ -159,8 +157,6 @@
     $('profileTransferActive').checked = data.ueberweisung_aktiv === true;
     $('profilePaypalLinkActive').checked = data.paypal_link_aktiv === true;
     $('profilePaypalLink').value = data.paypal_link || '';
-    $('profileApiPayPalStatus').dataset.active = data.paypal_api_aktiv ? 'true' : 'false';
-    $('profileApiPayPalStatus').textContent = data.paypal_api_aktiv ? 'Direkter PayPal-Checkout ist für dieses Konto freigeschaltet.' : 'Direkter PayPal-Checkout ist für dieses Konto nicht freigeschaltet.';
     profileSnapshot = data;
     return true;
   }
@@ -183,8 +179,7 @@
     }
     if (payload.ueberweisung_aktiv && !payload.iban) return showError('profileError', 'Für Überweisung bitte eine IBAN hinterlegen.');
     if (payload.paypal_link_aktiv && !/^https:\/\/(?:www\.)?(?:paypal\.me|paypal\.com)\//i.test(payload.paypal_link || '')) return showError('profileError', 'Bitte einen gültigen HTTPS-PayPal-Link (paypal.me oder paypal.com) hinterlegen.');
-    const apiPayPalActive = $('profileApiPayPalStatus').dataset.active === 'true';
-    if (!payload.ueberweisung_aktiv && !payload.paypal_link_aktiv && !apiPayPalActive) return showError('profileError', 'Bitte mindestens eine Zahlungsart aktivieren.');
+    if (!payload.ueberweisung_aktiv && !payload.paypal_link_aktiv) return showError('profileError', 'Bitte mindestens eine Zahlungsart aktivieren.');
     const wasOnboarding = onboardingMode;
     const button=$('saveProfileButton'); button.disabled=true; button.textContent='Speichert …';
     try {
@@ -250,7 +245,7 @@
     const issues = [];
     const p = profileSnapshot || {};
     if (!p.telefon) issues.push('Telefonnummer fehlt im Veranstalterprofil.');
-    if (!p.ueberweisung_aktiv && !p.paypal_link_aktiv && !p.paypal_api_aktiv) issues.push('Keine Zahlungsart ist aktiviert.');
+    if (!p.ueberweisung_aktiv && !p.paypal_link_aktiv) issues.push('Keine Zahlungsart ist aktiviert.');
     if (p.ueberweisung_aktiv && !p.iban) issues.push('Überweisung ist aktiv, aber es ist keine IBAN hinterlegt.');
     if (p.paypal_link_aktiv && !p.paypal_link) issues.push('PayPal-Link ist aktiv, aber kein Link hinterlegt.');
     if (!basare.length) issues.push('Lege deinen ersten Basar an.');
@@ -489,7 +484,7 @@
   function openBooking(id) {
     selectedBooking=bookings.find(b=>b.id===id)||null; if(!selectedBooking)return; const r=selectedBooking; const [status]=bookingStatusInfo(r); const deadline=deadlineInfo(r);
     $('bookingModalTitle').textContent=r.buchungsnummer;
-    $('bookingDetails').innerHTML=`<div class="detail-item"><span>Name</span><strong>${escapeHtml(`${r.vorname} ${r.nachname}`)}</strong></div><div class="detail-item"><span>Bereich</span><strong>${r.verkaufsbereich==='kinder'?'Kinder':'Erwachsene'}</strong></div><div class="detail-item"><span>Tische</span><strong>${r.anzahl_tische}</strong></div><div class="detail-item"><span>Kuchen</span><strong>${r.kuchenspende?'Ja':'Nein'}</strong></div><div class="detail-item"><span>Betrag</span><strong>${euro(r.preis)}</strong></div><div class="detail-item"><span>Zahlung</span><strong>${r.zahlungsart==='paypal'?'PayPal (online)':r.zahlungsart==='paypal_link'?'PayPal-Link':'Überweisung'}</strong></div><div class="detail-item"><span>Status</span><strong>${status}</strong></div><div class="detail-item"><span>Zahlungsfrist</span><strong>${formatDate(r.zahlungsfrist)}${deadline.text?` · ${escapeHtml(deadline.text)}`:''}</strong></div><div class="detail-item full"><span>Adresse</span><strong>${escapeHtml(`${r.strasse} ${r.hausnummer}, ${r.plz} ${r.ort}`)}</strong></div><div class="detail-item"><span>E-Mail</span><strong>${escapeHtml(r.email)}</strong></div><div class="detail-item"><span>Telefon</span><strong>${escapeHtml(r.telefon||'—')}</strong></div><div class="detail-item"><span>E-Mail an Teilnehmer</span><strong>${r.email_status==='sent'?'Versendet':r.email_status==='error'?'Fehler':r.email_status==='sending'?'Wird gesendet':'Ausstehend'}${r.email_sent_at?` · ${formatDateTime(r.email_sent_at)}`:''}</strong></div><div class="detail-item"><span>E-Mail an Veranstalter</span><strong>${r.veranstalter_email_status==='sent'?'Versendet':r.veranstalter_email_status==='error'?'Fehler':r.veranstalter_email_status==='sending'?'Wird gesendet':'Ausstehend'}${r.veranstalter_email_sent_at?` · ${formatDateTime(r.veranstalter_email_sent_at)}`:''}</strong></div><div class="detail-item full"><span>Buchung eingegangen</span><strong>${formatDateTime(r.created_at)}</strong></div>`;
+    $('bookingDetails').innerHTML=`<div class="detail-item"><span>Name</span><strong>${escapeHtml(`${r.vorname} ${r.nachname}`)}</strong></div><div class="detail-item"><span>Bereich</span><strong>${r.verkaufsbereich==='kinder'?'Kinder':'Erwachsene'}</strong></div><div class="detail-item"><span>Tische</span><strong>${r.anzahl_tische}</strong></div><div class="detail-item"><span>Kuchen</span><strong>${r.kuchenspende?'Ja':'Nein'}</strong></div><div class="detail-item"><span>Betrag</span><strong>${euro(r.preis)}</strong></div><div class="detail-item"><span>Zahlung</span><strong>${r.zahlungsart==='paypal'?'PayPal online (Altbuchung)':r.zahlungsart==='paypal_link'?'PayPal-Link':'Überweisung'}</strong></div><div class="detail-item"><span>Status</span><strong>${status}</strong></div><div class="detail-item"><span>Zahlungsfrist</span><strong>${formatDate(r.zahlungsfrist)}${deadline.text?` · ${escapeHtml(deadline.text)}`:''}</strong></div><div class="detail-item full"><span>Adresse</span><strong>${escapeHtml(`${r.strasse} ${r.hausnummer}, ${r.plz} ${r.ort}`)}</strong></div><div class="detail-item"><span>E-Mail</span><strong>${escapeHtml(r.email)}</strong></div><div class="detail-item"><span>Telefon</span><strong>${escapeHtml(r.telefon||'—')}</strong></div><div class="detail-item"><span>E-Mail an Teilnehmer</span><strong>${r.email_status==='sent'?'Versendet':r.email_status==='error'?'Fehler':r.email_status==='sending'?'Wird gesendet':'Ausstehend'}${r.email_sent_at?` · ${formatDateTime(r.email_sent_at)}`:''}</strong></div><div class="detail-item"><span>E-Mail an Veranstalter</span><strong>${r.veranstalter_email_status==='sent'?'Versendet':r.veranstalter_email_status==='error'?'Fehler':r.veranstalter_email_status==='sending'?'Wird gesendet':'Ausstehend'}${r.veranstalter_email_sent_at?` · ${formatDateTime(r.veranstalter_email_sent_at)}`:''}</strong></div><div class="detail-item full"><span>Buchung eingegangen</span><strong>${formatDateTime(r.created_at)}</strong></div>`;
     $('markPaidButton').classList.toggle('hidden', ['bezahlt','storniert'].includes(r.zahlungsstatus)); $('markOpenButton').classList.toggle('hidden', r.zahlungsstatus!=='bezahlt'); $('cancelBookingButton').classList.toggle('hidden', r.zahlungsstatus==='storniert'); $('bookingModal').classList.remove('hidden');
   }
   function closeBooking(){ $('bookingModal').classList.add('hidden'); selectedBooking=null; }
@@ -594,7 +589,7 @@
     el.innerHTML=rows.map(r=>{
       const basarItems=Array.isArray(r.basare)?r.basare:[];
       const basarHtml=basarItems.length?`<div class="platform-basar-list">${basarItems.map(b=>`<div><strong>${escapeHtml(b.name||'Basar')}</strong><span>${escapeHtml(formatDate(b.veranstaltungsdatum))}${b.stadt?' · '+escapeHtml(b.stadt):''} · ${b.aktiv?'aktiv':'inaktiv'}${b.veroeffentlicht?' · Veröffentlichung an':' · Entwurf'}</span></div>`).join('')}</div>`:'<div class="platform-no-basar">Noch kein Basar angelegt.</div>';
-      const payment=[]; if(r.ueberweisung_aktiv)payment.push('Überweisung'); if(r.paypal_link_aktiv)payment.push('PayPal-Link'); if(r.paypal_api_aktiv)payment.push('PayPal online');
+      const payment=[]; if(r.ueberweisung_aktiv)payment.push('Überweisung'); if(r.paypal_link_aktiv)payment.push('PayPal-Link');
       return `<article class="platform-review-item status-${escapeHtml(r.freigabestatus)}" data-platform-user="${escapeHtml(r.user_id)}"><div class="platform-review-main"><div class="platform-review-title"><div><strong>${escapeHtml(r.name||'Ohne Namen')}</strong><span>${escapeHtml(r.email||'')} · ${escapeHtml(r.plz||'')} ${escapeHtml(r.ort||'')}</span></div><span class="status-chip ${r.freigabestatus==='freigegeben'?'active':r.freigabestatus==='gesperrt'?'blocked':'pending'}">${platformStatusLabel(r.freigabestatus)}</span></div><div class="platform-review-meta"><span>Registriert: ${formatDateTime(r.created_at)}</span><span>${Number(r.basare_count||0)} Basar${Number(r.basare_count||0)===1?'':'e'}</span><span>Zahlung: ${escapeHtml(payment.join(', ')||'noch nicht vollständig')}</span></div>${r.sperrgrund?`<div class="platform-block-reason"><strong>Sperrgrund:</strong> ${escapeHtml(r.sperrgrund)}</div>`:''}${basarHtml}</div><div class="platform-review-actions">${r.freigabestatus!=='freigegeben'?`<button class="primary inline-button" type="button" data-platform-action="approve" data-user-id="${escapeHtml(r.user_id)}">Freigeben</button>`:''}${r.freigabestatus!=='ausstehend'?`<button class="secondary" type="button" data-platform-action="pending" data-user-id="${escapeHtml(r.user_id)}">Auf Prüfung setzen</button>`:''}${r.freigabestatus!=='gesperrt'?`<button class="danger" type="button" data-platform-action="block" data-user-id="${escapeHtml(r.user_id)}">Sperren</button>`:''}</div></article>`;
     }).join('');
   }

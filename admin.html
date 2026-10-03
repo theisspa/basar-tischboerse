@@ -122,7 +122,6 @@
 <div class="field"><label for="profileIban">IBAN</label><input autocomplete="off" id="profileIban" placeholder="DE…"/></div>
 <div class="field full"><label class="checkbox-row"><input id="profilePaypalLinkActive" type="checkbox"/><span>Eigenen PayPal-Link anbieten</span></label></div>
 <div class="field full"><label for="profilePaypalLink">PayPal-Link / PayPal.Me-Link</label><input id="profilePaypalLink" placeholder="https://paypal.me/deinname" type="url"/><span class="hint">Das Geld geht direkt an das PayPal-Konto des Veranstalters. Zahlungsstatus wird dabei manuell gepflegt.</span></div>
-<div class="field full info-box"><strong>Direkter PayPal-Checkout</strong><span data-active="false" id="profileApiPayPalStatus">Wird geladen …</span><span class="hint">Diese Freischaltung kann aus Sicherheitsgründen nicht selbst aktiviert werden.</span></div>
 <div class="form-error hidden full" id="profileError" role="alert"></div>
 <div class="field full"><button class="primary" id="saveProfileButton" type="submit">Veranstalterdaten speichern</button></div>
 </form>
@@ -217,7 +216,7 @@
 <option value="alle">Alle Zahlungsarten</option>
 <option value="ueberweisung">Überweisung</option>
 <option value="paypal_link">PayPal-Link</option>
-<option value="paypal">PayPal online</option>
+<option value="paypal">PayPal online (Altbuchungen)</option>
 </select>
 <select aria-label="Verkaufsbereich filtern" class="compact-select" id="areaFilter">
 <option value="alle">Alle Bereiche</option>
@@ -288,6 +287,6 @@
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=2875"></script>
-<script src="admin.js?v=2875"></script>
+<script src="admin.js?v=2876"></script>
 </body>
 </html>

@@ -18,7 +18,6 @@
   let currentAvailability = null;
   let lastContract = null;
   let lastEmailPayload = null;
-  let paypalSdkPromise = null;
   let paymentConfigured = false;
   const discoveryAvailability = new Map();
   let discoveryQuery = '';
@@ -483,7 +482,6 @@
   function updatePaymentOptions() {
     const select = $('payment');
     const options = [];
-    if (currentBasar?.zahlung_paypal_api_aktiv) options.push(['paypal', 'PayPal (direkt online)']);
     if (currentBasar?.zahlung_paypal_link_aktiv && currentBasar?.zahlung_paypal_link) options.push(['paypal_link', 'PayPal']);
     if (currentBasar?.zahlung_ueberweisung_aktiv && currentBasar?.zahlung_iban_vorhanden) options.push(['ueberweisung', 'Überweisung']);
     select.innerHTML = options.length ? options.map(([value, label]) => `<option value="${value}">${label}</option>`).join('') : '<option value="">Keine Zahlungsart verfügbar</option>';
@@ -539,9 +537,6 @@
   }
 
   function paymentInfoText(booking, paymentMethod) {
-    if (paymentMethod === 'paypal') {
-      return `Zahlungsfrist: ${formatDate(booking.zahlungsfrist)}. Bitte bezahle über den PayPal-Button auf dieser Seite. Die Buchungsnummer ${booking.buchungsnummer} wird automatisch zugeordnet.`;
-    }
     if (paymentMethod === 'paypal_link') {
       return `Zahlungsfrist: ${formatDate(booking.zahlungsfrist)}. Bitte bezahle über den PayPal-Link des Veranstalters. Verwendungszweck: ${booking.buchungsnummer}.`;
     }
@@ -550,146 +545,6 @@
       return `Zahlungsfrist: ${formatDate(booking.zahlungsfrist)}. Überweisung an ${owner}, IBAN ${booking.veranstalter_iban}. Verwendungszweck: ${booking.buchungsnummer}.`;
     }
     return `Zahlungsfrist: ${formatDate(booking.zahlungsfrist)}. Die Zahlungsdaten werden vom Veranstalter separat mitgeteilt.`;
-  }
-
-  function setPayPalStatus(message, type = '') {
-    const el = $('paypalStatus');
-    el.textContent = message || '';
-    el.className = `small paypal-status${type ? ` ${type}` : ''}`;
-  }
-
-  function loadPayPalSdk() {
-    if (window.paypal?.createInstance) return Promise.resolve(window.paypal);
-    if (paypalSdkPromise) return paypalSdkPromise;
-    if (!config.paypalClientId) return Promise.reject(new Error('PayPal Client-ID fehlt in der Konfiguration.'));
-
-    paypalSdkPromise = new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      const isSandbox = (config.paypalEnvironment || 'sandbox') !== 'live';
-      script.src = isSandbox
-        ? 'https://www.sandbox.paypal.com/web-sdk/v6/core'
-        : 'https://www.paypal.com/web-sdk/v6/core';
-      script.async = true;
-      script.onload = () => window.paypal?.createInstance
-        ? resolve(window.paypal)
-        : reject(new Error('PayPal Web SDK v6 wurde geladen, ist aber nicht verfügbar.'));
-      script.onerror = () => reject(new Error('PayPal Web SDK v6 konnte nicht geladen werden.'));
-      document.head.appendChild(script);
-    });
-    return paypalSdkPromise;
-  }
-
-  async function renderPayPalButtons(booking) {
-    const section = $('paypalSection');
-    const container = $('paypalButtonContainer');
-    section.classList.remove('hidden');
-    container.innerHTML = '';
-    setPayPalStatus('PayPal wird geladen …');
-
-    if (!booking?.buchung_id || !booking?.email_token) {
-      setPayPalStatus('PayPal kann für diese Buchung nicht gestartet werden.', 'error');
-      return;
-    }
-
-    try {
-      await loadPayPalSdk();
-
-      const { data: tokenResult, error: tokenError } = await supabaseClient.functions.invoke('paypal-client-token', {
-        body: { origin: window.location.origin, booking_id: booking.buchung_id, email_token: booking.email_token }
-      });
-      if (tokenError) throw tokenError;
-      if (tokenResult?.error) throw new Error(tokenResult.error);
-      if (!tokenResult?.client_token) throw new Error('PayPal Client-Token konnte nicht erstellt werden.');
-
-      const sdk = await window.paypal.createInstance({
-        clientToken: tokenResult.client_token,
-        components: ['paypal-payments'],
-        pageType: 'checkout'
-      });
-
-      const methods = await sdk.findEligibleMethods({
-        currencyCode: config.paypalCurrency || 'EUR'
-      });
-
-      if (!methods?.isEligible?.('paypal')) {
-        setPayPalStatus('PayPal ist für diese Testumgebung derzeit nicht verfügbar.', 'error');
-        return;
-      }
-
-      const session = sdk.createPayPalOneTimePaymentSession({
-        onApprove: async ({ orderId }) => {
-          setPayPalStatus('Zahlung wird bestätigt …');
-          try {
-            const { data: result, error } = await supabaseClient.functions.invoke('paypal-capture-order', {
-              body: {
-                booking_id: booking.buchung_id,
-                email_token: booking.email_token,
-                order_id: orderId
-              }
-            });
-            if (error) throw error;
-            if (result?.error) throw new Error(result.error);
-            if (result?.status !== 'COMPLETED') throw new Error('PayPal hat die Zahlung nicht als abgeschlossen bestätigt.');
-
-            booking.zahlungsstatus = 'bezahlt';
-            booking.paypal_status = 'COMPLETED';
-            booking.paypal_capture_id = result.capture_id || null;
-            $('paymentInfo').textContent = `PayPal-Zahlung erfolgreich abgeschlossen. Buchungsnummer: ${booking.buchungsnummer}.`;
-            setPayPalStatus('✓ Zahlung erfolgreich. Dein Zahlungsstatus wurde automatisch auf „bezahlt“ gesetzt.', 'success');
-            container.innerHTML = '';
-          } catch (error) {
-            console.error('PayPal-Capture fehlgeschlagen:', error);
-            setPayPalStatus(`Die Zahlung konnte nicht bestätigt werden: ${error?.message || error}`, 'error');
-          }
-        },
-        onCancel: () => {
-          setPayPalStatus('Die PayPal-Zahlung wurde abgebrochen. Deine Tischreservierung bleibt bestehen.', 'warning');
-        },
-        onError: error => {
-          console.error('PayPal-Fehler:', error);
-          setPayPalStatus(`PayPal konnte nicht gestartet werden: ${error?.message || error}`, 'error');
-        }
-      });
-
-      const button = document.createElement('paypal-button');
-      button.setAttribute('type', 'pay');
-      button.style.display = 'block';
-      button.style.width = '100%';
-      container.appendChild(button);
-      setPayPalStatus('');
-
-      button.addEventListener('click', async () => {
-        try {
-          setPayPalStatus('PayPal-Zahlung wird vorbereitet …');
-
-          // PayPal Web SDK v6 erwartet als zweiten Parameter von start()
-          // zwingend ein Promise, das zu { orderId } aufloest.
-          // Die Order wird deshalb direkt als Promise erzeugt und an PayPal
-          // weitergereicht, statt erst auf die Order zu warten und ein Objekt
-          // zu uebergeben.
-          const orderPromise = supabaseClient.functions.invoke('paypal-create-order', {
-            body: { booking_id: booking.buchung_id, email_token: booking.email_token }
-          }).then(({ data, error }) => {
-            if (error) throw error;
-            if (data?.error) throw new Error(data.error);
-            if (!data?.order_id) throw new Error('PayPal hat keine Order-ID geliefert.');
-            setPayPalStatus('Bitte bestaetige die Zahlung im PayPal-Fenster.');
-            return { orderId: data.order_id };
-          });
-
-          await session.start(
-            { presentationMode: 'auto' },
-            orderPromise
-          );
-        } catch (error) {
-          console.error('PayPal-Start fehlgeschlagen:', error);
-          setPayPalStatus(`PayPal konnte nicht gestartet werden: ${error?.message || error}`, 'error');
-        }
-      });
-    } catch (error) {
-      console.error('PayPal konnte nicht geladen werden:', error);
-      setPayPalStatus(`PayPal konnte nicht geladen werden: ${error?.message || error}`, 'error');
-    }
   }
 
   async function sendBookingEmail(booking, silent = false) {
@@ -785,15 +640,10 @@
       $('emailStatus').textContent = '';
       $('emailStatus').className = 'small email-status';
       $('resendEmailButton').classList.add('hidden');
-      $('paypalSection').classList.add('hidden');
-      $('paypalButtonContainer').innerHTML = '';
       $('externalPaypalButton').classList.add('hidden');
       $('externalPaypalButton').removeAttribute('href');
-      setPayPalStatus('');
       await loadAvailability();
-      if (payload.p_zahlungsart === 'paypal') {
-        await renderPayPalButtons(booking);
-      } else if (payload.p_zahlungsart === 'paypal_link' && booking.veranstalter_paypal_email) {
+      if (payload.p_zahlungsart === 'paypal_link' && booking.veranstalter_paypal_email) {
         $('externalPaypalButton').href = booking.veranstalter_paypal_email;
         $('externalPaypalButton').classList.remove('hidden');
       }
@@ -866,7 +716,7 @@
 
     section('Buchung & Zahlung');
     const discount=Number(pricing?.kuchenrabatt??4), category=p.p_verkaufsbereich==='kinder'?'Kinder':'Erwachsene';
-    const payment=p.p_zahlungsart==='paypal'?'PayPal (online)':p.p_zahlungsart==='paypal_link'?'PayPal-Link':'Überweisung';
+    const payment=p.p_zahlungsart==='paypal'?'PayPal online (Altbuchung)':p.p_zahlungsart==='paypal_link'?'PayPal-Link':'Überweisung';
     wrapped(`Tische: ${p.p_anzahl_tische}\nVerkaufsbereich: ${category}\nKuchenspende: ${p.p_kuchenspende?`Ja (-${discount.toFixed(2).replace('.',',')} EUR Rabatt)`:'Nein'}\nGesamtbetrag: ${Number(b.preis).toFixed(2).replace('.',',')} EUR\nZahlungsart: ${payment}\nZahlungsfrist: ${formatDate(b.zahlungsfrist)}`);
     y+=2; wrapped(paymentInfoText(b,p.p_zahlungsart),9.2,4.6,[70,70,70]);
 
@@ -951,11 +801,8 @@
     $('bookingForm').reset();
     lastContract = null;
     lastEmailPayload = null;
-    $('paypalSection').classList.add('hidden');
-    $('paypalButtonContainer').innerHTML = '';
     $('externalPaypalButton').classList.add('hidden');
     $('externalPaypalButton').removeAttribute('href');
-    setPayPalStatus('');
     clearError();
     configureCategoryOptions();
     updatePrice();
