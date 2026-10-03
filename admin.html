@@ -5,7 +5,7 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Veranstalterbereich | Basar Tischbörse</title>
-<link href="styles.css?v=2875" rel="stylesheet"/>
+<link href="styles.css?v=288" rel="stylesheet"/>
 <meta content="Geschützter Veranstalterbereich der Basar Tischbörse." name="description"/><meta content="noindex,nofollow,noarchive" name="robots"/><meta content="noindex,nofollow,noarchive" name="googlebot"/><meta content="#fbf5ea" name="theme-color"/><meta content="Basar Tischbörse" name="application-name"/><meta content="Basar Tischbörse" name="apple-mobile-web-app-title"/><link href="favicon-v285.png" rel="icon" type="image/png"/><link href="favicon-v285.png" rel="apple-touch-icon"/><link href="site.webmanifest" rel="manifest"/><link crossorigin="anonymous" href="https://cdn.jsdelivr.net" rel="preconnect"/><link crossorigin="anonymous" href="https://byvvsockfobnrqzkxvap.supabase.co" rel="preconnect"/></head>
 <body class="admin-page">
 <header class="admin-site-header">
@@ -197,12 +197,13 @@
 </section>
 <section class="card admin-section-card" id="bookingCard">
 <div class="card-head booking-card-head">
-<div><span class="eyebrow">BUCHUNGEN</span><h2>Teilnehmerübersicht</h2><p>Öffne Buchungen, markiere Zahlungen und storniere Buchungen.</p></div>
+<div><span class="eyebrow">BUCHUNGEN</span><h2>Teilnehmerübersicht</h2><p>Öffne Buchungen, markiere Zahlungen, storniere Buchungen oder trage Reservierungen manuell ein.</p></div>
+<div class="booking-head-actions"><button class="primary compact-action manual-booking-button" id="openManualBookingButton" type="button">+ Kunde manuell eintragen</button></div>
 <div aria-label="Buchungen suchen und filtern" class="booking-tools">
 <div class="booking-filter-grid">
 <div class="booking-search-wrap">
 <label class="sr-only" for="bookingSearch">Name oder Buchungsnummer suchen</label>
-<input autocomplete="off" class="booking-search" id="bookingSearch" placeholder="Name oder Buchungsnummer suchen …" type="search"/>
+<input autocomplete="off" class="booking-search" id="bookingSearch" placeholder="Name, Buchungsnr., E-Mail oder Telefon …" type="search"/>
 </div>
 <select aria-label="Zahlungsstatus filtern" class="compact-select" id="bookingFilter">
 <option value="alle">Alle Status</option>
@@ -217,6 +218,7 @@
 <option value="ueberweisung">Überweisung</option>
 <option value="paypal_link">PayPal-Link</option>
 <option value="paypal">PayPal online (Altbuchungen)</option>
+<option value="bar">Bar / vor Ort</option>
 </select>
 <select aria-label="Verkaufsbereich filtern" class="compact-select" id="areaFilter">
 <option value="alle">Alle Bereiche</option>
@@ -227,6 +229,11 @@
 <option value="alle">Kuchen: alle</option>
 <option value="ja">Kuchen: ja</option>
 <option value="nein">Kuchen: nein</option>
+</select>
+<select aria-label="Buchungsquelle filtern" class="compact-select" id="sourceFilter">
+<option value="alle">Quelle: alle</option>
+<option value="online">Online</option>
+<option value="manuell">Manuell</option>
 </select>
 </div>
 <div class="booking-action-row">
@@ -266,6 +273,33 @@
 </section>
 </section>
 </main>
+<div aria-labelledby="manualBookingModalTitle" aria-modal="true" class="modal hidden" id="manualBookingModal" role="dialog">
+<div class="modal-panel manual-booking-panel">
+<div class="modal-head"><div><span class="eyebrow">MANUELLE RESERVIERUNG</span><h2 id="manualBookingModalTitle">Kunde manuell eintragen</h2><p id="manualBookingBasarName" class="small">–</p></div><button aria-label="Schließen" class="icon-button" id="closeManualBookingModal" type="button">×</button></div>
+<form id="manualBookingForm">
+<div class="manual-booking-summary" id="manualBookingSummary"><strong>Preis und Verfügbarkeit werden automatisch berechnet.</strong><span>–</span></div>
+<div class="section-grid manual-booking-grid">
+<div class="field"><label for="manualFirstName">Vorname *</label><input id="manualFirstName" maxlength="80" required type="text"/></div>
+<div class="field"><label for="manualLastName">Nachname *</label><input id="manualLastName" maxlength="80" required type="text"/></div>
+<div class="field"><label for="manualEmail">E-Mail</label><input id="manualEmail" maxlength="200" type="email"/><span class="hint">Optional. Nur nötig, wenn du eine Bestätigung per E-Mail senden möchtest.</span></div>
+<div class="field"><label for="manualPhone">Telefon</label><input id="manualPhone" maxlength="60" type="tel"/></div>
+<div class="field"><label for="manualStreet">Straße</label><input id="manualStreet" maxlength="120" type="text"/></div>
+<div class="field"><label for="manualHouseNumber">Hausnummer</label><input id="manualHouseNumber" maxlength="30" type="text"/></div>
+<div class="field"><label for="manualZip">PLZ</label><input id="manualZip" maxlength="12" type="text"/></div>
+<div class="field"><label for="manualCity">Ort</label><input id="manualCity" maxlength="120" type="text"/></div>
+<div class="field"><label for="manualTables">Tische *</label><select id="manualTables" required><option value="1">1 Tisch</option><option value="2">2 Tische</option><option value="3">3 Tische</option></select></div>
+<div class="field"><label for="manualArea">Verkaufsbereich *</label><select id="manualArea" required></select></div>
+<div class="field"><label for="manualCake">Kuchenspende</label><select id="manualCake"><option value="false">Nein</option><option value="true">Ja</option></select></div>
+<div class="field"><label for="manualPaymentMethod">Zahlungsart *</label><select id="manualPaymentMethod" required></select></div>
+<div class="field"><label for="manualPaymentStatus">Zahlungsstatus *</label><select id="manualPaymentStatus" required><option value="offen">Offen</option><option value="bezahlt">Bereits bezahlt</option></select></div>
+<div class="field full"><label for="manualNote">Interne Notiz</label><textarea id="manualNote" maxlength="1000" rows="3" placeholder="z. B. Reservierung telefonisch am … / besondere Absprache"></textarea><span class="hint">Nur im Veranstalterbereich sichtbar.</span></div>
+</div>
+<div class="form-error hidden" id="manualBookingError" role="alert"></div>
+<div class="form-success hidden" id="manualBookingSuccess" role="status"></div>
+<div class="modal-actions"><button class="secondary" id="cancelManualBookingButton" type="button">Abbrechen</button><button class="primary" id="saveManualBookingButton" type="submit">Manuelle Buchung speichern</button></div>
+</form>
+</div>
+</div>
 <div aria-labelledby="bookingModalTitle" aria-modal="true" class="modal hidden" id="bookingModal" role="dialog">
 <div class="modal-panel">
 <div class="modal-head"><div><span class="eyebrow">BUCHUNG</span><h2 id="bookingModalTitle">Buchung</h2></div><button aria-label="Schließen" class="icon-button" data-action="close-booking" id="closeBookingModal" type="button">×</button></div>
@@ -286,7 +320,7 @@
 </div>
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=2875"></script>
-<script src="admin.js?v=2876"></script>
+<script src="config.js?v=288"></script>
+<script src="admin.js?v=288"></script>
 </body>
 </html>

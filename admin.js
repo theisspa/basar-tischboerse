@@ -1,4 +1,4 @@
-// V28.7.5 - verhindert automatische Dashboard-Neuladung bei Auth-Token-Refresh und schützt ungespeicherte Basar-Änderungen.
+// V28.8 - manuelle Teilnehmerbuchungen im Veranstalterbereich, auf Basis der stabilen V28.7.6.
 (() => {
   'use strict';
   const config = window.BASAR_CONFIG;
@@ -333,7 +333,7 @@
   async function loadBookings() {
     clearError('dashboardError');
     if (selectedBasarId) await supabase.rpc('get_basar_availability', { p_basar_id: selectedBasarId });
-    const { data, error } = await supabase.from('buchungen').select('id,buchungsnummer,anzahl_tische,verkaufsbereich,kuchenspende,preis,vorname,nachname,strasse,hausnummer,plz,ort,email,telefon,zahlungsart,zahlungsstatus,zahlungsfrist,email_status,email_sent_at,email_last_error,veranstalter_email_status,veranstalter_email_sent_at,veranstalter_email_last_error,created_at').eq('basar_id',selectedBasarId).order('created_at',{ascending:false});
+    const { data, error } = await supabase.from('buchungen').select('id,buchungsnummer,anzahl_tische,verkaufsbereich,kuchenspende,preis,vorname,nachname,strasse,hausnummer,plz,ort,email,telefon,zahlungsart,zahlungsstatus,zahlungsfrist,email_status,email_sent_at,email_last_error,veranstalter_email_status,veranstalter_email_sent_at,veranstalter_email_last_error,buchungsquelle,manuell_notiz,created_at').eq('basar_id',selectedBasarId).order('created_at',{ascending:false});
     if (error) throw error; bookings=data||[]; updateStats(); renderBookings();
   }
 
@@ -371,7 +371,96 @@
   function paymentLabel(value) {
     if (value === 'paypal') return 'PayPal (online)';
     if (value === 'paypal_link') return 'PayPal-Link';
+    if (value === 'bar') return 'Bar / vor Ort';
     return 'Überweisung';
+  }
+
+  function bookingSourceLabel(value) { return value === 'manuell' ? 'Manuell' : 'Online'; }
+
+  function manualBookingBasar() { return basare.find(b => Number(b.id) === Number(selectedBasarId)) || null; }
+
+  function getManualAreaFree(basar, area) {
+    const blocking = bookings.filter(bookingBlocksTable);
+    const totalBooked = blocking.reduce((sum,r)=>sum+Number(r.anzahl_tische||0),0);
+    if (basar?.verkaufsbereiche === 'beide' && basar?.kontingent_modus === 'getrennt') {
+      const used = blocking.filter(r=>r.verkaufsbereich===area).reduce((sum,r)=>sum+Number(r.anzahl_tische||0),0);
+      const max = area === 'kinder' ? Number(basar.max_tische_kinder||0) : Number(basar.max_tische_erwachsene||0);
+      return Math.max(0, max-used);
+    }
+    return Math.max(0, Number(basar?.max_tische||0)-totalBooked);
+  }
+
+  function manualBookingPrice(basar, tables, cake) {
+    const base = tables === 1 ? Number(basar?.preis_1_tisch||0) : tables === 2 ? Number(basar?.preis_2_tische||0) : Number(basar?.preis_3_tische||0);
+    const discount = cake ? Number(basar?.kuchenrabatt||0) : 0;
+    return Math.max(0, base-discount);
+  }
+
+  function populateManualBookingOptions() {
+    const basar = manualBookingBasar(); if (!basar) return;
+    const area = $('manualArea');
+    const allowed = basar.verkaufsbereiche === 'kinder' ? [['kinder','Kinder']] : basar.verkaufsbereiche === 'erwachsene' ? [['erwachsene','Erwachsene']] : [['kinder','Kinder'],['erwachsene','Erwachsene']];
+    area.innerHTML = allowed.map(([value,label])=>`<option value="${value}">${label}</option>`).join('');
+    const payment = $('manualPaymentMethod');
+    const options = [];
+    if (profileSnapshot?.ueberweisung_aktiv && profileSnapshot?.iban) options.push(['ueberweisung','Überweisung']);
+    if (profileSnapshot?.paypal_link_aktiv && profileSnapshot?.paypal_link) options.push(['paypal_link','PayPal-Link']);
+    options.push(['bar','Bar / vor Ort']);
+    payment.innerHTML = options.map(([value,label])=>`<option value="${value}">${label}</option>`).join('');
+    updateManualBookingSummary();
+  }
+
+  function updateManualBookingSummary() {
+    const basar = manualBookingBasar(); if (!basar || !$('manualBookingSummary')) return;
+    const tables = Number($('manualTables').value||1);
+    const area = $('manualArea').value || (basar.verkaufsbereiche === 'erwachsene' ? 'erwachsene' : 'kinder');
+    const cake = $('manualCake').value === 'true';
+    const free = getManualAreaFree(basar, area);
+    const price = manualBookingPrice(basar, tables, cake);
+    const areaName = area === 'kinder' ? 'Kinder' : 'Erwachsene';
+    const warning = tables > free ? ' · Nicht genügend Tische frei' : '';
+    $('manualBookingSummary').classList.toggle('warning', tables > free);
+    $('manualBookingSummary').innerHTML = `<strong>${tables} ${tables===1?'Tisch':'Tische'} · ${escapeHtml(areaName)} · ${euro(price)}</strong><span>${free} Tische in diesem Bereich frei${warning}</span>`;
+  }
+
+  function openManualBooking() {
+    const basar = manualBookingBasar();
+    if (!basar) return showError('dashboardError','Bitte zuerst einen Basar auswählen.');
+    clearError('manualBookingError');
+    $('manualBookingForm').reset();
+    $('manualBookingBasarName').textContent = `${basar.name} · ${formatDate(basar.veranstaltungsdatum)}`;
+    $('manualTables').value='1'; $('manualCake').value='false'; $('manualPaymentStatus').value='offen';
+    populateManualBookingOptions();
+    $('manualBookingModal').classList.remove('hidden');
+    setTimeout(()=>$('manualFirstName').focus(),0);
+  }
+
+  function closeManualBooking() { $('manualBookingModal').classList.add('hidden'); clearError('manualBookingError'); }
+
+  async function saveManualBooking(event) {
+    event.preventDefault(); clearError('manualBookingError');
+    const basar = manualBookingBasar(); if (!basar) return showError('manualBookingError','Der ausgewählte Basar wurde nicht gefunden.');
+    const tables = Number($('manualTables').value);
+    const area = $('manualArea').value;
+    if (tables > getManualAreaFree(basar, area)) return showError('manualBookingError','Für diesen Bereich sind nicht genügend freie Tische vorhanden.');
+    const first = $('manualFirstName').value.trim(), last = $('manualLastName').value.trim();
+    if (!first || !last) return showError('manualBookingError','Bitte Vor- und Nachname eintragen.');
+    const payload = {
+      p_basar_id:selectedBasarId, p_anzahl_tische:tables, p_verkaufsbereich:area, p_kuchenspende:$('manualCake').value==='true',
+      p_vorname:first, p_nachname:last, p_strasse:$('manualStreet').value.trim(), p_hausnummer:$('manualHouseNumber').value.trim(),
+      p_plz:$('manualZip').value.trim(), p_ort:$('manualCity').value.trim(), p_email:$('manualEmail').value.trim(), p_telefon:$('manualPhone').value.trim(),
+      p_zahlungsart:$('manualPaymentMethod').value, p_zahlungsstatus:$('manualPaymentStatus').value, p_notiz:$('manualNote').value.trim()
+    };
+    const button=$('saveManualBookingButton'); button.disabled=true; button.textContent='Wird gespeichert …';
+    try {
+      const { data, error } = await supabase.rpc('create_manual_buchung', payload);
+      if (error) throw error;
+      const result = Array.isArray(data) ? data[0] : data;
+      closeManualBooking();
+      await loadBookings(); await loadDashboardOverview();
+      window.alert(`Manuelle Buchung ${result?.buchungsnummer || ''} wurde gespeichert.`.trim());
+    } catch (error) { console.error(error); showError('manualBookingError',humanizeError(error)); }
+    finally { button.disabled=false; button.textContent='Manuelle Buchung speichern'; }
   }
 
   function getFilteredBookings() {
@@ -379,14 +468,17 @@
     const paymentFilter = $('paymentFilter').value;
     const areaFilter = $('areaFilter').value;
     const cakeFilter = $('cakeFilter').value;
+    const sourceFilter = $('sourceFilter').value;
     const search = $('bookingSearch').value.trim().toLocaleLowerCase('de-DE');
 
     return bookings.filter(r => {
       const deadline = deadlineInfo(r);
       const fullName = `${r.vorname || ''} ${r.nachname || ''}`.trim().toLocaleLowerCase('de-DE');
       const bookingNumber = String(r.buchungsnummer || '').toLocaleLowerCase('de-DE');
+      const email = String(r.email || '').toLocaleLowerCase('de-DE');
+      const phone = String(r.telefon || '').toLocaleLowerCase('de-DE');
 
-      if (search && !fullName.includes(search) && !bookingNumber.includes(search)) return false;
+      if (search && !fullName.includes(search) && !bookingNumber.includes(search) && !email.includes(search) && !phone.includes(search)) return false;
 
       if (statusFilter === 'offen' && r.zahlungsstatus !== 'offen') return false;
       if (statusFilter === 'bezahlt' && r.zahlungsstatus !== 'bezahlt') return false;
@@ -398,6 +490,7 @@
       if (areaFilter !== 'alle' && r.verkaufsbereich !== areaFilter) return false;
       if (cakeFilter === 'ja' && !r.kuchenspende) return false;
       if (cakeFilter === 'nein' && r.kuchenspende) return false;
+      if (sourceFilter !== 'alle' && (r.buchungsquelle || 'online') !== sourceFilter) return false;
 
       return true;
     });
@@ -417,7 +510,8 @@
       const rowClass = r.zahlungsstatus==='storniert' || r.zahlungsstatus==='abgelaufen' ? 'muted-row' : deadline.state==='overdue' ? 'overdue-row' : deadline.state==='today' ? 'due-today-row' : '';
       const deadlineClass = deadline.state==='overdue' ? 'deadline-overdue' : deadline.state==='today' ? 'deadline-today' : '';
       const deadlineSub = deadline.text ? `<small class="deadline-note ${deadlineClass}">${escapeHtml(deadline.text)}</small>` : '';
-      return `<tr class="${rowClass}"><td><strong>${escapeHtml(r.buchungsnummer)}</strong></td><td>${escapeHtml(`${r.vorname} ${r.nachname}`)}</td><td>${r.anzahl_tische}</td><td>${r.verkaufsbereich==='kinder'?'Kinder':'Erwachsene'}</td><td>${r.kuchenspende?'Ja':'Nein'}</td><td>${euro(r.preis)}</td><td>${paymentLabel(r.zahlungsart)}</td><td>${formatDate(r.zahlungsfrist)}${deadlineSub}</td><td><span class="badge status-${statusClass}">${statusText}</span></td><td><button class="table-button" type="button" data-booking-id="${r.id}" data-action="open-booking">Öffnen</button></td></tr>`;
+      const sourceBadge = (r.buchungsquelle || 'online') === 'manuell' ? '<small class="manual-source-badge">Manuell</small>' : '';
+      return `<tr class="${rowClass}"><td><strong>${escapeHtml(r.buchungsnummer)}</strong>${sourceBadge}</td><td>${escapeHtml(`${r.vorname} ${r.nachname}`)}</td><td>${r.anzahl_tische}</td><td>${r.verkaufsbereich==='kinder'?'Kinder':'Erwachsene'}</td><td>${r.kuchenspende?'Ja':'Nein'}</td><td>${euro(r.preis)}</td><td>${paymentLabel(r.zahlungsart)}</td><td>${formatDate(r.zahlungsfrist)}${deadlineSub}</td><td><span class="badge status-${statusClass}">${statusText}</span></td><td><button class="table-button" type="button" data-booking-id="${r.id}" data-action="open-booking">Öffnen</button></td></tr>`;
     }).join('');
   }
 
@@ -438,6 +532,7 @@
     $('paymentFilter').value = 'alle';
     $('areaFilter').value = 'alle';
     $('cakeFilter').value = 'alle';
+    $('sourceFilter').value = 'alle';
     renderBookings();
     $('bookingSearch').focus();
   }
@@ -449,9 +544,10 @@
       return;
     }
     clearError('dashboardError');
-    const header = ['Buchungsnummer','Vorname','Nachname','E-Mail','Telefon','Tische','Bereich','Kuchen','Betrag EUR','Zahlungsart','Zahlungsstatus','Zahlungsfrist','Buchung eingegangen'];
+    const header = ['Buchungsnummer','Quelle','Vorname','Nachname','E-Mail','Telefon','Tische','Bereich','Kuchen','Betrag EUR','Zahlungsart','Zahlungsstatus','Zahlungsfrist','Interne Notiz','Buchung eingegangen'];
     const lines = [header, ...rows.map(r => [
       r.buchungsnummer,
+      bookingSourceLabel(r.buchungsquelle),
       r.vorname,
       r.nachname,
       r.email,
@@ -463,6 +559,7 @@
       paymentLabel(r.zahlungsart),
       bookingStatusInfo(r)[0],
       r.zahlungsfrist || '',
+      r.manuell_notiz || '',
       r.created_at ? formatDateTime(r.created_at) : ''
     ])].map(row => row.map(csvCell).join(';')).join('\r\n');
 
@@ -484,7 +581,10 @@
   function openBooking(id) {
     selectedBooking=bookings.find(b=>b.id===id)||null; if(!selectedBooking)return; const r=selectedBooking; const [status]=bookingStatusInfo(r); const deadline=deadlineInfo(r);
     $('bookingModalTitle').textContent=r.buchungsnummer;
-    $('bookingDetails').innerHTML=`<div class="detail-item"><span>Name</span><strong>${escapeHtml(`${r.vorname} ${r.nachname}`)}</strong></div><div class="detail-item"><span>Bereich</span><strong>${r.verkaufsbereich==='kinder'?'Kinder':'Erwachsene'}</strong></div><div class="detail-item"><span>Tische</span><strong>${r.anzahl_tische}</strong></div><div class="detail-item"><span>Kuchen</span><strong>${r.kuchenspende?'Ja':'Nein'}</strong></div><div class="detail-item"><span>Betrag</span><strong>${euro(r.preis)}</strong></div><div class="detail-item"><span>Zahlung</span><strong>${r.zahlungsart==='paypal'?'PayPal online (Altbuchung)':r.zahlungsart==='paypal_link'?'PayPal-Link':'Überweisung'}</strong></div><div class="detail-item"><span>Status</span><strong>${status}</strong></div><div class="detail-item"><span>Zahlungsfrist</span><strong>${formatDate(r.zahlungsfrist)}${deadline.text?` · ${escapeHtml(deadline.text)}`:''}</strong></div><div class="detail-item full"><span>Adresse</span><strong>${escapeHtml(`${r.strasse} ${r.hausnummer}, ${r.plz} ${r.ort}`)}</strong></div><div class="detail-item"><span>E-Mail</span><strong>${escapeHtml(r.email)}</strong></div><div class="detail-item"><span>Telefon</span><strong>${escapeHtml(r.telefon||'—')}</strong></div><div class="detail-item"><span>E-Mail an Teilnehmer</span><strong>${r.email_status==='sent'?'Versendet':r.email_status==='error'?'Fehler':r.email_status==='sending'?'Wird gesendet':'Ausstehend'}${r.email_sent_at?` · ${formatDateTime(r.email_sent_at)}`:''}</strong></div><div class="detail-item"><span>E-Mail an Veranstalter</span><strong>${r.veranstalter_email_status==='sent'?'Versendet':r.veranstalter_email_status==='error'?'Fehler':r.veranstalter_email_status==='sending'?'Wird gesendet':'Ausstehend'}${r.veranstalter_email_sent_at?` · ${formatDateTime(r.veranstalter_email_sent_at)}`:''}</strong></div><div class="detail-item full"><span>Buchung eingegangen</span><strong>${formatDateTime(r.created_at)}</strong></div>`;
+    const address = [String(r.strasse||'').trim() + (r.hausnummer ? ` ${r.hausnummer}` : ''), [r.plz,r.ort].filter(Boolean).join(' ')].filter(x=>x.trim()).join(', ') || '—';
+    const manual = (r.buchungsquelle || 'online') === 'manuell';
+    const participantMail = manual && !r.email ? 'Keine E-Mail hinterlegt' : manual && r.email_status === 'pending' ? 'Nicht automatisch versendet' : r.email_status==='sent'?'Versendet':r.email_status==='error'?'Fehler':r.email_status==='sending'?'Wird gesendet':'Ausstehend';
+    $('bookingDetails').innerHTML=`<div class="detail-item"><span>Name</span><strong>${escapeHtml(`${r.vorname} ${r.nachname}`)}</strong></div><div class="detail-item"><span>Quelle</span><strong>${bookingSourceLabel(r.buchungsquelle)}</strong></div><div class="detail-item"><span>Bereich</span><strong>${r.verkaufsbereich==='kinder'?'Kinder':'Erwachsene'}</strong></div><div class="detail-item"><span>Tische</span><strong>${r.anzahl_tische}</strong></div><div class="detail-item"><span>Kuchen</span><strong>${r.kuchenspende?'Ja':'Nein'}</strong></div><div class="detail-item"><span>Betrag</span><strong>${euro(r.preis)}</strong></div><div class="detail-item"><span>Zahlung</span><strong>${paymentLabel(r.zahlungsart)}</strong></div><div class="detail-item"><span>Status</span><strong>${status}</strong></div><div class="detail-item"><span>Zahlungsfrist</span><strong>${formatDate(r.zahlungsfrist)}${deadline.text?` · ${escapeHtml(deadline.text)}`:''}</strong></div><div class="detail-item full"><span>Adresse</span><strong>${escapeHtml(address)}</strong></div><div class="detail-item"><span>E-Mail</span><strong>${escapeHtml(r.email||'—')}</strong></div><div class="detail-item"><span>Telefon</span><strong>${escapeHtml(r.telefon||'—')}</strong></div><div class="detail-item"><span>E-Mail an Teilnehmer</span><strong>${escapeHtml(participantMail)}${r.email_sent_at?` · ${formatDateTime(r.email_sent_at)}`:''}</strong></div><div class="detail-item"><span>E-Mail an Veranstalter</span><strong>${r.veranstalter_email_status==='sent'?'Versendet':r.veranstalter_email_status==='error'?'Fehler':r.veranstalter_email_status==='sending'?'Wird gesendet':manual?'Nicht automatisch versendet':'Ausstehend'}${r.veranstalter_email_sent_at?` · ${formatDateTime(r.veranstalter_email_sent_at)}`:''}</strong></div>${manual&&r.manuell_notiz?`<div class="detail-item full"><span>Interne Notiz</span><strong>${escapeHtml(r.manuell_notiz)}</strong></div>`:''}<div class="detail-item full"><span>Buchung eingegangen</span><strong>${formatDateTime(r.created_at)}</strong></div>`;
     $('markPaidButton').classList.toggle('hidden', ['bezahlt','storniert'].includes(r.zahlungsstatus)); $('markOpenButton').classList.toggle('hidden', r.zahlungsstatus!=='bezahlt'); $('cancelBookingButton').classList.toggle('hidden', r.zahlungsstatus==='storniert'); $('bookingModal').classList.remove('hidden');
   }
   function closeBooking(){ $('bookingModal').classList.add('hidden'); selectedBooking=null; }
@@ -495,7 +595,8 @@
   }
 
   document.addEventListener('click', async e=>{ const b=e.target.closest('[data-action]'); if(!b)return; const a=b.dataset.action; if(a==='open-booking')openBooking(Number(b.dataset.bookingId)); else if(a==='close-booking')closeBooking(); else if(a==='mark-paid')await updateBookingStatus('bezahlt'); else if(a==='mark-open')await updateBookingStatus('offen'); else if(a==='cancel-booking')await updateBookingStatus('storniert'); }, true);
-  document.addEventListener('click',e=>{if(e.target===$('bookingModal'))closeBooking();}); document.addEventListener('keydown',e=>{if(e.key==='Escape')closeBooking();});
+  document.addEventListener('click',e=>{if(e.target===$('bookingModal'))closeBooking(); if(e.target===$('manualBookingModal'))closeManualBooking();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'){ closeBooking(); closeManualBooking(); }});
 
   function updateBasarCapacityFields() {
     const areas=$('basarBereiche').value;
@@ -641,7 +742,7 @@
     if (password !== repeat) return showError('registerError', 'Die beiden Passwörter stimmen nicht überein.');
     const button = $('registerButton'); button.disabled = true; button.textContent = 'Konto wird erstellt …';
     try {
-      const redirectTo = `${window.location.origin}${window.location.pathname}?v=2875&onboarding=1`;
+      const redirectTo = `${window.location.origin}${window.location.pathname}?v=288&onboarding=1`;
       const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo } });
       if (error) throw error;
       if (data.session) {
@@ -666,7 +767,8 @@
   $('basarForm').addEventListener('input',markBasarFormDirty);
   $('basarForm').addEventListener('change',markBasarFormDirty);
   window.addEventListener('beforeunload',e=>{ if(!basarFormDirty) return; e.preventDefault(); e.returnValue=''; });
-  $('editCurrentButton').addEventListener('click',()=>{const b=basare.find(x=>x.id===selectedBasarId);if(b)editBasar(b);}); $('refreshButton').addEventListener('click',()=>loadBasare().catch(e=>showError('dashboardError',humanizeError(e)))); $('refreshBookingsButton').addEventListener('click',()=>loadBookings().catch(e=>showError('dashboardError',humanizeError(e)))); $('bookingFilter').addEventListener('change',renderBookings); $('paymentFilter').addEventListener('change',renderBookings); $('areaFilter').addEventListener('change',renderBookings); $('cakeFilter').addEventListener('change',renderBookings); $('bookingSearch').addEventListener('input',renderBookings); $('resetBookingFiltersButton').addEventListener('click',resetBookingFilters); $('exportBookingsButton').addEventListener('click',exportFilteredBookings);
+  $('editCurrentButton').addEventListener('click',()=>{const b=basare.find(x=>x.id===selectedBasarId);if(b)editBasar(b);}); $('refreshButton').addEventListener('click',()=>loadBasare().catch(e=>showError('dashboardError',humanizeError(e)))); $('refreshBookingsButton').addEventListener('click',()=>loadBookings().catch(e=>showError('dashboardError',humanizeError(e)))); $('bookingFilter').addEventListener('change',renderBookings); $('paymentFilter').addEventListener('change',renderBookings); $('areaFilter').addEventListener('change',renderBookings); $('cakeFilter').addEventListener('change',renderBookings); $('sourceFilter').addEventListener('change',renderBookings); $('bookingSearch').addEventListener('input',renderBookings); $('resetBookingFiltersButton').addEventListener('click',resetBookingFilters); $('exportBookingsButton').addEventListener('click',exportFilteredBookings);
+  $('openManualBookingButton').addEventListener('click',openManualBooking); $('closeManualBookingModal').addEventListener('click',closeManualBooking); $('cancelManualBookingButton').addEventListener('click',closeManualBooking); $('manualBookingForm').addEventListener('submit',saveManualBooking); ['manualTables','manualArea','manualCake'].forEach(id=>$(id).addEventListener('change',updateManualBookingSummary));
   $('platformStatusFilter').addEventListener('change',renderPlatformAccounts); $('refreshPlatformButton').addEventListener('click',()=>loadPlatformAccounts().catch(e=>showError('platformError',humanizeError(e))));
   document.addEventListener('click', async e=>{ const btn=e.target.closest('[data-platform-action]'); if(!btn)return; const action=btn.dataset.platformAction; const status=action==='approve'?'freigegeben':action==='block'?'gesperrt':'ausstehend'; await changePlatformStatus(btn.dataset.userId,status); });
   supabase.auth.onAuthStateChange((event,session)=>{
