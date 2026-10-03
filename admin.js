@@ -1,4 +1,4 @@
-// V28.9 - druckbares Blanko-Reservierungsformular je Basar, auf Basis der stabilen V28.8.
+// V29.0 - Plattformadmin kann Basare dauerhaft löschen + druckbares Kuchen-/Allergenformular.
 (() => {
   'use strict';
   const config = window.BASAR_CONFIG;
@@ -513,6 +513,86 @@
     popup.focus();
   }
 
+
+  function printCakeAllergenForm(booking = null) {
+    const basar = manualBookingBasar();
+    if (!basar) return window.alert('Bitte zuerst einen Basar auswählen.');
+    if (booking && !booking.kuchenspende) return window.alert('Für diese Buchung ist keine Kuchenspende hinterlegt.');
+    const p = profileSnapshot || {};
+    const popup = window.open('', '_blank');
+    if (!popup) return window.alert('Das Druckfenster wurde vom Browser blockiert. Bitte Pop-ups für diese Seite erlauben und erneut versuchen.');
+
+    const eventAddress = [basar.veranstaltungsadresse, [basar.plz, basar.stadt].filter(Boolean).join(' ')].filter(Boolean).join(', ') || '—';
+    const donorName = booking ? `${booking.vorname || ''} ${booking.nachname || ''}`.trim() : '';
+    const bookingNo = booking?.buchungsnummer || '';
+    const organizerContact = [p.name, p.email, p.telefon].filter(Boolean).join(' · ');
+    const logoUrl = new URL('logo-footer-v263.png', window.location.href).href;
+    const allergens = [
+      'Glutenhaltiges Getreide (z. B. Weizen, Roggen, Gerste, Hafer, Dinkel)',
+      'Krebstiere',
+      'Eier',
+      'Fisch',
+      'Erdnüsse',
+      'Soja',
+      'Milch / Laktose',
+      'Schalenfrüchte / Nüsse (z. B. Mandeln, Haselnüsse, Walnüsse)',
+      'Sellerie',
+      'Senf',
+      'Sesam',
+      'Schwefeldioxid / Sulfite',
+      'Lupinen',
+      'Weichtiere'
+    ];
+    const allergenRows = allergens.map(label => `<label class="allergen"><span class="box">☐</span><span>${escapeHtml(label)}</span></label>`).join('');
+    const html = `<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kuchen- und Allergeninformation - ${escapeHtml(basar.name || 'Basar')}</title>
+<style>
+  :root{--navy:#1f3550;--terracotta:#b76045;--cream:#f7f1e7;--line:#cfc7bb;--text:#20262d;--muted:#68717a}
+  *{box-sizing:border-box} body{margin:0;background:#ece8e1;color:var(--text);font-family:Arial,Helvetica,sans-serif}
+  .toolbar{position:sticky;top:0;z-index:5;display:flex;gap:10px;justify-content:center;padding:12px;background:var(--navy)}
+  .toolbar button{border:0;border-radius:8px;padding:10px 16px;font-size:15px;font-weight:700;cursor:pointer;background:#fff;color:var(--navy)}
+  .page{width:210mm;min-height:297mm;margin:18px auto;background:#fff;padding:14mm 15mm 12mm;box-shadow:0 8px 28px rgba(0,0,0,.12)}
+  .head{display:flex;align-items:center;gap:18px;padding-bottom:10px;border-bottom:2px solid var(--terracotta)}
+  .head img{width:64px;height:64px;object-fit:contain}.head h1{margin:0;color:var(--navy);font-size:22px}.head p{margin:4px 0 0;color:var(--muted);font-size:11px;line-height:1.45}
+  .notice{margin:12px 0;padding:9px 11px;background:var(--cream);border-left:4px solid var(--terracotta);font-size:11px;line-height:1.45}
+  .event{display:grid;grid-template-columns:1fr 1fr;gap:7px 14px;margin-top:12px}.event div{font-size:11px}.event span{display:block;color:var(--muted);font-size:9px;text-transform:uppercase;letter-spacing:.04em}.event strong{display:block;margin-top:2px}
+  .section{margin-top:15px}.section h2{margin:0 0 8px;background:var(--cream);color:var(--navy);font-size:13px;padding:7px 9px;border-left:4px solid var(--terracotta)}
+  .field{margin-top:8px}.field label{display:block;font-size:10px;color:var(--muted);margin-bottom:3px}.line{height:23px;border-bottom:1px solid #555}.lines{height:70px;background:repeating-linear-gradient(to bottom,transparent 0,transparent 22px,#777 23px,#777 24px)}
+  .allergens{display:grid;grid-template-columns:1fr 1fr;gap:7px 18px}.allergen{display:flex;gap:7px;align-items:flex-start;font-size:10.5px;line-height:1.35}.box{font-size:16px;line-height:1}
+  .signature{display:grid;grid-template-columns:1fr 1fr;gap:28px;margin-top:18px}.signature div{border-top:1px solid #555;padding-top:4px;font-size:9px;color:var(--muted)}
+  .visitor{margin-top:17px;padding:11px;border:1px solid #d9cbbb;border-radius:8px;background:#fffdf9}.visitor strong{color:var(--navy);font-size:11px}.visitor p{margin:4px 0 0;font-size:9.7px;line-height:1.45}
+  .footer{margin-top:14px;padding-top:8px;border-top:1px solid var(--line);font-size:8.5px;color:#777;line-height:1.4}
+  @media print{body{background:#fff}.toolbar{display:none}.page{margin:0;box-shadow:none;width:auto;min-height:auto;padding:10mm 12mm}.notice{-webkit-print-color-adjust:exact;print-color-adjust:exact}.section h2{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style></head><body>
+<div class="toolbar"><button onclick="window.print()">Drucken / als PDF speichern</button><button onclick="window.close()">Schließen</button></div>
+<main class="page">
+  <div class="head"><img src="${escapeHtml(logoUrl)}" alt="Basar Tischbörse"><div><h1>Kuchen- &amp; Allergeninformation</h1><p>Bitte von der Kuchenspenderin / dem Kuchenspender ausfüllen und am Veranstaltungstag zusammen mit dem Kuchen abgeben.</p></div></div>
+  <div class="notice"><strong>Für die Ausgabe am Kuchenbuffet:</strong> Dieses Blatt kann nach dem Ausfüllen gut sichtbar beim jeweiligen Kuchen ausgelegt werden, damit Besucher die Zutaten- und Allergenangaben einsehen können.</div>
+  <div class="event">
+    <div><span>Veranstaltung</span><strong>${escapeHtml(basar.name || '—')}</strong></div>
+    <div><span>Datum</span><strong>${escapeHtml(formatDate(basar.veranstaltungsdatum) || '—')}</strong></div>
+    <div><span>Ort</span><strong>${escapeHtml(basar.ort || '—')}</strong></div>
+    <div><span>Adresse</span><strong>${escapeHtml(eventAddress)}</strong></div>
+    ${bookingNo ? `<div><span>Buchungsnummer</span><strong>${escapeHtml(bookingNo)}</strong></div>` : ''}
+    <div><span>Kuchenspender/in</span><strong>${donorName ? escapeHtml(donorName) : '____________________________'}</strong></div>
+  </div>
+  <section class="section"><h2>1. Kuchen / Gebäck</h2>
+    <div class="field"><label>Bezeichnung des Kuchens / Gebäcks</label><div class="line"></div></div>
+    <div class="field"><label>Verwendete Zutaten – bitte möglichst vollständig angeben</label><div class="lines"></div></div>
+  </section>
+  <section class="section"><h2>2. Allergene – bitte Zutreffendes ankreuzen</h2><div class="allergens">${allergenRows}</div></section>
+  <section class="section"><h2>3. Weitere Hinweise</h2>
+    <div class="field"><label>Kann Spuren enthalten von / mögliche Kreuzkontakte</label><div class="line"></div></div>
+    <div class="field"><label>Sonstige Hinweise, z. B. Alkohol, Süßungsmittel oder besondere Zutaten</label><div class="line"></div></div>
+  </section>
+  <div class="signature"><div>Datum</div><div>Unterschrift Kuchenspender/in</div></div>
+  <div class="visitor"><strong>Hinweis für Besucher</strong><p>Die Angaben wurden von der Kuchenspenderin / dem Kuchenspender nach bestem Wissen gemacht. Bei selbst zubereiteten Speisen können unbeabsichtigte Kreuzkontakte nicht sicher ausgeschlossen werden. Bei starken Allergien oder Unsicherheit bitte im Zweifel nicht verzehren und beim Veranstalter nachfragen.</p></div>
+  <div class="footer">Veranstalter: ${escapeHtml(organizerContact || '—')} · Basar Tischbörse · basar-tischboerse.pages.dev<br>Die Allergenliste orientiert sich an Anhang II der EU-Lebensmittelinformationsverordnung (EU) Nr. 1169/2011. Dieses Formular ersetzt keine individuelle lebensmittelrechtliche Prüfung.</div>
+</main></body></html>`;
+    popup.document.open(); popup.document.write(html); popup.document.close();
+  }
+
   function getManualAreaFree(basar, area) {
     const blocking = bookings.filter(bookingBlocksTable);
     const totalBooked = blocking.reduce((sum,r)=>sum+Number(r.anzahl_tische||0),0);
@@ -719,7 +799,7 @@
     const manual = (r.buchungsquelle || 'online') === 'manuell';
     const participantMail = manual && !r.email ? 'Keine E-Mail hinterlegt' : manual && r.email_status === 'pending' ? 'Nicht automatisch versendet' : r.email_status==='sent'?'Versendet':r.email_status==='error'?'Fehler':r.email_status==='sending'?'Wird gesendet':'Ausstehend';
     $('bookingDetails').innerHTML=`<div class="detail-item"><span>Name</span><strong>${escapeHtml(`${r.vorname} ${r.nachname}`)}</strong></div><div class="detail-item"><span>Quelle</span><strong>${bookingSourceLabel(r.buchungsquelle)}</strong></div><div class="detail-item"><span>Bereich</span><strong>${r.verkaufsbereich==='kinder'?'Kinder':'Erwachsene'}</strong></div><div class="detail-item"><span>Tische</span><strong>${r.anzahl_tische}</strong></div><div class="detail-item"><span>Kuchen</span><strong>${r.kuchenspende?'Ja':'Nein'}</strong></div><div class="detail-item"><span>Betrag</span><strong>${euro(r.preis)}</strong></div><div class="detail-item"><span>Zahlung</span><strong>${paymentLabel(r.zahlungsart)}</strong></div><div class="detail-item"><span>Status</span><strong>${status}</strong></div><div class="detail-item"><span>Zahlungsfrist</span><strong>${formatDate(r.zahlungsfrist)}${deadline.text?` · ${escapeHtml(deadline.text)}`:''}</strong></div><div class="detail-item full"><span>Adresse</span><strong>${escapeHtml(address)}</strong></div><div class="detail-item"><span>E-Mail</span><strong>${escapeHtml(r.email||'—')}</strong></div><div class="detail-item"><span>Telefon</span><strong>${escapeHtml(r.telefon||'—')}</strong></div><div class="detail-item"><span>E-Mail an Teilnehmer</span><strong>${escapeHtml(participantMail)}${r.email_sent_at?` · ${formatDateTime(r.email_sent_at)}`:''}</strong></div><div class="detail-item"><span>E-Mail an Veranstalter</span><strong>${r.veranstalter_email_status==='sent'?'Versendet':r.veranstalter_email_status==='error'?'Fehler':r.veranstalter_email_status==='sending'?'Wird gesendet':manual?'Nicht automatisch versendet':'Ausstehend'}${r.veranstalter_email_sent_at?` · ${formatDateTime(r.veranstalter_email_sent_at)}`:''}</strong></div>${manual&&r.manuell_notiz?`<div class="detail-item full"><span>Interne Notiz</span><strong>${escapeHtml(r.manuell_notiz)}</strong></div>`:''}<div class="detail-item full"><span>Buchung eingegangen</span><strong>${formatDateTime(r.created_at)}</strong></div>`;
-    $('markPaidButton').classList.toggle('hidden', ['bezahlt','storniert'].includes(r.zahlungsstatus)); $('markOpenButton').classList.toggle('hidden', r.zahlungsstatus!=='bezahlt'); $('cancelBookingButton').classList.toggle('hidden', r.zahlungsstatus==='storniert'); $('bookingModal').classList.remove('hidden');
+    $('printCakeAllergenBookingButton').classList.toggle('hidden', !r.kuchenspende); $('markPaidButton').classList.toggle('hidden', ['bezahlt','storniert'].includes(r.zahlungsstatus)); $('markOpenButton').classList.toggle('hidden', r.zahlungsstatus!=='bezahlt'); $('cancelBookingButton').classList.toggle('hidden', r.zahlungsstatus==='storniert'); $('bookingModal').classList.remove('hidden');
   }
   function closeBooking(){ $('bookingModal').classList.add('hidden'); selectedBooking=null; }
 
@@ -728,7 +808,7 @@
     const { error }=await supabase.from('buchungen').update({zahlungsstatus:status}).eq('id',selectedBooking.id); if(error){showError('dashboardError',humanizeError(error));return;} closeBooking(); await loadBookings(); await loadDashboardOverview();
   }
 
-  document.addEventListener('click', async e=>{ const b=e.target.closest('[data-action]'); if(!b)return; const a=b.dataset.action; if(a==='open-booking')openBooking(Number(b.dataset.bookingId)); else if(a==='close-booking')closeBooking(); else if(a==='mark-paid')await updateBookingStatus('bezahlt'); else if(a==='mark-open')await updateBookingStatus('offen'); else if(a==='cancel-booking')await updateBookingStatus('storniert'); }, true);
+  document.addEventListener('click', async e=>{ const b=e.target.closest('[data-action]'); if(!b)return; const a=b.dataset.action; if(a==='open-booking')openBooking(Number(b.dataset.bookingId)); else if(a==='close-booking')closeBooking(); else if(a==='print-cake-allergen')printCakeAllergenForm(selectedBooking); else if(a==='mark-paid')await updateBookingStatus('bezahlt'); else if(a==='mark-open')await updateBookingStatus('offen'); else if(a==='cancel-booking')await updateBookingStatus('storniert'); }, true);
   document.addEventListener('click',e=>{if(e.target===$('bookingModal'))closeBooking(); if(e.target===$('manualBookingModal'))closeManualBooking();});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){ closeBooking(); closeManualBooking(); }});
 
@@ -793,6 +873,7 @@
     } catch (e) { console.warn('Plattformadmin-Prüfung nicht verfügbar.', e); }
     $('platformNavLink').classList.toggle('hidden', !isPlatformAdmin);
     $('platformAdminCard').classList.toggle('hidden', !isPlatformAdmin);
+    $('deleteCurrentBasarButton').classList.toggle('hidden', !isPlatformAdmin);
     if (isPlatformAdmin) await loadPlatformAccounts();
   }
 
@@ -823,7 +904,7 @@
     if(!rows.length){el.innerHTML='<div class="empty-state">Für diesen Filter gibt es keine Veranstalter.</div>';return;}
     el.innerHTML=rows.map(r=>{
       const basarItems=Array.isArray(r.basare)?r.basare:[];
-      const basarHtml=basarItems.length?`<div class="platform-basar-list">${basarItems.map(b=>`<div><strong>${escapeHtml(b.name||'Basar')}</strong><span>${escapeHtml(formatDate(b.veranstaltungsdatum))}${b.stadt?' · '+escapeHtml(b.stadt):''} · ${b.aktiv?'aktiv':'inaktiv'}${b.veroeffentlicht?' · Veröffentlichung an':' · Entwurf'}</span></div>`).join('')}</div>`:'<div class="platform-no-basar">Noch kein Basar angelegt.</div>';
+      const basarHtml=basarItems.length?`<div class="platform-basar-list">${basarItems.map(b=>`<div class="platform-basar-row"><div><strong>${escapeHtml(b.name||'Basar')}</strong><span>${escapeHtml(formatDate(b.veranstaltungsdatum))}${b.stadt?' · '+escapeHtml(b.stadt):''} · ${b.aktiv?'aktiv':'inaktiv'}${b.veroeffentlicht?' · Veröffentlichung an':' · Entwurf'}</span></div><button class="platform-basar-delete" type="button" data-platform-action="delete-basar" data-basar-id="${Number(b.id)}" data-basar-name="${escapeHtml(b.name||'Basar')}">Löschen</button></div>`).join('')}</div>`:'<div class="platform-no-basar">Noch kein Basar angelegt.</div>';
       const payment=[]; if(r.ueberweisung_aktiv)payment.push('Überweisung'); if(r.paypal_link_aktiv)payment.push('PayPal-Link');
       return `<article class="platform-review-item status-${escapeHtml(r.freigabestatus)}" data-platform-user="${escapeHtml(r.user_id)}"><div class="platform-review-main"><div class="platform-review-title"><div><strong>${escapeHtml(r.name||'Ohne Namen')}</strong><span>${escapeHtml(r.email||'')} · ${escapeHtml(r.plz||'')} ${escapeHtml(r.ort||'')}</span></div><span class="status-chip ${r.freigabestatus==='freigegeben'?'active':r.freigabestatus==='gesperrt'?'blocked':'pending'}">${platformStatusLabel(r.freigabestatus)}</span></div><div class="platform-review-meta"><span>Registriert: ${formatDateTime(r.created_at)}</span><span>${Number(r.basare_count||0)} Basar${Number(r.basare_count||0)===1?'':'e'}</span><span>Zahlung: ${escapeHtml(payment.join(', ')||'noch nicht vollständig')}</span></div>${r.sperrgrund?`<div class="platform-block-reason"><strong>Sperrgrund:</strong> ${escapeHtml(r.sperrgrund)}</div>`:''}${basarHtml}</div><div class="platform-review-actions">${r.freigabestatus!=='freigegeben'?`<button class="primary inline-button" type="button" data-platform-action="approve" data-user-id="${escapeHtml(r.user_id)}">Freigeben</button>`:''}${r.freigabestatus!=='ausstehend'?`<button class="secondary" type="button" data-platform-action="pending" data-user-id="${escapeHtml(r.user_id)}">Auf Prüfung setzen</button>`:''}${r.freigabestatus!=='gesperrt'?`<button class="danger" type="button" data-platform-action="block" data-user-id="${escapeHtml(r.user_id)}">Sperren</button>`:''}</div></article>`;
     }).join('');
@@ -845,6 +926,38 @@
     if (currentUser?.id === userId) { profileExists = await loadProfile(); renderAccountStatus(); await loadBasare(); }
   }
 
+
+  async function deleteBasarAsPlatformAdmin(basarId, basarName = 'Basar') {
+    if (!isPlatformAdmin || !basarId) return;
+    const first = window.confirm(`„${basarName}“ wirklich endgültig löschen?\n\nDabei werden auch alle zugehörigen Buchungen dauerhaft gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.`);
+    if (!first) return;
+    const typed = window.prompt(`Sicherheitsabfrage: Bitte den Basarnamen exakt eingeben:\n${basarName}`, '');
+    if (typed === null) return;
+    if (typed.trim() !== String(basarName).trim()) {
+      window.alert('Der eingegebene Basarname stimmt nicht überein. Der Basar wurde nicht gelöscht.');
+      return;
+    }
+    clearError('platformError');
+    const { data, error } = await supabase.rpc('platform_delete_basar', { p_basar_id: Number(basarId) });
+    if (error) { showError('platformError', humanizeError(error)); return; }
+    const result = Array.isArray(data) ? data[0] : data;
+    const deletedBookings = Number(result?.bookings_deleted ?? 0);
+    window.alert(`Basar „${basarName}“ wurde endgültig gelöscht.${deletedBookings ? `\n${deletedBookings} zugehörige Buchung${deletedBookings === 1 ? '' : 'en'} wurde${deletedBookings === 1 ? '' : 'n'} ebenfalls gelöscht.` : ''}`);
+    if (Number(selectedBasarId) === Number(basarId)) {
+      selectedBasarId = null; selectedBooking = null; bookings = [];
+      closeBooking(); clearSelectedBasar();
+    }
+    await loadPlatformAccounts();
+    if (profileExists) await loadBasare();
+  }
+
+  async function deleteCurrentBasar() {
+    if (!isPlatformAdmin || !selectedBasarId) return;
+    const basar = basare.find(b => Number(b.id) === Number(selectedBasarId));
+    if (!basar) return;
+    await deleteBasarAsPlatformAdmin(basar.id, basar.name || 'Basar');
+  }
+
   async function showDashboard() {
     const { data:{user}, error }=await supabase.auth.getUser();
     if(error||!user) throw error||new Error('Nicht angemeldet');
@@ -863,7 +976,7 @@
     if (profileExists) await loadBasare();
     await loadPlatformAdminState();
   }
-  async function logout(){await supabase.auth.signOut();currentUser=null;profileExists=false;onboardingMode=false;isPlatformAdmin=false;platformAccounts=[];selectedBasarId=null;basare=[];bookings=[];allBookings=[];profileSnapshot=null;$('dashboard').classList.add('hidden');$('loginCard').classList.remove('hidden');$('topLogoutButton').classList.add('hidden');$('adminNav').classList.add('hidden');$('platformNavLink').classList.add('hidden');$('platformAdminCard').classList.add('hidden');$('accountStatusBanner').classList.add('hidden');$('loginForm').reset();$('registerForm').reset();setAuthMode('login');}
+  async function logout(){await supabase.auth.signOut();currentUser=null;profileExists=false;onboardingMode=false;isPlatformAdmin=false;platformAccounts=[];selectedBasarId=null;basare=[];bookings=[];allBookings=[];profileSnapshot=null;$('dashboard').classList.add('hidden');$('loginCard').classList.remove('hidden');$('topLogoutButton').classList.add('hidden');$('adminNav').classList.add('hidden');$('platformNavLink').classList.add('hidden');$('platformAdminCard').classList.add('hidden');$('deleteCurrentBasarButton').classList.add('hidden');$('accountStatusBanner').classList.add('hidden');$('loginForm').reset();$('registerForm').reset();setAuthMode('login');}
 
   $('loginForm').addEventListener('submit',async e=>{e.preventDefault();clearError('loginError');$('loginButton').disabled=true;$('loginButton').textContent='Anmeldung läuft …';const {error}=await supabase.auth.signInWithPassword({email:$('loginEmail').value.trim(),password:$('loginPassword').value});$('loginButton').disabled=false;$('loginButton').textContent='Anmelden';if(error)return showError('loginError','Anmeldung fehlgeschlagen. Bitte E-Mail-Adresse, Passwort und ggf. die E-Mail-Bestätigung prüfen.');try{await showDashboard();}catch(err){console.error(err);showError('loginError',humanizeError(err));}});
 
@@ -876,7 +989,7 @@
     if (password !== repeat) return showError('registerError', 'Die beiden Passwörter stimmen nicht überein.');
     const button = $('registerButton'); button.disabled = true; button.textContent = 'Konto wird erstellt …';
     try {
-      const redirectTo = `${window.location.origin}${window.location.pathname}?v=289&onboarding=1`;
+      const redirectTo = `${window.location.origin}${window.location.pathname}?v=290&onboarding=1`;
       const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo } });
       if (error) throw error;
       if (data.session) {
@@ -901,10 +1014,10 @@
   $('basarForm').addEventListener('input',markBasarFormDirty);
   $('basarForm').addEventListener('change',markBasarFormDirty);
   window.addEventListener('beforeunload',e=>{ if(!basarFormDirty) return; e.preventDefault(); e.returnValue=''; });
-  $('printBlankFormButton').addEventListener('click',printBlankBookingForm); $('editCurrentButton').addEventListener('click',()=>{const b=basare.find(x=>x.id===selectedBasarId);if(b)editBasar(b);}); $('refreshButton').addEventListener('click',()=>loadBasare().catch(e=>showError('dashboardError',humanizeError(e)))); $('refreshBookingsButton').addEventListener('click',()=>loadBookings().catch(e=>showError('dashboardError',humanizeError(e)))); $('bookingFilter').addEventListener('change',renderBookings); $('paymentFilter').addEventListener('change',renderBookings); $('areaFilter').addEventListener('change',renderBookings); $('cakeFilter').addEventListener('change',renderBookings); $('sourceFilter').addEventListener('change',renderBookings); $('bookingSearch').addEventListener('input',renderBookings); $('resetBookingFiltersButton').addEventListener('click',resetBookingFilters); $('exportBookingsButton').addEventListener('click',exportFilteredBookings);
+  $('printBlankFormButton').addEventListener('click',printBlankBookingForm); $('printCakeAllergenFormButton').addEventListener('click',()=>printCakeAllergenForm(null)); $('deleteCurrentBasarButton').addEventListener('click',deleteCurrentBasar); $('editCurrentButton').addEventListener('click',()=>{const b=basare.find(x=>x.id===selectedBasarId);if(b)editBasar(b);}); $('refreshButton').addEventListener('click',()=>loadBasare().catch(e=>showError('dashboardError',humanizeError(e)))); $('refreshBookingsButton').addEventListener('click',()=>loadBookings().catch(e=>showError('dashboardError',humanizeError(e)))); $('bookingFilter').addEventListener('change',renderBookings); $('paymentFilter').addEventListener('change',renderBookings); $('areaFilter').addEventListener('change',renderBookings); $('cakeFilter').addEventListener('change',renderBookings); $('sourceFilter').addEventListener('change',renderBookings); $('bookingSearch').addEventListener('input',renderBookings); $('resetBookingFiltersButton').addEventListener('click',resetBookingFilters); $('exportBookingsButton').addEventListener('click',exportFilteredBookings);
   $('openManualBookingButton').addEventListener('click',openManualBooking); $('closeManualBookingModal').addEventListener('click',closeManualBooking); $('cancelManualBookingButton').addEventListener('click',closeManualBooking); $('manualBookingForm').addEventListener('submit',saveManualBooking); ['manualTables','manualArea','manualCake'].forEach(id=>$(id).addEventListener('change',updateManualBookingSummary));
   $('platformStatusFilter').addEventListener('change',renderPlatformAccounts); $('refreshPlatformButton').addEventListener('click',()=>loadPlatformAccounts().catch(e=>showError('platformError',humanizeError(e))));
-  document.addEventListener('click', async e=>{ const btn=e.target.closest('[data-platform-action]'); if(!btn)return; const action=btn.dataset.platformAction; const status=action==='approve'?'freigegeben':action==='block'?'gesperrt':'ausstehend'; await changePlatformStatus(btn.dataset.userId,status); });
+  document.addEventListener('click', async e=>{ const btn=e.target.closest('[data-platform-action]'); if(!btn)return; const action=btn.dataset.platformAction; if(action==='delete-basar'){ await deleteBasarAsPlatformAdmin(Number(btn.dataset.basarId), btn.dataset.basarName || 'Basar'); return; } const status=action==='approve'?'freigegeben':action==='block'?'gesperrt':'ausstehend'; await changePlatformStatus(btn.dataset.userId,status); });
   supabase.auth.onAuthStateChange((event,session)=>{
     if (event === 'SIGNED_IN' && session && !currentUser) {
       setTimeout(()=>{ if(!currentUser) showDashboard().catch(console.error); },0);
