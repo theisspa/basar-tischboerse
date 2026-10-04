@@ -281,7 +281,7 @@
 <div class="section-grid manual-booking-grid">
 <div class="field"><label for="manualFirstName">Vorname *</label><input id="manualFirstName" maxlength="80" required type="text"/></div>
 <div class="field"><label for="manualLastName">Nachname *</label><input id="manualLastName" maxlength="80" required type="text"/></div>
-<div class="field"><label for="manualEmail">E-Mail</label><input id="manualEmail" maxlength="200" type="email"/><span class="hint">Optional. Nur nötig, wenn du eine Bestätigung per E-Mail senden möchtest.</span></div>
+<div class="field"><label for="manualEmail">E-Mail</label><input id="manualEmail" maxlength="200" type="email"/><span class="hint">Für die automatische Buchungsbestätigung erforderlich.</span></div>
 <div class="field"><label for="manualPhone">Telefon</label><input id="manualPhone" maxlength="60" type="tel"/></div>
 <div class="field"><label for="manualStreet">Straße</label><input id="manualStreet" maxlength="120" type="text"/></div>
 <div class="field"><label for="manualHouseNumber">Hausnummer</label><input id="manualHouseNumber" maxlength="30" type="text"/></div>
@@ -293,6 +293,7 @@
 <div class="field"><label for="manualPaymentMethod">Zahlungsart *</label><select id="manualPaymentMethod" required></select></div>
 <div class="field"><label for="manualPaymentStatus">Zahlungsstatus *</label><select id="manualPaymentStatus" required><option value="offen">Offen</option><option value="bezahlt">Bereits bezahlt</option></select></div>
 <div class="field full"><label for="manualNote">Interne Notiz</label><textarea id="manualNote" maxlength="1000" rows="3" placeholder="z. B. Reservierung telefonisch am … / besondere Absprache"></textarea><span class="hint">Nur im Veranstalterbereich sichtbar.</span></div>
+<div class="field full"><label class="checkbox-row" for="manualSendEmail"><input id="manualSendEmail" type="checkbox" checked/><span><strong>Bestätigungs-E-Mail direkt nach dem Speichern senden</strong><br><span class="hint">Der Kunde erhält dieselbe vollständige Bestätigung wie bei einer Online-Buchung – inklusive Vertrag als PDF. Bei Kuchenspende wird zusätzlich das Kuchen-/Allergenformular angehängt.</span></span></label></div>
 </div>
 <div class="form-error hidden" id="manualBookingError" role="alert"></div>
 <div class="form-success hidden" id="manualBookingSuccess" role="status"></div>
@@ -304,7 +305,7 @@
 <div class="modal-panel">
 <div class="modal-head"><div><span class="eyebrow">BUCHUNG</span><h2 id="bookingModalTitle">Buchung</h2></div><button aria-label="Schließen" class="icon-button" data-action="close-booking" id="closeBookingModal" type="button">×</button></div>
 <div class="detail-grid" id="bookingDetails"></div>
-<div class="modal-actions"><button class="secondary hidden" data-action="print-cake-allergen" id="printCakeAllergenBookingButton" type="button">Kuchen-/Allergenformular</button><button class="secondary hidden" data-action="mark-open" id="markOpenButton" type="button">Als offen markieren</button><button class="secondary" data-action="mark-paid" id="markPaidButton" type="button">Als bezahlt markieren</button><button class="danger" data-action="cancel-booking" id="cancelBookingButton" type="button">Buchung stornieren</button></div>
+<div class="modal-actions"><button class="secondary hidden" data-action="send-booking-email" id="sendBookingEmailButton" type="button">Bestätigungs-E-Mail senden</button><button class="secondary hidden" data-action="print-cake-allergen" id="printCakeAllergenBookingButton" type="button">Kuchen-/Allergenformular</button><button class="secondary hidden" data-action="mark-open" id="markOpenButton" type="button">Als offen markieren</button><button class="secondary" data-action="mark-paid" id="markPaidButton" type="button">Als bezahlt markieren</button><button class="danger" data-action="cancel-booking" id="cancelBookingButton" type="button">Buchung stornieren</button></div>
 </div>
 </div>
 <footer class="admin-footer">
@@ -320,7 +321,7 @@
 </div>
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=290"></script>
-<script src="admin.js?v=290"></script>
+<script src="config.js?v=292"></script>
+<script src="admin.js?v=292"></script>
 </body>
 </html>

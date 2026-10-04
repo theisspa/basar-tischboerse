@@ -333,7 +333,7 @@
   async function loadBookings() {
     clearError('dashboardError');
     if (selectedBasarId) await supabase.rpc('get_basar_availability', { p_basar_id: selectedBasarId });
-    const { data, error } = await supabase.from('buchungen').select('id,buchungsnummer,anzahl_tische,verkaufsbereich,kuchenspende,preis,vorname,nachname,strasse,hausnummer,plz,ort,email,telefon,zahlungsart,zahlungsstatus,zahlungsfrist,email_status,email_sent_at,email_last_error,veranstalter_email_status,veranstalter_email_sent_at,veranstalter_email_last_error,buchungsquelle,manuell_notiz,created_at').eq('basar_id',selectedBasarId).order('created_at',{ascending:false});
+    const { data, error } = await supabase.from('buchungen').select('id,buchungsnummer,anzahl_tische,verkaufsbereich,kuchenspende,preis,vorname,nachname,strasse,hausnummer,plz,ort,email,telefon,zahlungsart,zahlungsstatus,zahlungsfrist,email_token,email_status,email_sent_at,email_last_error,veranstalter_email_status,veranstalter_email_sent_at,veranstalter_email_last_error,buchungsquelle,manuell_notiz,created_at').eq('basar_id',selectedBasarId).order('created_at',{ascending:false});
     if (error) throw error; bookings=data||[]; updateStats(); renderBookings();
   }
 
@@ -643,13 +643,35 @@
     clearError('manualBookingError');
     $('manualBookingForm').reset();
     $('manualBookingBasarName').textContent = `${basar.name} · ${formatDate(basar.veranstaltungsdatum)}`;
-    $('manualTables').value='1'; $('manualCake').value='false'; $('manualPaymentStatus').value='offen';
+    $('manualTables').value='1'; $('manualCake').value='false'; $('manualPaymentStatus').value='offen'; $('manualSendEmail').checked=true;
     populateManualBookingOptions();
     $('manualBookingModal').classList.remove('hidden');
     setTimeout(()=>$('manualFirstName').focus(),0);
   }
 
   function closeManualBooking() { $('manualBookingModal').classList.add('hidden'); clearError('manualBookingError'); }
+
+  async function sendBookingConfirmationEmail(booking, { force = false, showMessage = true } = {}) {
+    const email = String(booking?.email || '').trim();
+    if (!email) throw new Error('Für diese Buchung ist keine E-Mail-Adresse hinterlegt.');
+    const token = String(booking?.email_token || '').trim();
+    if (!/^[0-9a-f-]{36}$/i.test(token)) throw new Error('Der E-Mail-Schlüssel der Buchung fehlt. Bitte die Buchungsliste aktualisieren.');
+    const bookingId = Number(booking?.id ?? booking?.buchung_id);
+    if (!Number.isInteger(bookingId) || bookingId <= 0) throw new Error('Ungültige Buchungs-ID.');
+
+    const { data, error } = await supabase.functions.invoke('send-booking-email', {
+      body: {
+        booking_id: bookingId,
+        email_token: token,
+        force: !!force,
+        participant_only: true
+      }
+    });
+    if (error) throw new Error(error.message || 'Die Bestätigungs-E-Mail konnte nicht versendet werden.');
+    if (data?.error) throw new Error(data.error);
+    if (showMessage) window.alert(`Bestätigungs-E-Mail wurde an ${email} versendet.`);
+    return data;
+  }
 
   async function saveManualBooking(event) {
     event.preventDefault(); clearError('manualBookingError');
@@ -659,10 +681,13 @@
     if (tables > getManualAreaFree(basar, area)) return showError('manualBookingError','Für diesen Bereich sind nicht genügend freie Tische vorhanden.');
     const first = $('manualFirstName').value.trim(), last = $('manualLastName').value.trim();
     if (!first || !last) return showError('manualBookingError','Bitte Vor- und Nachname eintragen.');
+    const email = $('manualEmail').value.trim();
+    const sendEmailNow = $('manualSendEmail').checked;
+    if (sendEmailNow && !email) return showError('manualBookingError','Bitte eine E-Mail-Adresse eintragen oder den automatischen E-Mail-Versand deaktivieren.');
     const payload = {
       p_basar_id:selectedBasarId, p_anzahl_tische:tables, p_verkaufsbereich:area, p_kuchenspende:$('manualCake').value==='true',
       p_vorname:first, p_nachname:last, p_strasse:$('manualStreet').value.trim(), p_hausnummer:$('manualHouseNumber').value.trim(),
-      p_plz:$('manualZip').value.trim(), p_ort:$('manualCity').value.trim(), p_email:$('manualEmail').value.trim(), p_telefon:$('manualPhone').value.trim(),
+      p_plz:$('manualZip').value.trim(), p_ort:$('manualCity').value.trim(), p_email:email, p_telefon:$('manualPhone').value.trim(),
       p_zahlungsart:$('manualPaymentMethod').value, p_zahlungsstatus:$('manualPaymentStatus').value, p_notiz:$('manualNote').value.trim()
     };
     const button=$('saveManualBookingButton'); button.disabled=true; button.textContent='Wird gespeichert …';
@@ -670,9 +695,25 @@
       const { data, error } = await supabase.rpc('create_manual_buchung', payload);
       if (error) throw error;
       const result = Array.isArray(data) ? data[0] : data;
+      let mailError = null;
+      if (sendEmailNow) {
+        button.textContent='E-Mail wird versendet …';
+        try {
+          await sendBookingConfirmationEmail({ id: result?.buchung_id, email_token: result?.email_token, email }, { showMessage:false });
+        } catch (error) {
+          console.error('Manuelle Buchung gespeichert, E-Mail-Versand fehlgeschlagen:', error);
+          mailError = error;
+        }
+      }
       closeManualBooking();
       await loadBookings(); await loadDashboardOverview();
-      window.alert(`Manuelle Buchung ${result?.buchungsnummer || ''} wurde gespeichert.`.trim());
+      if (mailError) {
+        window.alert(`Manuelle Buchung ${result?.buchungsnummer || ''} wurde gespeichert.\n\nDie Bestätigungs-E-Mail konnte jedoch nicht versendet werden. Öffne die Buchung und klicke auf „Bestätigungs-E-Mail senden“.\n\nFehler: ${humanizeError(mailError)}`.trim());
+      } else if (sendEmailNow) {
+        window.alert(`Manuelle Buchung ${result?.buchungsnummer || ''} wurde gespeichert.\nDie vollständige Bestätigungs-E-Mail wurde an ${email} versendet.`.trim());
+      } else {
+        window.alert(`Manuelle Buchung ${result?.buchungsnummer || ''} wurde gespeichert. Die E-Mail kannst du später über „Öffnen“ versenden.`.trim());
+      }
     } catch (error) { console.error(error); showError('manualBookingError',humanizeError(error)); }
     finally { button.disabled=false; button.textContent='Manuelle Buchung speichern'; }
   }
@@ -799,16 +840,44 @@
     const manual = (r.buchungsquelle || 'online') === 'manuell';
     const participantMail = manual && !r.email ? 'Keine E-Mail hinterlegt' : manual && r.email_status === 'pending' ? 'Nicht automatisch versendet' : r.email_status==='sent'?'Versendet':r.email_status==='error'?'Fehler':r.email_status==='sending'?'Wird gesendet':'Ausstehend';
     $('bookingDetails').innerHTML=`<div class="detail-item"><span>Name</span><strong>${escapeHtml(`${r.vorname} ${r.nachname}`)}</strong></div><div class="detail-item"><span>Quelle</span><strong>${bookingSourceLabel(r.buchungsquelle)}</strong></div><div class="detail-item"><span>Bereich</span><strong>${r.verkaufsbereich==='kinder'?'Kinder':'Erwachsene'}</strong></div><div class="detail-item"><span>Tische</span><strong>${r.anzahl_tische}</strong></div><div class="detail-item"><span>Kuchen</span><strong>${r.kuchenspende?'Ja':'Nein'}</strong></div><div class="detail-item"><span>Betrag</span><strong>${euro(r.preis)}</strong></div><div class="detail-item"><span>Zahlung</span><strong>${paymentLabel(r.zahlungsart)}</strong></div><div class="detail-item"><span>Status</span><strong>${status}</strong></div><div class="detail-item"><span>Zahlungsfrist</span><strong>${formatDate(r.zahlungsfrist)}${deadline.text?` · ${escapeHtml(deadline.text)}`:''}</strong></div><div class="detail-item full"><span>Adresse</span><strong>${escapeHtml(address)}</strong></div><div class="detail-item"><span>E-Mail</span><strong>${escapeHtml(r.email||'—')}</strong></div><div class="detail-item"><span>Telefon</span><strong>${escapeHtml(r.telefon||'—')}</strong></div><div class="detail-item"><span>E-Mail an Teilnehmer</span><strong>${escapeHtml(participantMail)}${r.email_sent_at?` · ${formatDateTime(r.email_sent_at)}`:''}</strong></div><div class="detail-item"><span>E-Mail an Veranstalter</span><strong>${r.veranstalter_email_status==='sent'?'Versendet':r.veranstalter_email_status==='error'?'Fehler':r.veranstalter_email_status==='sending'?'Wird gesendet':manual?'Nicht automatisch versendet':'Ausstehend'}${r.veranstalter_email_sent_at?` · ${formatDateTime(r.veranstalter_email_sent_at)}`:''}</strong></div>${manual&&r.manuell_notiz?`<div class="detail-item full"><span>Interne Notiz</span><strong>${escapeHtml(r.manuell_notiz)}</strong></div>`:''}<div class="detail-item full"><span>Buchung eingegangen</span><strong>${formatDateTime(r.created_at)}</strong></div>`;
+    const sendButton = $('sendBookingEmailButton');
+    const canSendManualEmail = manual && !!String(r.email || '').trim();
+    sendButton.classList.toggle('hidden', !canSendManualEmail);
+    sendButton.textContent = r.email_status === 'sent' ? 'Bestätigung erneut senden' : 'Bestätigungs-E-Mail senden';
     $('printCakeAllergenBookingButton').classList.toggle('hidden', !r.kuchenspende); $('markPaidButton').classList.toggle('hidden', ['bezahlt','storniert'].includes(r.zahlungsstatus)); $('markOpenButton').classList.toggle('hidden', r.zahlungsstatus!=='bezahlt'); $('cancelBookingButton').classList.toggle('hidden', r.zahlungsstatus==='storniert'); $('bookingModal').classList.remove('hidden');
   }
   function closeBooking(){ $('bookingModal').classList.add('hidden'); selectedBooking=null; }
+
+  async function sendSelectedBookingEmail() {
+    if (!selectedBooking) return;
+    const button = $('sendBookingEmailButton');
+    const wasSent = selectedBooking.email_status === 'sent';
+    if (wasSent && !window.confirm(`Die Bestätigung wurde bereits versendet. Wirklich erneut an ${selectedBooking.email} senden?`)) return;
+    button.disabled = true;
+    const originalText = button.textContent;
+    button.textContent = 'E-Mail wird versendet …';
+    try {
+      await sendBookingConfirmationEmail(selectedBooking, { force: wasSent, showMessage:false });
+      await loadBookings();
+      const refreshed = bookings.find(b => b.id === selectedBooking?.id);
+      if (refreshed) selectedBooking = refreshed;
+      window.alert(`Die vollständige Bestätigungs-E-Mail wurde an ${selectedBooking?.email || ''} versendet.`);
+      closeBooking();
+    } catch (error) {
+      console.error(error);
+      window.alert(`Die E-Mail konnte nicht versendet werden.\n\n${humanizeError(error)}`);
+    } finally {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+  }
 
   async function updateBookingStatus(status) {
     if(!selectedBooking)return; const label=status==='bezahlt'?'Zahlung als bezahlt markieren':status==='offen'?'Zahlung wieder öffnen':'Buchung stornieren'; if(!window.confirm(`${label}?`))return;
     const { error }=await supabase.from('buchungen').update({zahlungsstatus:status}).eq('id',selectedBooking.id); if(error){showError('dashboardError',humanizeError(error));return;} closeBooking(); await loadBookings(); await loadDashboardOverview();
   }
 
-  document.addEventListener('click', async e=>{ const b=e.target.closest('[data-action]'); if(!b)return; const a=b.dataset.action; if(a==='open-booking')openBooking(Number(b.dataset.bookingId)); else if(a==='close-booking')closeBooking(); else if(a==='print-cake-allergen')printCakeAllergenForm(selectedBooking); else if(a==='mark-paid')await updateBookingStatus('bezahlt'); else if(a==='mark-open')await updateBookingStatus('offen'); else if(a==='cancel-booking')await updateBookingStatus('storniert'); }, true);
+  document.addEventListener('click', async e=>{ const b=e.target.closest('[data-action]'); if(!b)return; const a=b.dataset.action; if(a==='open-booking')openBooking(Number(b.dataset.bookingId)); else if(a==='close-booking')closeBooking(); else if(a==='send-booking-email')await sendSelectedBookingEmail(); else if(a==='print-cake-allergen')printCakeAllergenForm(selectedBooking); else if(a==='mark-paid')await updateBookingStatus('bezahlt'); else if(a==='mark-open')await updateBookingStatus('offen'); else if(a==='cancel-booking')await updateBookingStatus('storniert'); }, true);
   document.addEventListener('click',e=>{if(e.target===$('bookingModal'))closeBooking(); if(e.target===$('manualBookingModal'))closeManualBooking();});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){ closeBooking(); closeManualBooking(); }});
 
@@ -989,7 +1058,7 @@
     if (password !== repeat) return showError('registerError', 'Die beiden Passwörter stimmen nicht überein.');
     const button = $('registerButton'); button.disabled = true; button.textContent = 'Konto wird erstellt …';
     try {
-      const redirectTo = `${window.location.origin}${window.location.pathname}?v=290&onboarding=1`;
+      const redirectTo = `${window.location.origin}${window.location.pathname}?v=292&onboarding=1`;
       const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: redirectTo } });
       if (error) throw error;
       if (data.session) {
