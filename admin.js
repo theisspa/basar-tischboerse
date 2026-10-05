@@ -356,14 +356,45 @@
 
   async function loadBookings() {
     clearError('dashboardError');
-    if (selectedBasarId) await supabase.rpc('get_basar_availability', { p_basar_id: selectedBasarId });
+    if ($('waitlistError')) clearError('waitlistError');
+
+    // Verfügbarkeit aktualisieren. Ein Fehler hier darf die bestehende
+    // Teilnehmerübersicht nicht komplett blockieren.
+    if (selectedBasarId) {
+      const { error: availabilityError } = await supabase.rpc('get_basar_availability', { p_basar_id: selectedBasarId });
+      if (availabilityError) console.warn('Verfügbarkeit konnte nicht aktualisiert werden:', availabilityError);
+    }
+
     const { data, error } = await supabase.from('buchungen').select('id,buchungsnummer,anzahl_tische,verkaufsbereich,kuchenspende,preis,sonderrabatt_betrag,sonderrabatt_grund,sonderrabatt_geaendert_at,vorname,nachname,strasse,hausnummer,plz,ort,email,telefon,zahlungsart,zahlungsstatus,zahlungsfrist,email_token,email_status,email_sent_at,email_last_error,veranstalter_email_status,veranstalter_email_sent_at,veranstalter_email_last_error,buchungsquelle,manuell_notiz,warteliste_id,ist_nachruecker,nachruecker_zahlungsfrist_at,created_at').eq('basar_id',selectedBasarId).order('created_at',{ascending:false});
-    if (error) throw error;
-    bookings=data||[];
+
+    if (error) {
+      console.error('Buchungen konnten nicht geladen werden:', error);
+      bookings=[];
+      const message=humanizeError(error);
+      showError('dashboardError', message);
+      const rows=$('bookingRows');
+      if (rows) rows.innerHTML=`<tr><td colspan="10">Buchungen konnten nicht geladen werden: ${escapeHtml(message)}</td></tr>`;
+    } else {
+      bookings=data||[];
+      updateStats();
+      renderBookings();
+    }
+
+    // Warteliste bewusst separat laden. Ein Fehler der neuen Wartelisten-RPC
+    // darf die vorhandenen Buchungen nicht mehr auf "wird geladen" festhalten.
     const { data: waitData, error: waitError } = await supabase.rpc('get_waitlist_for_basar', { p_basar_id: selectedBasarId });
-    if (waitError) throw waitError;
-    waitlist=waitData||[];
-    updateStats(); renderBookings(); renderWaitlist();
+    if (waitError) {
+      console.error('Warteliste konnte nicht geladen werden:', waitError);
+      waitlist=[];
+      const message=humanizeError(waitError);
+      if ($('waitlistError')) showError('waitlistError', message);
+      const rows=$('waitlistRows');
+      if (rows) rows.innerHTML=`<tr><td colspan="9">Warteliste konnte nicht geladen werden: ${escapeHtml(message)}</td></tr>`;
+    } else {
+      waitlist=waitData||[];
+      renderWaitlist();
+      updateStats();
+    }
   }
 
   function updateStats() {
