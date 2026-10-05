@@ -1,4 +1,4 @@
-// V29.4 - Plattformadmin kann Basare dauerhaft löschen + druckbares Kuchen-/Allergenformular.
+// V29.5 - Sonderrabatte / kostenfreie Buchungen mit korrekter Einnahmenberechnung.
 (() => {
   'use strict';
   const config = window.BASAR_CONFIG;
@@ -8,6 +8,13 @@
   const supabase = window.supabase.createClient(config.supabaseUrl, config.supabasePublishableKey);
   const $ = id => document.getElementById(id);
   const euro = value => Number(value).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+  const specialDiscountAmount = row => {
+    const price = Math.max(0, Number(row?.preis || 0));
+    const discount = Math.max(0, Number(row?.sonderrabatt_betrag || 0));
+    return Math.min(price, discount);
+  };
+  const payableAmount = row => Math.max(0, Number(row?.preis || 0) - specialDiscountAmount(row));
+  const isFreeBooking = row => !!row && !['storniert','abgelaufen'].includes(row.zahlungsstatus) && payableAmount(row) < 0.005;
   let currentUser = null, basare = [], bookings = [], allBookings = [], selectedBasarId = null, selectedBooking = null;
   let profileExists = false, onboardingMode = false, profileSnapshot = null;
   let isPlatformAdmin = false, platformAccounts = [];
@@ -27,7 +34,7 @@
   function formatDate(value) { if (!value) return ''; return new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date(`${value}T12:00:00`)); }
   function formatDateTime(value) { if (!value) return ''; return new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)); }
   function deadlineInfo(row) {
-    if (!row || row.zahlungsstatus !== 'offen' || !row.zahlungsfrist) return { state: 'normal', text: '', days: null };
+    if (!row || row.zahlungsstatus !== 'offen' || isFreeBooking(row) || !row.zahlungsfrist) return { state: 'normal', text: '', days: null };
     const today = new Date(); today.setHours(0,0,0,0);
     const deadline = new Date(`${row.zahlungsfrist}T00:00:00`);
     if (Number.isNaN(deadline.getTime())) return { state: 'normal', text: '', days: null };
@@ -37,9 +44,10 @@
     return { state: 'open', text: days === 1 ? 'Noch 1 Tag' : `Noch ${days} Tage`, days };
   }
   function bookingStatusInfo(row) {
-    if (row?.zahlungsstatus === 'bezahlt') return ['Bezahlt','bezahlt'];
     if (row?.zahlungsstatus === 'storniert') return ['Storniert','storniert'];
     if (row?.zahlungsstatus === 'abgelaufen') return ['Frist abgelaufen','abgelaufen'];
+    if (isFreeBooking(row)) return ['Kostenfrei','bezahlt'];
+    if (row?.zahlungsstatus === 'bezahlt') return ['Bezahlt','bezahlt'];
     const deadline = deadlineInfo(row);
     if (deadline.state === 'overdue') return ['Überfällig','ueberfaellig'];
     if (deadline.state === 'today') return ['Heute fällig','heute'];
@@ -214,9 +222,11 @@
       reserved: blocking.reduce((sum,r)=>sum+Number(r.anzahl_tische||0),0),
       childrenReserved: blocking.filter(r=>r.verkaufsbereich==='kinder').reduce((sum,r)=>sum+Number(r.anzahl_tische||0),0),
       adultsReserved: blocking.filter(r=>r.verkaufsbereich==='erwachsene').reduce((sum,r)=>sum+Number(r.anzahl_tische||0),0),
-      open: rows.filter(r=>r.zahlungsstatus==='offen').length,
-      paid: rows.filter(r=>r.zahlungsstatus==='bezahlt').length,
-      paidAmount: rows.filter(r=>r.zahlungsstatus==='bezahlt').reduce((sum,r)=>sum+Number(r.preis||0),0)
+      open: rows.filter(r=>r.zahlungsstatus==='offen' && !isFreeBooking(r)).length,
+      paid: rows.filter(r=>r.zahlungsstatus==='bezahlt' && !isFreeBooking(r)).length,
+      free: rows.filter(isFreeBooking).length,
+      paidAmount: rows.filter(r=>r.zahlungsstatus==='bezahlt' && !isFreeBooking(r)).reduce((sum,r)=>sum+payableAmount(r),0),
+      discountAmount: rows.filter(r=>!['storniert','abgelaufen'].includes(r.zahlungsstatus)).reduce((sum,r)=>sum+specialDiscountAmount(r),0)
     };
   }
 
@@ -226,8 +236,9 @@
     box.classList.remove('hidden');
     const activeBasars = basare.filter(b=>b.aktiv);
     const publicBasars = basare.filter(b=>b.aktiv && b.veroeffentlicht && isApprovedOrganizer());
-    const openRows = allBookings.filter(r=>r.zahlungsstatus==='offen');
-    const paidRows = allBookings.filter(r=>r.zahlungsstatus==='bezahlt');
+    const openRows = allBookings.filter(r=>r.zahlungsstatus==='offen' && !isFreeBooking(r));
+    const paidRows = allBookings.filter(r=>r.zahlungsstatus==='bezahlt' && !isFreeBooking(r));
+    const discountTotal = allBookings.filter(r=>!['storniert','abgelaufen'].includes(r.zahlungsstatus)).reduce((sum,r)=>sum+specialDiscountAmount(r),0);
     const reserved = allBookings.filter(bookingBlocksTable).reduce((sum,r)=>sum+Number(r.anzahl_tische||0),0);
     const capacity = basare.reduce((sum,b)=>sum+Number(b.max_tische||0),0);
     const now = new Date(); now.setHours(0,0,0,0);
@@ -236,9 +247,9 @@
     $('overviewNextBasar').textContent = upcoming ? `Nächster Termin: ${formatDate(upcoming.veranstaltungsdatum)}` : (basare.length ? 'Kein aktiver zukünftiger Termin' : 'Noch kein Basar angelegt');
     $('overviewOpenPayments').textContent = openRows.length;
     const overdueRows = openRows.filter(r=>deadlineInfo(r).state==='overdue');
-    $('overviewOpenAmount').textContent = `${euro(openRows.reduce((sum,r)=>sum+Number(r.preis||0),0))} offen${overdueRows.length ? ` · ${overdueRows.length} überfällig` : ''}`;
+    $('overviewOpenAmount').textContent = `${euro(openRows.reduce((sum,r)=>sum+payableAmount(r),0))} offen${overdueRows.length ? ` · ${overdueRows.length} überfällig` : ''}`;
     $('overviewPaidBookings').textContent = paidRows.length;
-    $('overviewPaidAmount').textContent = `${euro(paidRows.reduce((sum,r)=>sum+Number(r.preis||0),0))} bezahlt`;
+    $('overviewPaidAmount').textContent = `${euro(paidRows.reduce((sum,r)=>sum+payableAmount(r),0))} Einnahmen${discountTotal > 0 ? ` · ${euro(discountTotal)} Sonderrabatt` : ''}`;
     $('overviewReservedTables').textContent = reserved;
     $('overviewTotalCapacity').textContent = capacity ? `von ${capacity} Tischplätzen` : 'Noch keine Kapazität';
 
@@ -263,7 +274,7 @@
   async function loadDashboardOverview() {
     if (!basare.length) { allBookings = []; renderDashboardOverview(); renderBasarList(); return; }
     const ids = basare.map(b=>b.id);
-    const { data, error } = await supabase.from('buchungen').select('id,basar_id,anzahl_tische,verkaufsbereich,preis,zahlungsstatus,zahlungsfrist,created_at').in('basar_id', ids);
+    const { data, error } = await supabase.from('buchungen').select('id,basar_id,anzahl_tische,verkaufsbereich,preis,sonderrabatt_betrag,sonderrabatt_grund,zahlungsstatus,zahlungsfrist,created_at').in('basar_id', ids);
     if (error) throw error;
     allBookings = data || [];
     renderDashboardOverview();
@@ -311,7 +322,7 @@
       else { statusText='Öffentlich'; statusClass='active'; }
       const publication = b.veroeffentlicht ? 'Veröffentlichung aktiviert' : 'Nicht öffentlich';
       const areaText = b.verkaufsbereiche === 'kinder' ? 'Nur Kinder' : b.verkaufsbereiche === 'erwachsene' ? 'Nur Erwachsene' : (b.kontingent_modus === 'getrennt' ? `Kinder ${Number(b.max_tische_kinder||0)} · Erwachsene ${Number(b.max_tische_erwachsene||0)}` : 'Kinder & Erwachsene · gemeinsamer Pool');
-      return `<button class="basar-list-item ${b.id===selectedBasarId?'selected':''}" data-basar-id="${b.id}" type="button"><div class="basar-list-main"><strong>${escapeHtml(b.name)}</strong><span>${escapeHtml(formatDate(b.veranstaltungsdatum))}${b.ort?' · '+escapeHtml(b.ort):''}</span><small>${st.reserved} von ${max} Tischen reserviert · ${escapeHtml(areaText)} · ${st.open} offen · ${st.paid} bezahlt · ${publication}${hasValidCoordinates(b)?' · 📍 Umkreissuche bereit':' · ⚠ Standort neu speichern'}</small></div><span class="status-chip ${statusClass}">${statusText}</span></button>`;
+      return `<button class="basar-list-item ${b.id===selectedBasarId?'selected':''}" data-basar-id="${b.id}" type="button"><div class="basar-list-main"><strong>${escapeHtml(b.name)}</strong><span>${escapeHtml(formatDate(b.veranstaltungsdatum))}${b.ort?' · '+escapeHtml(b.ort):''}</span><small>${st.reserved} von ${max} Tischen reserviert · ${escapeHtml(areaText)} · ${st.open} offen · ${st.paid} bezahlt${st.free ? ` · ${st.free} kostenfrei` : ''} · ${publication}${hasValidCoordinates(b)?' · 📍 Umkreissuche bereit':' · ⚠ Standort neu speichern'}</small></div><span class="status-chip ${statusClass}">${statusText}</span></button>`;
     }).join('');
     el.querySelectorAll('[data-basar-id]').forEach(btn=>btn.addEventListener('click', async()=>{
       const nextId=Number(btn.dataset.basarId);
@@ -333,7 +344,7 @@
   async function loadBookings() {
     clearError('dashboardError');
     if (selectedBasarId) await supabase.rpc('get_basar_availability', { p_basar_id: selectedBasarId });
-    const { data, error } = await supabase.from('buchungen').select('id,buchungsnummer,anzahl_tische,verkaufsbereich,kuchenspende,preis,vorname,nachname,strasse,hausnummer,plz,ort,email,telefon,zahlungsart,zahlungsstatus,zahlungsfrist,email_token,email_status,email_sent_at,email_last_error,veranstalter_email_status,veranstalter_email_sent_at,veranstalter_email_last_error,buchungsquelle,manuell_notiz,created_at').eq('basar_id',selectedBasarId).order('created_at',{ascending:false});
+    const { data, error } = await supabase.from('buchungen').select('id,buchungsnummer,anzahl_tische,verkaufsbereich,kuchenspende,preis,sonderrabatt_betrag,sonderrabatt_grund,sonderrabatt_geaendert_at,vorname,nachname,strasse,hausnummer,plz,ort,email,telefon,zahlungsart,zahlungsstatus,zahlungsfrist,email_token,email_status,email_sent_at,email_last_error,veranstalter_email_status,veranstalter_email_sent_at,veranstalter_email_last_error,buchungsquelle,manuell_notiz,created_at').eq('basar_id',selectedBasarId).order('created_at',{ascending:false});
     if (error) throw error; bookings=data||[]; updateStats(); renderBookings();
   }
 
@@ -343,14 +354,18 @@
     const booked=blocking.reduce((sum,r)=>sum+Number(r.anzahl_tische||0),0);
     const max=Number(basar.max_tische||0);
     const free=Math.max(0,max-booked);
-    const open=bookings.filter(r=>r.zahlungsstatus==='offen').length;
-    const paidRows=bookings.filter(r=>r.zahlungsstatus==='bezahlt');
-    const paidAmount=paidRows.reduce((sum,r)=>sum+Number(r.preis||0),0);
+    const openRows=bookings.filter(r=>r.zahlungsstatus==='offen' && !isFreeBooking(r));
+    const open=openRows.length;
+    const paidRows=bookings.filter(r=>r.zahlungsstatus==='bezahlt' && !isFreeBooking(r));
+    const paidAmount=paidRows.reduce((sum,r)=>sum+payableAmount(r),0);
+    const discountRows=bookings.filter(r=>!['storniert','abgelaufen'].includes(r.zahlungsstatus) && specialDiscountAmount(r)>0);
+    const discountAmount=discountRows.reduce((sum,r)=>sum+specialDiscountAmount(r),0);
     const percent=max?Math.min(100,Math.round((booked/max)*100)):0;
     $('dashboardBooked').textContent=booked; $('dashboardFree').textContent=free;
     const overdue=bookings.filter(r=>deadlineInfo(r).state==='overdue').length;
     $('dashboardOpen').textContent=open; $('dashboardOpen').title=overdue ? `${overdue} offene Zahlung${overdue===1?' ist':'en sind'} überfällig` : 'Keine überfälligen offenen Zahlungen';
     $('dashboardPaid').textContent=paidRows.length; $('dashboardRevenue').textContent=euro(paidAmount);
+    if ($('dashboardDiscounts')) { $('dashboardDiscounts').textContent=euro(discountAmount); $('dashboardDiscounts').title=`${discountRows.length} Buchung${discountRows.length===1?'':'en'} mit Sonderrabatt`; }
     $('dashboardCapacityText').textContent=`${booked} von ${max} · ${percent} %`;
     $('dashboardCapacityFill').style.width=`${percent}%`;
     const childrenBooked=blocking.filter(r=>r.verkaufsbereich==='kinder').reduce((sum,r)=>sum+Number(r.anzahl_tische||0),0);
@@ -735,8 +750,9 @@
 
       if (search && !fullName.includes(search) && !bookingNumber.includes(search) && !email.includes(search) && !phone.includes(search)) return false;
 
-      if (statusFilter === 'offen' && r.zahlungsstatus !== 'offen') return false;
-      if (statusFilter === 'bezahlt' && r.zahlungsstatus !== 'bezahlt') return false;
+      if (statusFilter === 'offen' && !(r.zahlungsstatus === 'offen' && !isFreeBooking(r))) return false;
+      if (statusFilter === 'bezahlt' && !(r.zahlungsstatus === 'bezahlt' && !isFreeBooking(r))) return false;
+      if (statusFilter === 'kostenfrei' && !isFreeBooking(r)) return false;
       if (statusFilter === 'storniert' && r.zahlungsstatus !== 'storniert') return false;
       if (statusFilter === 'abgelaufen' && !(r.zahlungsstatus === 'abgelaufen' || deadline.state === 'overdue')) return false;
       if (statusFilter === 'heute' && deadline.state !== 'today') return false;
@@ -766,7 +782,9 @@
       const deadlineClass = deadline.state==='overdue' ? 'deadline-overdue' : deadline.state==='today' ? 'deadline-today' : '';
       const deadlineSub = deadline.text ? `<small class="deadline-note ${deadlineClass}">${escapeHtml(deadline.text)}</small>` : '';
       const sourceBadge = (r.buchungsquelle || 'online') === 'manuell' ? '<small class="manual-source-badge">Manuell</small>' : '';
-      return `<tr class="${rowClass}"><td><strong>${escapeHtml(r.buchungsnummer)}</strong>${sourceBadge}</td><td>${escapeHtml(`${r.vorname} ${r.nachname}`)}</td><td>${r.anzahl_tische}</td><td>${r.verkaufsbereich==='kinder'?'Kinder':'Erwachsene'}</td><td>${r.kuchenspende?'Ja':'Nein'}</td><td>${euro(r.preis)}</td><td>${paymentLabel(r.zahlungsart)}</td><td>${formatDate(r.zahlungsfrist)}${deadlineSub}</td><td><span class="badge status-${statusClass}">${statusText}</span></td><td><button class="table-button" type="button" data-booking-id="${r.id}" data-action="open-booking">Öffnen</button></td></tr>`;
+      const discount = specialDiscountAmount(r), due = payableAmount(r);
+      const amountDisplay = discount > 0 ? `${euro(due)}<small class="deadline-note">statt ${euro(r.preis)} · Rabatt ${euro(discount)}</small>` : euro(r.preis);
+      return `<tr class="${rowClass}"><td><strong>${escapeHtml(r.buchungsnummer)}</strong>${sourceBadge}</td><td>${escapeHtml(`${r.vorname} ${r.nachname}`)}</td><td>${r.anzahl_tische}</td><td>${r.verkaufsbereich==='kinder'?'Kinder':'Erwachsene'}</td><td>${r.kuchenspende?'Ja':'Nein'}</td><td>${amountDisplay}</td><td>${isFreeBooking(r)?'Keine Zahlung':paymentLabel(r.zahlungsart)}</td><td>${isFreeBooking(r)?'—':formatDate(r.zahlungsfrist)}${deadlineSub}</td><td><span class="badge status-${statusClass}">${statusText}</span></td><td><button class="table-button" type="button" data-booking-id="${r.id}" data-action="open-booking">Öffnen</button></td></tr>`;
     }).join('');
   }
 
@@ -799,7 +817,7 @@
       return;
     }
     clearError('dashboardError');
-    const header = ['Buchungsnummer','Quelle','Vorname','Nachname','E-Mail','Telefon','Tische','Bereich','Kuchen','Betrag EUR','Zahlungsart','Zahlungsstatus','Zahlungsfrist','Interne Notiz','Buchung eingegangen'];
+    const header = ['Buchungsnummer','Quelle','Vorname','Nachname','E-Mail','Telefon','Tische','Bereich','Kuchen','Betrag vor Sonderrabatt EUR','Sonderrabatt EUR','Rabattgrund','Zahlbetrag EUR','Zahlungsart','Zahlungsstatus','Zahlungsfrist','Interne Notiz','Buchung eingegangen'];
     const lines = [header, ...rows.map(r => [
       r.buchungsnummer,
       bookingSourceLabel(r.buchungsquelle),
@@ -811,7 +829,10 @@
       r.verkaufsbereich === 'kinder' ? 'Kinder' : 'Erwachsene',
       r.kuchenspende ? 'Ja' : 'Nein',
       Number(r.preis || 0).toFixed(2).replace('.', ','),
-      paymentLabel(r.zahlungsart),
+      specialDiscountAmount(r).toFixed(2).replace('.', ','),
+      r.sonderrabatt_grund || '',
+      payableAmount(r).toFixed(2).replace('.', ','),
+      isFreeBooking(r) ? 'Keine Zahlung erforderlich' : paymentLabel(r.zahlungsart),
       bookingStatusInfo(r)[0],
       r.zahlungsfrist || '',
       r.manuell_notiz || '',
@@ -839,14 +860,85 @@
     const address = [String(r.strasse||'').trim() + (r.hausnummer ? ` ${r.hausnummer}` : ''), [r.plz,r.ort].filter(Boolean).join(' ')].filter(x=>x.trim()).join(', ') || '—';
     const manual = (r.buchungsquelle || 'online') === 'manuell';
     const participantMail = manual && !r.email ? 'Keine E-Mail hinterlegt' : manual && r.email_status === 'pending' ? 'Nicht automatisch versendet' : r.email_status==='sent'?'Versendet':r.email_status==='error'?'Fehler':r.email_status==='sending'?'Wird gesendet':'Ausstehend';
-    $('bookingDetails').innerHTML=`<div class="detail-item"><span>Name</span><strong>${escapeHtml(`${r.vorname} ${r.nachname}`)}</strong></div><div class="detail-item"><span>Quelle</span><strong>${bookingSourceLabel(r.buchungsquelle)}</strong></div><div class="detail-item"><span>Bereich</span><strong>${r.verkaufsbereich==='kinder'?'Kinder':'Erwachsene'}</strong></div><div class="detail-item"><span>Tische</span><strong>${r.anzahl_tische}</strong></div><div class="detail-item"><span>Kuchen</span><strong>${r.kuchenspende?'Ja':'Nein'}</strong></div><div class="detail-item"><span>Betrag</span><strong>${euro(r.preis)}</strong></div><div class="detail-item"><span>Zahlung</span><strong>${paymentLabel(r.zahlungsart)}</strong></div><div class="detail-item"><span>Status</span><strong>${status}</strong></div><div class="detail-item"><span>Zahlungsfrist</span><strong>${formatDate(r.zahlungsfrist)}${deadline.text?` · ${escapeHtml(deadline.text)}`:''}</strong></div><div class="detail-item full"><span>Adresse</span><strong>${escapeHtml(address)}</strong></div><div class="detail-item"><span>E-Mail</span><strong>${escapeHtml(r.email||'—')}</strong></div><div class="detail-item"><span>Telefon</span><strong>${escapeHtml(r.telefon||'—')}</strong></div><div class="detail-item"><span>E-Mail an Teilnehmer</span><strong>${escapeHtml(participantMail)}${r.email_sent_at?` · ${formatDateTime(r.email_sent_at)}`:''}</strong></div><div class="detail-item"><span>E-Mail an Veranstalter</span><strong>${r.veranstalter_email_status==='sent'?'Versendet':r.veranstalter_email_status==='error'?'Fehler':r.veranstalter_email_status==='sending'?'Wird gesendet':manual?'Nicht automatisch versendet':'Ausstehend'}${r.veranstalter_email_sent_at?` · ${formatDateTime(r.veranstalter_email_sent_at)}`:''}</strong></div>${manual&&r.manuell_notiz?`<div class="detail-item full"><span>Interne Notiz</span><strong>${escapeHtml(r.manuell_notiz)}</strong></div>`:''}<div class="detail-item full"><span>Buchung eingegangen</span><strong>${formatDateTime(r.created_at)}</strong></div>`;
+    const discount = specialDiscountAmount(r), due = payableAmount(r);
+    $('bookingDetails').innerHTML=`<div class="detail-item"><span>Name</span><strong>${escapeHtml(`${r.vorname} ${r.nachname}`)}</strong></div><div class="detail-item"><span>Quelle</span><strong>${bookingSourceLabel(r.buchungsquelle)}</strong></div><div class="detail-item"><span>Bereich</span><strong>${r.verkaufsbereich==='kinder'?'Kinder':'Erwachsene'}</strong></div><div class="detail-item"><span>Tische</span><strong>${r.anzahl_tische}</strong></div><div class="detail-item"><span>Kuchen</span><strong>${r.kuchenspende?'Ja':'Nein'}</strong></div><div class="detail-item"><span>Betrag vor Sonderrabatt</span><strong>${euro(r.preis)}</strong></div>${discount>0?`<div class="detail-item"><span>Sonderrabatt</span><strong>− ${euro(discount)}</strong></div><div class="detail-item"><span>Rabattgrund</span><strong>${escapeHtml(r.sonderrabatt_grund||'Sonderrabatt')}</strong></div>`:''}<div class="detail-item"><span>Zu zahlen</span><strong>${euro(due)}</strong></div><div class="detail-item"><span>Zahlung</span><strong>${isFreeBooking(r)?'Keine Zahlung erforderlich':paymentLabel(r.zahlungsart)}</strong></div><div class="detail-item"><span>Status</span><strong>${status}</strong></div><div class="detail-item"><span>Zahlungsfrist</span><strong>${isFreeBooking(r)?'Entfällt':`${formatDate(r.zahlungsfrist)}${deadline.text?` · ${escapeHtml(deadline.text)}`:''}`}</strong></div><div class="detail-item full"><span>Adresse</span><strong>${escapeHtml(address)}</strong></div><div class="detail-item"><span>E-Mail</span><strong>${escapeHtml(r.email||'—')}</strong></div><div class="detail-item"><span>Telefon</span><strong>${escapeHtml(r.telefon||'—')}</strong></div><div class="detail-item"><span>E-Mail an Teilnehmer</span><strong>${escapeHtml(participantMail)}${r.email_sent_at?` · ${formatDateTime(r.email_sent_at)}`:''}</strong></div><div class="detail-item"><span>E-Mail an Veranstalter</span><strong>${r.veranstalter_email_status==='sent'?'Versendet':r.veranstalter_email_status==='error'?'Fehler':r.veranstalter_email_status==='sending'?'Wird gesendet':manual?'Nicht automatisch versendet':'Ausstehend'}${r.veranstalter_email_sent_at?` · ${formatDateTime(r.veranstalter_email_sent_at)}`:''}</strong></div>${r.sonderrabatt_geaendert_at?`<div class="detail-item full"><span>Sonderrabatt zuletzt geändert</span><strong>${formatDateTime(r.sonderrabatt_geaendert_at)}</strong></div>`:''}${manual&&r.manuell_notiz?`<div class="detail-item full"><span>Interne Notiz</span><strong>${escapeHtml(r.manuell_notiz)}</strong></div>`:''}<div class="detail-item full"><span>Buchung eingegangen</span><strong>${formatDateTime(r.created_at)}</strong></div>`;
     const sendButton = $('sendBookingEmailButton');
     const canSendParticipantEmail = !!String(r.email || '').trim();
     sendButton.classList.toggle('hidden', !canSendParticipantEmail);
     sendButton.textContent = r.email_status === 'sent' ? 'Bestätigung erneut senden' : 'Bestätigungs-E-Mail senden';
-    $('printCakeAllergenBookingButton').classList.toggle('hidden', !r.kuchenspende); $('markPaidButton').classList.toggle('hidden', ['bezahlt','storniert'].includes(r.zahlungsstatus)); $('markOpenButton').classList.toggle('hidden', r.zahlungsstatus!=='bezahlt'); $('cancelBookingButton').classList.toggle('hidden', r.zahlungsstatus==='storniert'); $('bookingModal').classList.remove('hidden');
+    $('printCakeAllergenBookingButton').classList.toggle('hidden', !r.kuchenspende);
+    $('editSpecialDiscountButton').classList.toggle('hidden', ['storniert','abgelaufen'].includes(r.zahlungsstatus));
+    $('markPaidButton').classList.toggle('hidden', ['bezahlt','storniert'].includes(r.zahlungsstatus) || isFreeBooking(r));
+    $('markOpenButton').classList.toggle('hidden', r.zahlungsstatus!=='bezahlt' || isFreeBooking(r));
+    $('cancelBookingButton').classList.toggle('hidden', r.zahlungsstatus==='storniert');
+    closeSpecialDiscountEditor();
+    $('bookingModal').classList.remove('hidden');
   }
-  function closeBooking(){ $('bookingModal').classList.add('hidden'); selectedBooking=null; }
+  function closeBooking(){ $('bookingModal').classList.add('hidden'); closeSpecialDiscountEditor(); selectedBooking=null; }
+
+  function updateSpecialDiscountPreview() {
+    if (!selectedBooking || !$('specialDiscountPreview')) return;
+    const price = Math.max(0, Number(selectedBooking.preis || 0));
+    const raw = Number($('specialDiscountAmount').value || 0);
+    const discount = Number.isFinite(raw) ? Math.max(0, Math.min(price, raw)) : 0;
+    const due = Math.max(0, price - discount);
+    $('specialDiscountPreview').textContent = `Betrag vor Sonderrabatt: ${euro(price)} · Sonderrabatt: ${euro(discount)} · Neuer Zahlbetrag: ${euro(due)}`;
+  }
+
+  function openSpecialDiscountEditor() {
+    if (!selectedBooking) return;
+    clearError('specialDiscountError');
+    $('specialDiscountAmount').max = Number(selectedBooking.preis || 0).toFixed(2);
+    $('specialDiscountAmount').value = specialDiscountAmount(selectedBooking).toFixed(2);
+    $('specialDiscountReason').value = selectedBooking.sonderrabatt_grund || '';
+    $('specialDiscountPanel').classList.remove('hidden');
+    updateSpecialDiscountPreview();
+    setTimeout(()=>$('specialDiscountAmount').focus(),0);
+  }
+
+  function closeSpecialDiscountEditor() {
+    if (!$('specialDiscountPanel')) return;
+    $('specialDiscountPanel').classList.add('hidden');
+    clearError('specialDiscountError');
+  }
+
+  function setFullSpecialDiscount() {
+    if (!selectedBooking) return;
+    $('specialDiscountAmount').value = Number(selectedBooking.preis || 0).toFixed(2);
+    if (!$('specialDiscountReason').value.trim()) $('specialDiscountReason').value = 'Eigener Tisch';
+    updateSpecialDiscountPreview();
+  }
+
+  async function saveSpecialDiscount() {
+    if (!selectedBooking) return;
+    clearError('specialDiscountError');
+    const price = Math.max(0, Number(selectedBooking.preis || 0));
+    const amount = Number($('specialDiscountAmount').value || 0);
+    const reason = $('specialDiscountReason').value.trim();
+    if (!Number.isFinite(amount) || amount < 0) return showError('specialDiscountError','Bitte einen gültigen Rabattbetrag eingeben.');
+    if (amount > price + 0.001) return showError('specialDiscountError',`Der Sonderrabatt darf höchstens ${euro(price)} betragen.`);
+    if (amount > 0 && !reason) return showError('specialDiscountError','Bitte einen Grund für den Sonderrabatt eintragen, z. B. „Familie“, „Freunde“ oder „Eigener Tisch“.');
+    const button = $('saveSpecialDiscountButton'); button.disabled=true; button.textContent='Wird gespeichert …';
+    try {
+      const { error } = await supabase.rpc('set_booking_special_discount', {
+        p_buchung_id: selectedBooking.id,
+        p_betrag: amount,
+        p_grund: reason || null
+      });
+      if (error) throw error;
+      const bookingId = selectedBooking.id;
+      await loadBookings(); await loadDashboardOverview();
+      selectedBooking = bookings.find(b=>b.id===bookingId) || null;
+      if (selectedBooking) openBooking(bookingId);
+      const due = selectedBooking ? payableAmount(selectedBooking) : Math.max(0, price-amount);
+      const resendHint = selectedBooking?.email_status === 'sent'
+        ? '\n\nDer Kunde hat bereits eine Bestätigung erhalten. Falls nötig, klicke jetzt auf „Bestätigung erneut senden“, damit Vertrag und ggf. Allergenformular den neuen Betrag enthalten.'
+        : '';
+      window.alert(`Sonderrabatt gespeichert. Neuer Zahlbetrag: ${euro(due)}.${resendHint}`);
+    } catch (error) {
+      console.error(error); showError('specialDiscountError',humanizeError(error));
+    } finally { button.disabled=false; button.textContent='Sonderrabatt speichern'; }
+  }
 
   async function sendSelectedBookingEmail() {
     if (!selectedBooking) return;
@@ -877,7 +969,7 @@
     const { error }=await supabase.from('buchungen').update({zahlungsstatus:status}).eq('id',selectedBooking.id); if(error){showError('dashboardError',humanizeError(error));return;} closeBooking(); await loadBookings(); await loadDashboardOverview();
   }
 
-  document.addEventListener('click', async e=>{ const b=e.target.closest('[data-action]'); if(!b)return; const a=b.dataset.action; if(a==='open-booking')openBooking(Number(b.dataset.bookingId)); else if(a==='close-booking')closeBooking(); else if(a==='send-booking-email')await sendSelectedBookingEmail(); else if(a==='print-cake-allergen')printCakeAllergenForm(selectedBooking); else if(a==='mark-paid')await updateBookingStatus('bezahlt'); else if(a==='mark-open')await updateBookingStatus('offen'); else if(a==='cancel-booking')await updateBookingStatus('storniert'); }, true);
+  document.addEventListener('click', async e=>{ const b=e.target.closest('[data-action]'); if(!b)return; const a=b.dataset.action; if(a==='open-booking')openBooking(Number(b.dataset.bookingId)); else if(a==='close-booking')closeBooking(); else if(a==='send-booking-email')await sendSelectedBookingEmail(); else if(a==='print-cake-allergen')printCakeAllergenForm(selectedBooking); else if(a==='edit-special-discount')openSpecialDiscountEditor(); else if(a==='cancel-special-discount')closeSpecialDiscountEditor(); else if(a==='full-special-discount')setFullSpecialDiscount(); else if(a==='save-special-discount')await saveSpecialDiscount(); else if(a==='mark-paid')await updateBookingStatus('bezahlt'); else if(a==='mark-open')await updateBookingStatus('offen'); else if(a==='cancel-booking')await updateBookingStatus('storniert'); }, true);
   document.addEventListener('click',e=>{if(e.target===$('bookingModal'))closeBooking(); if(e.target===$('manualBookingModal'))closeManualBooking();});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){ closeBooking(); closeManualBooking(); }});
 
@@ -1085,6 +1177,7 @@
   window.addEventListener('beforeunload',e=>{ if(!basarFormDirty) return; e.preventDefault(); e.returnValue=''; });
   $('printBlankFormButton').addEventListener('click',printBlankBookingForm); $('printCakeAllergenFormButton').addEventListener('click',()=>printCakeAllergenForm(null)); $('deleteCurrentBasarButton').addEventListener('click',deleteCurrentBasar); $('editCurrentButton').addEventListener('click',()=>{const b=basare.find(x=>x.id===selectedBasarId);if(b)editBasar(b);}); $('refreshButton').addEventListener('click',()=>loadBasare().catch(e=>showError('dashboardError',humanizeError(e)))); $('refreshBookingsButton').addEventListener('click',()=>loadBookings().catch(e=>showError('dashboardError',humanizeError(e)))); $('bookingFilter').addEventListener('change',renderBookings); $('paymentFilter').addEventListener('change',renderBookings); $('areaFilter').addEventListener('change',renderBookings); $('cakeFilter').addEventListener('change',renderBookings); $('sourceFilter').addEventListener('change',renderBookings); $('bookingSearch').addEventListener('input',renderBookings); $('resetBookingFiltersButton').addEventListener('click',resetBookingFilters); $('exportBookingsButton').addEventListener('click',exportFilteredBookings);
   $('openManualBookingButton').addEventListener('click',openManualBooking); $('closeManualBookingModal').addEventListener('click',closeManualBooking); $('cancelManualBookingButton').addEventListener('click',closeManualBooking); $('manualBookingForm').addEventListener('submit',saveManualBooking); ['manualTables','manualArea','manualCake'].forEach(id=>$(id).addEventListener('change',updateManualBookingSummary));
+  $('specialDiscountAmount').addEventListener('input',updateSpecialDiscountPreview);
   $('platformStatusFilter').addEventListener('change',renderPlatformAccounts); $('refreshPlatformButton').addEventListener('click',()=>loadPlatformAccounts().catch(e=>showError('platformError',humanizeError(e))));
   document.addEventListener('click', async e=>{ const btn=e.target.closest('[data-platform-action]'); if(!btn)return; const action=btn.dataset.platformAction; if(action==='delete-basar'){ await deleteBasarAsPlatformAdmin(Number(btn.dataset.basarId), btn.dataset.basarName || 'Basar'); return; } const status=action==='approve'?'freigegeben':action==='block'?'gesperrt':'ausstehend'; await changePlatformStatus(btn.dataset.userId,status); });
   supabase.auth.onAuthStateChange((event,session)=>{
