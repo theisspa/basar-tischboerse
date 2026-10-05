@@ -4,3 +4,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://basar-tischboerse.pages.dev/sitemap.xml
+Sitemap: https://basar-tischboerse.pages.dev/sitemap-events.xml

@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "include": [
+    "/basar/*",
+    "/sitemap-events.xml"
+  ],
+  "exclude": []
+}

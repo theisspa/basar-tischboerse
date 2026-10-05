@@ -40,6 +40,22 @@
 
   function formatTime(value) { return value ? String(value).slice(0,5) : ''; }
 
+  function seoSlug(value) {
+    return String(value || '')
+      .toLocaleLowerCase('de-DE')
+      .replaceAll('ä','ae').replaceAll('ö','oe').replaceAll('ü','ue').replaceAll('ß','ss')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 70);
+  }
+
+  function publicBasarPath(basar) {
+    const place = basar?.stadt || basar?.ort || basar?.plz || '';
+    const tail = [seoSlug(basar?.name), seoSlug(place)].filter(Boolean).join('-') || 'basar';
+    return `/basar/${Number(basar?.id)}-${tail}`;
+  }
+
   function daysUntil(dateString) {
     if (!dateString) return null;
     const today = new Date();
@@ -356,7 +372,7 @@
           <p class="basar-card-location">📍 ${escapeHtml(basarLocationText(b))}${b.ort && (b.stadt || b.plz) ? ` · ${escapeHtml(b.ort)}` : ''}</p>
           <div class="basar-card-area">${b.verkaufsbereiche === 'kinder' ? '🧸 Nur Kinder' : b.verkaufsbereiche === 'erwachsene' ? '👕 Nur Erwachsene' : b.kontingent_modus === 'getrennt' ? '🧸 Kinder & 👕 Erwachsene · getrennte Kontingente' : '🧸 Kinder & 👕 Erwachsene'}</div>
           <div class="basar-card-facts"><span><small>ab</small><strong>${euro(minPrice)}</strong></span><span><small>freie Tische</small><strong>${Number.isFinite(free) ? free : '…'}</strong></span></div>
-          <button class="market-card-button" type="button" data-discover-basar="${b.id}" ${soldOut ? 'disabled' : ''}>${soldOut ? 'Derzeit ausgebucht' : selected ? 'Ausgewählt · zur Buchung' : 'Details & Tisch buchen'}</button>
+          <a class="market-card-button" href="${publicBasarPath(b)}" style="text-decoration:none;text-align:center;">${soldOut ? 'Details ansehen' : 'Details & Tisch buchen'}</a>
         </div>
       </article>`;
     }).join('');
