@@ -187,7 +187,7 @@
 <div class="dashboard-grid dashboard-grid-6">
 <div class="stat"><span>Tische insgesamt</span><strong id="dashboardTotal">–</strong></div>
 <div class="stat"><span>Reserviert</span><strong id="dashboardBooked">–</strong></div>
-<div class="stat"><span>Frei</span><strong id="dashboardFree">–</strong></div>
+<div class="stat"><span>Frei</span><strong id="dashboardFree">–</strong></div><div class="stat attention"><span>Warteliste</span><strong id="dashboardWaitlist">0</strong></div>
 <div class="stat attention"><span>Offene Zahlungen</span><strong id="dashboardOpen">–</strong></div>
 <div class="stat success"><span>Bezahlte Buchungen</span><strong id="dashboardPaid">–</strong></div>
 <div class="stat"><span>Einnahmen gesamt</span><strong id="dashboardRevenue">–</strong></div>
@@ -235,7 +235,7 @@
 <select aria-label="Buchungsquelle filtern" class="compact-select" id="sourceFilter">
 <option value="alle">Quelle: alle</option>
 <option value="online">Online</option>
-<option value="manuell">Manuell</option>
+<option value="manuell">Manuell</option><option value="warteliste">Nachrücker / Warteliste</option>
 </select>
 </div>
 <div class="booking-action-row">
@@ -251,6 +251,17 @@
 <table class="booking-table"><thead><tr><th>Buchungsnr.</th><th>Name</th><th>Tische</th><th>Bereich</th><th>Kuchen</th><th>Betrag</th><th>Zahlung</th><th>Frist</th><th>Status</th><th>Aktion</th></tr></thead><tbody id="bookingRows"><tr><td colspan="10">Buchungen werden geladen …</td></tr></tbody></table>
 </div>
 <p class="small">Offene Zahlungen werden nach Frist hervorgehoben: offen = orange, heute fällig = kräftig orange, überfällig = rot. Bereits als „Frist abgelaufen“ markierte Buchungen blockieren keine Tische mehr.</p>
+</section>
+<section class="card admin-section-card hidden" id="waitlistCard">
+<div class="card-head booking-card-head">
+<div><span class="eyebrow">WARTELISTE</span><h2>Nachrücker verwalten</h2><p>Wartelisteneinträge reservieren noch keinen Tisch. Sobald genug passende Tische frei sind, kannst du einen Teilnehmer manuell nachrücken lassen.</p></div>
+<div class="booking-head-actions"><button class="secondary compact-action" id="refreshWaitlistButton" type="button">Aktualisieren</button></div>
+</div>
+<div class="booking-result-meta"><span id="waitlistResultCount">–</span></div>
+<div class="table-wrap">
+<table class="booking-table"><thead><tr><th>Pos.</th><th>Warteliste</th><th>Name</th><th>Tische</th><th>Bereich</th><th>Kuchen</th><th>Eingang</th><th>Status</th><th>Aktion</th></tr></thead><tbody id="waitlistRows"><tr><td colspan="9">Warteliste wird geladen …</td></tr></tbody></table>
+</div>
+<p class="small"><strong>Nachrückregel:</strong> Beim Klick auf „Nachrücken lassen“ wird eine echte Buchung angelegt und der Teilnehmer erhält automatisch Vertrag und Zahlungsinformationen. Die Zahlungsfrist beträgt ab diesem Zeitpunkt exakt 48 Stunden. Wird nicht rechtzeitig bezahlt, läuft die Nachrückbuchung automatisch ab und der Tisch wird wieder frei.</p>
 </section>
 <section class="card admin-section-card hidden platform-admin-card" id="platformAdminCard">
 <div class="card-head platform-admin-head">
@@ -333,6 +344,6 @@
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=292"></script>
-<script src="admin.js?v=295"></script>
+<script src="admin.js?v=297"></script>
 </body>
 </html>

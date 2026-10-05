@@ -132,7 +132,7 @@ ${jsonLdScript(breadcrumbLd)}
     ${sale ? `<div class="seo-fact"><small>Verkaufszeit</small><strong>${escapeHtml(sale)} Uhr</strong></div>` : ''}
     <div class="seo-fact"><small>Freie Tische</small><strong>${free === null ? 'Verfügbarkeit prüfen' : soldOut ? 'Ausgebucht' : escapeHtml(String(free))}</strong></div>
   </div></article>
-  <aside class="seo-book-card"><span>Tischreservierung</span><div class="price">ab ${escapeHtml(euro(minPrice))}</div><p>${soldOut ? 'Aktuell sind keine freien Tische verfügbar. Die Veranstaltungsdetails bleiben weiterhin einsehbar.' : 'Reserviere deinen Verkaufstisch direkt online und erhalte deine Buchungsbestätigung per E-Mail.'}</p><a class="seo-cta ${soldOut ? 'disabled' : ''}" href="${escapeHtml(bookingUrl)}">${soldOut ? 'Derzeit ausgebucht' : 'Tisch jetzt buchen'}</a><a class="seo-cta secondary" href="/#discover">Weitere Basare finden</a></aside>
+  <aside class="seo-book-card"><span>Tischreservierung</span><div class="price">ab ${escapeHtml(euro(minPrice))}</div><p>${soldOut ? 'Aktuell sind keine freien Tische verfügbar. Du kannst dich aber direkt auf die Warteliste setzen und wirst informiert, wenn der Veranstalter dich nachrücken lässt.' : 'Reserviere deinen Verkaufstisch direkt online und erhalte deine Buchungsbestätigung per E-Mail.'}</p><a class="seo-cta" href="${escapeHtml(bookingUrl)}">${soldOut ? 'Auf Warteliste setzen' : 'Tisch jetzt buchen'}</a><a class="seo-cta secondary" href="/#discover">Weitere Basare finden</a></aside>
 </section>
 <section class="seo-details" aria-label="Veranstaltungsdetails">
   ${b.ort ? `<article class="seo-detail"><h2>🏛️ Veranstaltungsort</h2><p>${escapeHtml(b.ort)}</p></article>` : ''}

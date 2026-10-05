@@ -18,6 +18,7 @@
   let currentAvailability = null;
   let lastContract = null;
   let lastEmailPayload = null;
+  let lastWaitlistPayload = null;
   let paymentConfigured = false;
   const discoveryAvailability = new Map();
   let discoveryQuery = '';
@@ -193,11 +194,9 @@
 
     const childFree = areaFree('kinder');
     const adultFree = areaFree('erwachsene');
-    if (currentAvailability && childAllowed && adultAllowed) {
-      const active = selectedCategoryKey();
-      if (active === 'kinder' && childFree < 1 && adultFree > 0 && adultInput) adultInput.checked = true;
-      else if (active === 'erwachsene' && adultFree < 1 && childFree > 0 && childInput) childInput.checked = true;
-    }
+    // V29.7: Nicht automatisch in den anderen Bereich wechseln, wenn ein Bereich
+    // ausgebucht ist. Der Nutzer darf bewusst den ausgebuchten Bereich wählen
+    // und sich dort auf die Warteliste setzen.
     if ($('childrenAvailability')) $('childrenAvailability').textContent = currentAvailability && childAllowed ? `${childFree} frei` : '';
     if ($('adultsAvailability')) $('adultsAvailability').textContent = currentAvailability && adultAllowed ? `${adultFree} frei` : '';
 
@@ -208,6 +207,33 @@
       else if (currentBasar.kontingent_modus === 'getrennt') hint.textContent = `Getrennte Kontingente: Kinder ${childFree} frei · Erwachsene ${adultFree} frei. Kinder und Erwachsene werden getrennt gebucht.`;
       else hint.textContent = 'Kinder und Erwachsene werden getrennt gebucht und nutzen einen gemeinsamen Tischpool.';
     }
+  }
+
+  function waitlistModeActive() {
+    const tables = Number(selectedValue('tables') || 1);
+    return tables > currentFreeTables;
+  }
+
+  function refreshBookingMode(loading = false) {
+    const waitlist = waitlistModeActive();
+    const submit = $('submitButton');
+    const hint = $('waitlistHint');
+    const termsText = $('termsText');
+    if (hint) {
+      hint.classList.toggle('hidden', !waitlist);
+      hint.textContent = waitlist
+        ? `Für diese Auswahl sind aktuell nur ${currentFreeTables} Tisch${currentFreeTables === 1 ? '' : 'e'} frei. Du kannst dich auf die Warteliste setzen. Ein Tisch ist erst reserviert, wenn der Veranstalter dich nachrücken lässt.`
+        : '';
+    }
+    if (termsText) {
+      termsText.innerHTML = waitlist
+        ? 'Ich akzeptiere die für den ausgewählten Basar angezeigten Teilnahmebedingungen des Veranstalters sowie die <a href="nutzungsbedingungen.html?v=297" rel="noopener noreferrer" target="_blank">Nutzungsbedingungen der Basar Tischbörse</a>. Mir ist bewusst, dass der Wartelisteneintrag noch keine Tischreservierung ist. Bei einem Nachrückangebot wird die Buchung verbindlich und die Zahlung innerhalb von 48 Stunden fällig.'
+        : 'Ich akzeptiere die für den ausgewählten Basar angezeigten Teilnahmebedingungen des Veranstalters sowie die <a href="nutzungsbedingungen.html?v=297" rel="noopener noreferrer" target="_blank">Nutzungsbedingungen der Basar Tischbörse</a> und bestätige, dass die Buchung verbindlich ist.';
+    }
+    submit.disabled = loading || !paymentConfigured;
+    if (loading) submit.textContent = waitlist ? 'Warteliste wird gespeichert …' : 'Buchung wird gespeichert …';
+    else if (!paymentConfigured) submit.textContent = 'Keine Zahlungsart verfügbar';
+    else submit.textContent = waitlist ? 'Auf Warteliste setzen' : 'Verbindlich buchen';
   }
 
   function updateAvailability(value) {
@@ -223,21 +249,15 @@
     const safeFree = areaAllowed(selectedArea) ? areaFree(selectedArea) : 0;
     currentFreeTables = safeFree;
 
+    // V29.7: Auch bei ausgebuchten/teilweise ausgebuchten Kontingenten bleiben
+    // 1-3 Tische auswählbar. Ist die Wunschmenge nicht frei, wird automatisch
+    // auf Wartelistenmodus umgeschaltet.
     document.querySelectorAll('input[name="tables"]').forEach(input => {
-      const disabled = Number(input.value) > safeFree;
-      input.disabled = disabled;
-      input.closest('.choice')?.classList.toggle('disabled', disabled);
+      input.disabled = false;
+      input.closest('.choice')?.classList.remove('disabled');
     });
 
-    const selected = document.querySelector('input[name="tables"]:checked');
-    if (selected?.disabled) {
-      const firstAvailable = [...document.querySelectorAll('input[name="tables"]')].find(input => !input.disabled);
-      if (firstAvailable) firstAvailable.checked = true;
-      updatePrice();
-    }
-
-    $('submitButton').disabled = safeFree < 1 || !paymentConfigured;
-    $('submitButton').textContent = safeFree < 1 ? 'Dieser Bereich ist ausgebucht' : (!paymentConfigured ? 'Keine Zahlungsart verfügbar' : 'Verbindlich buchen');
+    refreshBookingMode(false);
   }
 
   function showError(message) {
@@ -548,8 +568,7 @@
   }
 
   function setLoading(loading) {
-    $('submitButton').disabled = loading || !paymentConfigured || currentFreeTables < 1;
-    $('submitButton').textContent = loading ? 'Buchung wird gespeichert …' : (currentFreeTables < 1 ? 'Ausgebucht' : (!paymentConfigured ? 'Keine Zahlungsart verfügbar' : 'Verbindlich buchen'));
+    refreshBookingMode(loading);
   }
 
   function paymentInfoText(booking, paymentMethod) {
@@ -598,6 +617,32 @@
     }
   }
 
+  async function sendWaitlistEmail(waitlist, silent = false) {
+    if (!waitlist?.warteliste_id || !waitlist?.email_token) return false;
+    lastWaitlistPayload = { waitlist_id: waitlist.warteliste_id, email_token: waitlist.email_token };
+    lastEmailPayload = null;
+    if (!silent) {
+      $('emailStatus').textContent = 'Wartelistenbestätigung wird per E-Mail versendet …';
+      $('emailStatus').className = 'small email-status';
+      $('resendEmailButton').classList.add('hidden');
+    }
+    try {
+      const { data, error } = await supabaseClient.functions.invoke('send-waitlist-email', { body: lastWaitlistPayload });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      $('emailStatus').textContent = data?.already_sent ? 'Die Wartelistenbestätigung wurde bereits per E-Mail versendet.' : 'Wartelistenbestätigung wurde per E-Mail versendet.';
+      $('emailStatus').className = 'small email-status success';
+      $('resendEmailButton').classList.add('hidden');
+      return true;
+    } catch (error) {
+      console.error('Wartelisten-E-Mail fehlgeschlagen:', error);
+      $('emailStatus').textContent = 'Dein Wartelisteneintrag wurde gespeichert. Die E-Mail konnte gerade nicht versendet werden. Du kannst sie hier erneut senden.';
+      $('emailStatus').className = 'small email-status warning';
+      $('resendEmailButton').classList.remove('hidden');
+      return false;
+    }
+  }
+
   async function submitBooking(event) {
     event.preventDefault();
     clearError();
@@ -606,22 +651,13 @@
 
     const tables = Number(selectedValue('tables'));
     if (!tables || tables < 1 || tables > 3) return showError('Bitte wähle eine gültige Tischanzahl.');
-    if (tables > currentFreeTables) {
-      showError(`Diese Buchung ist nicht möglich. Es sind nur noch ${currentFreeTables} Tische frei.`);
-      await loadAvailability();
-      return;
-    }
 
     const category = selectedValue('category');
     if (!['Kinder', 'Erwachsene'].includes(category)) return showError('Bitte wähle einen verfügbaren Verkaufsbereich.');
     const categoryKey = category === 'Kinder' ? 'kinder' : 'erwachsene';
     if (!areaAllowed(categoryKey)) return showError('Dieser Verkaufsbereich wird bei diesem Basar nicht angeboten.');
     const selectedAreaFree = areaFree(categoryKey);
-    if (tables > selectedAreaFree) {
-      showError(`Für den Bereich ${category} sind nur noch ${selectedAreaFree} Tische frei.`);
-      await loadAvailability();
-      return;
-    }
+    const waitlistMode = tables > selectedAreaFree;
 
     setLoading(true);
     const payload = {
@@ -641,11 +677,44 @@
     };
 
     try {
+      if (waitlistMode) {
+        const { data, error } = await supabaseClient.rpc('join_waitlist', payload);
+        if (error) throw error;
+        const waitlist = Array.isArray(data) ? data[0] : data;
+        if (!waitlist?.wartelisten_nummer) throw new Error('Keine Wartelistennummer erhalten.');
+
+        lastContract = null;
+        lastEmailPayload = null;
+        $('confirmationEyebrow').textContent = 'WARTELISTE';
+        $('confirmationTitle').textContent = 'Du stehst auf der Warteliste.';
+        $('confirmationText').textContent = `${payload.p_vorname} ${payload.p_nachname}, dein Wunsch nach ${tables} Tisch${tables === 1 ? '' : 'en'} wurde auf die Warteliste gesetzt. Position im Bereich ${category}: ${waitlist.position}. Noch ist kein Tisch reserviert.`;
+        $('bookingNumber').textContent = waitlist.wartelisten_nummer;
+        $('paymentInfo').textContent = 'Jetzt ist noch keine Zahlung erforderlich. Wenn der Veranstalter dich nachrücken lässt, erhältst du eine verbindliche Buchungsbestätigung. Ab diesem Zeitpunkt hast du 48 Stunden Zeit für die Zahlung.';
+        $('pdfButton').classList.add('hidden');
+        $('printButton').classList.add('hidden');
+        $('externalPaypalButton').classList.add('hidden');
+        $('externalPaypalButton').removeAttribute('href');
+        $('booking').classList.add('hidden');
+        $('confirmation').classList.remove('hidden');
+        $('emailStatus').textContent = '';
+        $('emailStatus').className = 'small email-status';
+        $('resendEmailButton').classList.add('hidden');
+        await sendWaitlistEmail(waitlist);
+        await loadAvailability().catch(console.error);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+
       const { data, error } = await supabaseClient.rpc('create_buchung', payload);
       if (error) throw error;
       const booking = Array.isArray(data) ? data[0] : data;
       if (!booking?.buchungsnummer) throw new Error('Keine Buchungsnummer erhalten.');
 
+      $('confirmationEyebrow').textContent = 'BUCHUNG ERFOLGREICH';
+      $('confirmationTitle').textContent = 'Dein Tisch ist reserviert.';
+      $('pdfButton').classList.remove('hidden');
+      $('printButton').classList.remove('hidden');
+      lastWaitlistPayload = null;
       lastContract = { booking, payload, pricing: { kuchenrabatt: Number(currentBasar?.kuchenrabatt ?? 4) }, rules: { zahlungsfrist_tage: Number(currentBasar?.zahlungsfrist_tage ?? 14), kurzfristig_ab_tage: Number(currentBasar?.kurzfristig_ab_tage ?? 14), kurzfristige_zahlungsfrist_tage: Number(currentBasar?.kurzfristige_zahlungsfrist_tage ?? 3), stornofrist_tage: Number(currentBasar?.stornofrist_tage ?? 14), kuchennachgebuehr: Number(currentBasar?.kuchennachgebuehr ?? 10), uebertragung_erlaubt: currentBasar?.uebertragung_erlaubt !== false, zusatzregeln: String(currentBasar?.zusatzregeln || '').trim(), verkaufsbereiche: currentBasar?.verkaufsbereiche || 'beide', kontingent_modus: currentBasar?.kontingent_modus || 'gemeinsam', ort: currentBasar?.ort || '', plz: currentBasar?.plz || '', stadt: currentBasar?.stadt || '', veranstaltungsadresse: currentBasar?.veranstaltungsadresse || '', aufbau_von: currentBasar?.aufbau_von || '', aufbau_bis: currentBasar?.aufbau_bis || '', verkauf_von: currentBasar?.verkauf_von || '', verkauf_bis: currentBasar?.verkauf_bis || '', erlaubte_waren: currentBasar?.erlaubte_waren || '', kleiderstaender_erlaubt: currentBasar?.kleiderstaender_erlaubt, zusaetzlicher_platz_erlaubt: currentBasar?.zusaetzlicher_platz_erlaubt, standregeln: currentBasar?.standregeln || '' } };
       $('confirmationText').textContent = `${payload.p_vorname} ${payload.p_nachname}, ${tables === 1 ? '1 Tisch wurde' : `${tables} Tische wurden`} verbindlich reserviert. Gesamtbetrag: ${euro(booking.preis)}. Zahlungsfrist: ${formatDate(booking.zahlungsfrist)}.`;
       $('bookingNumber').textContent = booking.buchungsnummer;
@@ -668,8 +737,13 @@
     } catch (error) {
       console.error('Buchungsfehler:', error);
       const message = String(error?.message || '');
-      if (/nicht genuegend|nicht genügend/i.test(message)) {
-        showError('Leider sind die gewünschten Tische inzwischen nicht mehr verfügbar. Bitte wähle eine kleinere Anzahl.');
+      if (/direkt buchbar/i.test(message)) {
+        showError('Inzwischen sind wieder genügend Tische frei. Bitte sende das Formular erneut – es wird jetzt als normale Buchung angelegt.');
+        await loadAvailability().catch(console.error);
+      } else if (/aktiver Wartelisteneintrag/i.test(message)) {
+        showError('Mit dieser E-Mail-Adresse besteht bereits ein Wartelisteneintrag für diesen Basar.');
+      } else if (/nicht genuegend|nicht genügend/i.test(message)) {
+        showError('Die Verfügbarkeit hat sich gerade geändert. Bitte prüfe die angezeigten freien Tische und sende das Formular erneut.');
         await loadAvailability().catch(console.error);
       } else if (/bereits vorbei/i.test(message)) {
         showError('Dieser Basar kann nicht mehr gebucht werden, weil der Veranstaltungstermin bereits vorbei ist.');
@@ -678,7 +752,6 @@
       }
     } finally {
       setLoading(false);
-      if (currentFreeTables < 1) updateAvailability(0);
     }
   }
 
@@ -769,9 +842,10 @@
     doc.save(`Basar-Vertrag-${b.buchungsnummer}.pdf`.replace(/[^a-zA-Z0-9._-]/g,'-'));
   }
 
-  document.querySelectorAll('input[name="tables"], #cake').forEach(el => el.addEventListener('change', updatePrice));
+  document.querySelectorAll('input[name="tables"], #cake').forEach(el => el.addEventListener('change', () => { updatePrice(); refreshBookingMode(false); }));
   document.querySelectorAll('input[name="category"]').forEach(el => el.addEventListener('change', () => {
     if (currentAvailability) updateAvailability(currentAvailability);
+    refreshBookingMode(false);
   }));
 
   $('searchBasarButton')?.addEventListener('click', () => applyDiscoverySearch());
@@ -801,11 +875,12 @@
   $('bookingForm').addEventListener('submit', submitBooking);
   $('pdfButton').addEventListener('click', generateContractPdf);
   $('resendEmailButton').addEventListener('click', async () => {
-    if (!lastEmailPayload) return;
+    if (!lastEmailPayload && !lastWaitlistPayload) return;
     $('resendEmailButton').disabled = true;
     $('resendEmailButton').textContent = 'E-Mail wird gesendet …';
     try {
-      await sendBookingEmail({ buchung_id: lastEmailPayload.booking_id, email_token: lastEmailPayload.email_token });
+      if (lastWaitlistPayload) await sendWaitlistEmail({ warteliste_id: lastWaitlistPayload.waitlist_id, email_token: lastWaitlistPayload.email_token });
+      else await sendBookingEmail({ buchung_id: lastEmailPayload.booking_id, email_token: lastEmailPayload.email_token });
     } finally {
       $('resendEmailButton').disabled = false;
       $('resendEmailButton').textContent = 'E-Mail erneut senden';
@@ -817,6 +892,11 @@
     $('bookingForm').reset();
     lastContract = null;
     lastEmailPayload = null;
+    lastWaitlistPayload = null;
+    $('confirmationEyebrow').textContent = 'BUCHUNG ERFOLGREICH';
+    $('confirmationTitle').textContent = 'Dein Tisch ist reserviert.';
+    $('pdfButton').classList.remove('hidden');
+    $('printButton').classList.remove('hidden');
     $('externalPaypalButton').classList.add('hidden');
     $('externalPaypalButton').removeAttribute('href');
     clearError();

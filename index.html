@@ -148,18 +148,18 @@
 <select id="payment" required=""><option value="">Zahlungsarten werden geladen …</option></select>
 </div>
 <div class="field full legal">
-<label class="checkbox-row"><input id="terms" required="" type="checkbox"/><span>Ich akzeptiere die für den ausgewählten Basar angezeigten Teilnahmebedingungen des Veranstalters sowie die <a href="nutzungsbedingungen.html?v=2873" rel="noopener noreferrer" target="_blank">Nutzungsbedingungen der Basar Tischbörse</a> und bestätige, dass die Buchung verbindlich ist.</span></label>
+<label class="checkbox-row"><input id="terms" required="" type="checkbox"/><span id="termsText">Ich akzeptiere die für den ausgewählten Basar angezeigten Teilnahmebedingungen des Veranstalters sowie die <a href="nutzungsbedingungen.html?v=297" rel="noopener noreferrer" target="_blank">Nutzungsbedingungen der Basar Tischbörse</a> und bestätige, dass die Buchung verbindlich ist.</span></label>
 <label class="checkbox-row"><input id="privacy" required="" type="checkbox"/><span>Ich habe die <a href="datenschutz.html?v=2873" rel="noopener noreferrer" target="_blank">Datenschutzerklärung</a> zur Kenntnis genommen.</span></label>
 </div>
 </div>
 <div class="terms-box"><strong>Wichtige Buchungsregeln</strong><ul><li class="hidden" id="eventTimeRule"></li><li class="hidden" id="goodsRule"></li><li class="hidden" id="standRule"></li><li id="paymentRule">Die Zahlungsfrist wird anhand des Veranstaltungstermins berechnet.</li><li id="cancellationRule">Die Stornierungsregel wird geladen.</li><li id="cakePenaltyRule">Die Kuchenregel wird geladen.</li><li class="hidden" id="additionalRule"></li></ul></div>
 <div class="price-box"><div><span>Grundpreis</span><strong id="basePrice">12,00 €</strong></div><div><span>Kuchenrabatt</span><strong id="discount">0,00 €</strong></div><div class="total"><span>Gesamt</span><strong id="totalPrice">12,00 €</strong></div></div>
 <div class="form-error hidden" id="formError" role="alert"></div>
-<button class="primary market-submit" id="submitButton" type="submit">Wird geladen …</button>
+<button class="primary market-submit" id="submitButton" type="submit">Wird geladen …</button><p class="small hidden" id="waitlistHint"></p>
 </form>
 </section>
 <section class="card confirmation hidden" id="confirmation">
-<div class="success-mark">✓</div><span class="eyebrow warm">BUCHUNG ERFOLGREICH</span><h2>Dein Tisch ist reserviert.</h2><p id="confirmationText"></p><div class="booking-number" id="bookingNumber"></div><p class="small" id="paymentInfo"></p>
+<div class="success-mark">✓</div><span class="eyebrow warm" id="confirmationEyebrow">BUCHUNG ERFOLGREICH</span><h2 id="confirmationTitle">Dein Tisch ist reserviert.</h2><p id="confirmationText"></p><div class="booking-number" id="bookingNumber"></div><p class="small" id="paymentInfo"></p>
 <a class="primary inline-button hidden" id="externalPaypalButton" rel="noopener noreferrer" target="_blank">Mit PayPal bezahlen</a>
 <p aria-live="polite" class="small email-status" id="emailStatus"></p><button class="secondary hidden" id="resendEmailButton" type="button">E-Mail erneut senden</button>
 <div class="actions"><button class="primary" id="pdfButton" type="button">Vertrag als PDF herunterladen</button><button class="secondary" id="printButton" type="button">Buchung drucken</button><button class="secondary" id="newBookingButton" type="button">Neue Buchung</button></div>
@@ -183,6 +183,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 <script src="config.js?v=2873"></script>
-<script src="app.js?v=296"></script>
+<script src="app.js?v=297"></script>
 </body>
 </html>
