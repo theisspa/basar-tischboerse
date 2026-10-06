@@ -419,6 +419,7 @@
     $('dashboardCapacityFill').style.width=`${percent}%`;
     const childrenBooked=blocking.filter(r=>r.verkaufsbereich==='kinder').reduce((sum,r)=>sum+Number(r.anzahl_tische||0),0);
     const adultsBooked=blocking.filter(r=>r.verkaufsbereich==='erwachsene').reduce((sum,r)=>sum+Number(r.anzahl_tische||0),0);
+    const bothBooked=blocking.filter(r=>r.verkaufsbereich==='beide').reduce((sum,r)=>sum+Number(r.anzahl_tische||0),0);
     const areaBox=$('dashboardAreaCapacity');
     if (basar.verkaufsbereiche==='kinder') {
       areaBox.innerHTML=`<span><strong>Kinder</strong>${childrenBooked} reserviert · ${Math.max(0,max-childrenBooked)} frei</span>`;
@@ -428,8 +429,15 @@
       const childMax=Number(basar.max_tische_kinder||0), adultMax=Number(basar.max_tische_erwachsene||0);
       areaBox.innerHTML=`<span><strong>🧸 Kinder</strong>${childrenBooked} / ${childMax} reserviert · ${Math.max(0,childMax-childrenBooked)} frei</span><span><strong>👕 Erwachsene</strong>${adultsBooked} / ${adultMax} reserviert · ${Math.max(0,adultMax-adultsBooked)} frei</span>`;
     } else {
-      areaBox.innerHTML=`<span><strong>Kinder & Erwachsene</strong>Gemeinsamer Pool mit ${max} Tischen · ${free} frei</span>`;
+      areaBox.innerHTML=`<span><strong>Kinder & Erwachsene</strong>Gemeinsamer Pool mit ${max} Tischen · ${free} frei${bothBooked ? ` · ${bothBooked} Tisch${bothBooked===1?'':'e'} gemischt` : ''}</span>`;
     }
+  }
+
+  function areaLabel(value) {
+    if (value === 'kinder') return 'Kinder';
+    if (value === 'erwachsene') return 'Erwachsene';
+    if (value === 'beide') return 'Kinder & Erwachsene';
+    return String(value || '—');
   }
 
   function paymentLabel(value) {
@@ -474,7 +482,9 @@
       ? '<span class="check">☐ Kinder</span>'
       : basar.verkaufsbereiche === 'erwachsene'
         ? '<span class="check">☐ Erwachsene</span>'
-        : '<span class="check">☐ Kinder</span><span class="check">☐ Erwachsene</span>';
+        : basar.kontingent_modus === 'getrennt'
+          ? '<span class="check">☐ Kinder</span><span class="check">☐ Erwachsene</span>'
+          : '<span class="check">☐ Kinder</span><span class="check">☐ Erwachsene</span><span class="check">☐ Kinder & Erwachsene</span>';
     const paymentChoices = [
       p.ueberweisung_aktiv ? '<span class="check">☐ Überweisung</span>' : '',
       p.paypal_link_aktiv ? '<span class="check">☐ PayPal-Link</span>' : '',
@@ -823,7 +833,7 @@
       } else if (w.buchung_id) {
         actions = `<button class="table-button" type="button" data-action="open-booking" data-booking-id="${w.buchung_id}">Buchung öffnen</button>`;
       }
-      return `<tr class="${['abgelaufen','storniert','entfernt'].includes(w.status)?'muted-row':''}"><td><strong>${position}</strong></td><td><strong>${escapeHtml(w.wartelisten_nummer)}</strong>${bookingInfo}</td><td>${escapeHtml(`${w.vorname} ${w.nachname}`)}<small class="deadline-note">${escapeHtml(w.email||'')}</small></td><td>${w.anzahl_tische}</td><td>${w.verkaufsbereich==='kinder'?'Kinder':'Erwachsene'}</td><td>${w.kuchenspende?'Ja':'Nein'}</td><td>${formatDateTime(w.created_at)}</td><td><span class="badge">${escapeHtml(waitlistStatusLabel(w))}</span>${deadline}</td><td>${actions}</td></tr>`;
+      return `<tr class="${['abgelaufen','storniert','entfernt'].includes(w.status)?'muted-row':''}"><td><strong>${position}</strong></td><td><strong>${escapeHtml(w.wartelisten_nummer)}</strong>${bookingInfo}</td><td>${escapeHtml(`${w.vorname} ${w.nachname}`)}<small class="deadline-note">${escapeHtml(w.email||'')}</small></td><td>${w.anzahl_tische}</td><td>${areaLabel(w.verkaufsbereich)}</td><td>${w.kuchenspende?'Ja':'Nein'}</td><td>${formatDateTime(w.created_at)}</td><td><span class="badge">${escapeHtml(waitlistStatusLabel(w))}</span>${deadline}</td><td>${actions}</td></tr>`;
     }).join('');
   }
 
@@ -922,7 +932,7 @@ ${humanizeError(error)}`);
       const sourceBadge = (r.buchungsquelle || 'online') === 'manuell' ? '<small class="manual-source-badge">Manuell</small>' : (r.buchungsquelle === 'warteliste' ? '<small class="manual-source-badge">Nachrücker</small>' : '');
       const discount = specialDiscountAmount(r), due = payableAmount(r);
       const amountDisplay = discount > 0 ? `${euro(due)}<small class="deadline-note">statt ${euro(r.preis)} · Rabatt ${euro(discount)}</small>` : euro(r.preis);
-      return `<tr class="${rowClass}"><td><strong>${escapeHtml(r.buchungsnummer)}</strong>${sourceBadge}</td><td>${escapeHtml(`${r.vorname} ${r.nachname}`)}</td><td>${r.anzahl_tische}</td><td>${r.verkaufsbereich==='kinder'?'Kinder':'Erwachsene'}</td><td>${r.kuchenspende?'Ja':'Nein'}</td><td>${amountDisplay}</td><td>${isFreeBooking(r)?'Keine Zahlung':paymentLabel(r.zahlungsart)}</td><td>${isFreeBooking(r)?'—':paymentDeadlineDisplay(r)}${deadlineSub}</td><td><span class="badge status-${statusClass}">${statusText}</span></td><td><button class="table-button" type="button" data-booking-id="${r.id}" data-action="open-booking">Öffnen</button></td></tr>`;
+      return `<tr class="${rowClass}"><td><strong>${escapeHtml(r.buchungsnummer)}</strong>${sourceBadge}</td><td>${escapeHtml(`${r.vorname} ${r.nachname}`)}</td><td>${r.anzahl_tische}</td><td>${areaLabel(r.verkaufsbereich)}</td><td>${r.kuchenspende?'Ja':'Nein'}</td><td>${amountDisplay}</td><td>${isFreeBooking(r)?'Keine Zahlung':paymentLabel(r.zahlungsart)}</td><td>${isFreeBooking(r)?'—':paymentDeadlineDisplay(r)}${deadlineSub}</td><td><span class="badge status-${statusClass}">${statusText}</span></td><td><button class="table-button" type="button" data-booking-id="${r.id}" data-action="open-booking">Öffnen</button></td></tr>`;
     }).join('');
   }
 
@@ -964,7 +974,7 @@ ${humanizeError(error)}`);
       r.email,
       excelPhoneCell(r.telefon),
       r.anzahl_tische,
-      r.verkaufsbereich === 'kinder' ? 'Kinder' : 'Erwachsene',
+      areaLabel(r.verkaufsbereich),
       r.kuchenspende ? 'Ja' : 'Nein',
       Number(r.preis || 0).toFixed(2).replace('.', ','),
       specialDiscountAmount(r).toFixed(2).replace('.', ','),
@@ -1000,7 +1010,7 @@ ${humanizeError(error)}`);
     const fromWaitlist = r.buchungsquelle === 'warteliste';
     const participantMail = manual && !r.email ? 'Keine E-Mail hinterlegt' : manual && r.email_status === 'pending' ? 'Nicht automatisch versendet' : r.email_status==='sent'?'Versendet':r.email_status==='error'?'Fehler':r.email_status==='sending'?'Wird gesendet':'Ausstehend';
     const discount = specialDiscountAmount(r), due = payableAmount(r);
-    $('bookingDetails').innerHTML=`<div class="detail-item"><span>Name</span><strong>${escapeHtml(`${r.vorname} ${r.nachname}`)}</strong></div><div class="detail-item"><span>Quelle</span><strong>${bookingSourceLabel(r.buchungsquelle)}</strong></div><div class="detail-item"><span>Bereich</span><strong>${r.verkaufsbereich==='kinder'?'Kinder':'Erwachsene'}</strong></div><div class="detail-item"><span>Tische</span><strong>${r.anzahl_tische}</strong></div><div class="detail-item"><span>Kuchen</span><strong>${r.kuchenspende?'Ja':'Nein'}</strong></div><div class="detail-item"><span>Betrag vor Sonderrabatt</span><strong>${euro(r.preis)}</strong></div>${discount>0?`<div class="detail-item"><span>Sonderrabatt</span><strong>− ${euro(discount)}</strong></div><div class="detail-item"><span>Rabattgrund</span><strong>${escapeHtml(r.sonderrabatt_grund||'Sonderrabatt')}</strong></div>`:''}<div class="detail-item"><span>Zu zahlen</span><strong>${euro(due)}</strong></div><div class="detail-item"><span>Zahlung</span><strong>${isFreeBooking(r)?'Keine Zahlung erforderlich':paymentLabel(r.zahlungsart)}</strong></div><div class="detail-item"><span>Status</span><strong>${status}</strong></div><div class="detail-item"><span>Zahlungsfrist</span><strong>${isFreeBooking(r)?'Entfällt':`${escapeHtml(paymentDeadlineDisplay(r))}${deadline.text?` · ${escapeHtml(deadline.text)}`:''}`}</strong></div>${r.ist_nachruecker?`<div class="detail-item full"><span>Nachrücker</span><strong>Wartelistenplatz · 48-Stunden-Zahlungsfrist</strong></div>`:''}<div class="detail-item full"><span>Adresse</span><strong>${escapeHtml(address)}</strong></div><div class="detail-item"><span>E-Mail</span><strong>${escapeHtml(r.email||'—')}</strong></div><div class="detail-item"><span>Telefon</span><strong>${escapeHtml(r.telefon||'—')}</strong></div><div class="detail-item"><span>E-Mail an Teilnehmer</span><strong>${escapeHtml(participantMail)}${r.email_sent_at?` · ${formatDateTime(r.email_sent_at)}`:''}</strong></div><div class="detail-item"><span>E-Mail an Veranstalter</span><strong>${r.veranstalter_email_status==='sent'?'Versendet':r.veranstalter_email_status==='error'?'Fehler':r.veranstalter_email_status==='sending'?'Wird gesendet':fromWaitlist?'Nicht separat versendet':manual?'Nicht automatisch versendet':'Ausstehend'}${r.veranstalter_email_sent_at?` · ${formatDateTime(r.veranstalter_email_sent_at)}`:''}</strong></div>${r.sonderrabatt_geaendert_at?`<div class="detail-item full"><span>Sonderrabatt zuletzt geändert</span><strong>${formatDateTime(r.sonderrabatt_geaendert_at)}</strong></div>`:''}${manual&&r.manuell_notiz?`<div class="detail-item full"><span>Interne Notiz</span><strong>${escapeHtml(r.manuell_notiz)}</strong></div>`:''}<div class="detail-item full"><span>Buchung eingegangen</span><strong>${formatDateTime(r.created_at)}</strong></div>`;
+    $('bookingDetails').innerHTML=`<div class="detail-item"><span>Name</span><strong>${escapeHtml(`${r.vorname} ${r.nachname}`)}</strong></div><div class="detail-item"><span>Quelle</span><strong>${bookingSourceLabel(r.buchungsquelle)}</strong></div><div class="detail-item"><span>Bereich</span><strong>${areaLabel(r.verkaufsbereich)}</strong></div><div class="detail-item"><span>Tische</span><strong>${r.anzahl_tische}</strong></div><div class="detail-item"><span>Kuchen</span><strong>${r.kuchenspende?'Ja':'Nein'}</strong></div><div class="detail-item"><span>Betrag vor Sonderrabatt</span><strong>${euro(r.preis)}</strong></div>${discount>0?`<div class="detail-item"><span>Sonderrabatt</span><strong>− ${euro(discount)}</strong></div><div class="detail-item"><span>Rabattgrund</span><strong>${escapeHtml(r.sonderrabatt_grund||'Sonderrabatt')}</strong></div>`:''}<div class="detail-item"><span>Zu zahlen</span><strong>${euro(due)}</strong></div><div class="detail-item"><span>Zahlung</span><strong>${isFreeBooking(r)?'Keine Zahlung erforderlich':paymentLabel(r.zahlungsart)}</strong></div><div class="detail-item"><span>Status</span><strong>${status}</strong></div><div class="detail-item"><span>Zahlungsfrist</span><strong>${isFreeBooking(r)?'Entfällt':`${escapeHtml(paymentDeadlineDisplay(r))}${deadline.text?` · ${escapeHtml(deadline.text)}`:''}`}</strong></div>${r.ist_nachruecker?`<div class="detail-item full"><span>Nachrücker</span><strong>Wartelistenplatz · 48-Stunden-Zahlungsfrist</strong></div>`:''}<div class="detail-item full"><span>Adresse</span><strong>${escapeHtml(address)}</strong></div><div class="detail-item"><span>E-Mail</span><strong>${escapeHtml(r.email||'—')}</strong></div><div class="detail-item"><span>Telefon</span><strong>${escapeHtml(r.telefon||'—')}</strong></div><div class="detail-item"><span>E-Mail an Teilnehmer</span><strong>${escapeHtml(participantMail)}${r.email_sent_at?` · ${formatDateTime(r.email_sent_at)}`:''}</strong></div><div class="detail-item"><span>E-Mail an Veranstalter</span><strong>${r.veranstalter_email_status==='sent'?'Versendet':r.veranstalter_email_status==='error'?'Fehler':r.veranstalter_email_status==='sending'?'Wird gesendet':fromWaitlist?'Nicht separat versendet':manual?'Nicht automatisch versendet':'Ausstehend'}${r.veranstalter_email_sent_at?` · ${formatDateTime(r.veranstalter_email_sent_at)}`:''}</strong></div>${r.sonderrabatt_geaendert_at?`<div class="detail-item full"><span>Sonderrabatt zuletzt geändert</span><strong>${formatDateTime(r.sonderrabatt_geaendert_at)}</strong></div>`:''}${manual&&r.manuell_notiz?`<div class="detail-item full"><span>Interne Notiz</span><strong>${escapeHtml(r.manuell_notiz)}</strong></div>`:''}<div class="detail-item full"><span>Buchung eingegangen</span><strong>${formatDateTime(r.created_at)}</strong></div>`;
     const sendButton = $('sendBookingEmailButton');
     const canSendParticipantEmail = !!String(r.email || '').trim();
     sendButton.classList.toggle('hidden', !canSendParticipantEmail);
@@ -1022,19 +1032,43 @@ ${humanizeError(error)}`);
     const basar = basare.find(b=>b.id===selectedBooking.basar_id) || basare.find(b=>b.id===selectedBasarId);
     if (!basar) return null;
     const tables = Number($('bookingEditTables')?.value || selectedBooking.anzahl_tische || 1);
+    const area = $('bookingEditArea')?.value || selectedBooking.verkaufsbereich || 'kinder';
     const cake = $('bookingEditCake')?.value === 'true';
     const base = Number(tables===1 ? basar.preis_1_tisch : tables===2 ? basar.preis_2_tische : basar.preis_3_tische || 0);
     const cakeDiscount = cake ? Math.max(0, Number(basar.kuchenrabatt || 0)) : 0;
     const regular = Math.max(0, base - cakeDiscount);
     const special = Math.min(Math.max(0, Number(selectedBooking.sonderrabatt_betrag || 0)), regular);
     const due = Math.max(0, regular - special);
-    return { basar, tables, cake, base, cakeDiscount, regular, special, due };
+    return { basar, tables, area, cake, base, cakeDiscount, regular, special, due };
   }
 
   function updateBookingEditPreview() {
     const values = bookingEditValues();
     if (!values || !$('bookingEditPreview')) return;
-    $('bookingEditPreview').textContent = `Grundpreis: ${euro(values.base)}${values.cake ? ` · Kuchenrabatt: − ${euro(values.cakeDiscount)}` : ''}${values.special > 0 ? ` · Sonderrabatt: − ${euro(values.special)}` : ''} · Neuer Zahlbetrag: ${euro(values.due)}`;
+    $('bookingEditPreview').textContent = `Bereich: ${areaLabel(values.area)} · Grundpreis: ${euro(values.base)}${values.cake ? ` · Kuchenrabatt: − ${euro(values.cakeDiscount)}` : ''}${values.special > 0 ? ` · Sonderrabatt: − ${euro(values.special)}` : ''} · Neuer Zahlbetrag: ${euro(values.due)}`;
+  }
+
+  function populateBookingEditAreas(basar, currentArea) {
+    const select = $('bookingEditArea');
+    const hint = $('bookingEditAreaHint');
+    if (!select || !basar) return;
+    let options = [];
+    if (basar.verkaufsbereiche === 'kinder') {
+      options = [['kinder','Kinder']];
+      if (hint) hint.textContent = 'Dieser Basar ist nur für Kinderartikel freigegeben.';
+    } else if (basar.verkaufsbereiche === 'erwachsene') {
+      options = [['erwachsene','Erwachsene']];
+      if (hint) hint.textContent = 'Dieser Basar ist nur für Erwachsenenartikel freigegeben.';
+    } else if (basar.kontingent_modus === 'getrennt') {
+      options = [['kinder','Kinder'],['erwachsene','Erwachsene']];
+      if (hint) hint.textContent = 'Bei getrennten Kontingenten muss die Buchung eindeutig Kinder oder Erwachsene zugeordnet sein.';
+    } else {
+      options = [['kinder','Kinder'],['erwachsene','Erwachsene'],['beide','Kinder & Erwachsene']];
+      if (hint) hint.textContent = 'Gemeinsamer Tischpool: Kinder, Erwachsene oder Kinder & Erwachsene sind möglich.';
+    }
+    select.innerHTML = options.map(([value,label])=>`<option value="${value}">${label}</option>`).join('');
+    const valid = options.some(([value])=>value===currentArea);
+    select.value = valid ? currentArea : options[0][0];
   }
 
   function openBookingEdit() {
@@ -1042,6 +1076,8 @@ ${humanizeError(error)}`);
     clearError('bookingEditError');
     closeSpecialDiscountEditor();
     $('bookingEditTables').value = String(selectedBooking.anzahl_tische || 1);
+    const basar = basare.find(b=>b.id===selectedBooking.basar_id) || basare.find(b=>b.id===selectedBasarId);
+    populateBookingEditAreas(basar, selectedBooking.verkaufsbereich || 'kinder');
     $('bookingEditCake').value = String(!!selectedBooking.kuchenspende);
     $('bookingEditPanel').classList.remove('hidden');
     updateBookingEditPreview();
@@ -1068,6 +1104,7 @@ ${humanizeError(error)}`);
       const { data, error } = await supabase.rpc('update_booking_reservation', {
         p_buchung_id: selectedBooking.id,
         p_anzahl_tische: values.tables,
+        p_verkaufsbereich: values.area,
         p_kuchenspende: values.cake
       });
       if (error) throw error;
@@ -1390,6 +1427,7 @@ ${humanizeError(error)}`);
   $('printBlankFormButton').addEventListener('click',printBlankBookingForm); $('printCakeAllergenFormButton').addEventListener('click',()=>printCakeAllergenForm(null)); $('deleteCurrentBasarButton').addEventListener('click',deleteCurrentBasar); $('editCurrentButton').addEventListener('click',()=>{const b=basare.find(x=>x.id===selectedBasarId);if(b)editBasar(b);}); $('refreshButton').addEventListener('click',()=>loadBasare().catch(e=>showError('dashboardError',humanizeError(e)))); $('refreshBookingsButton').addEventListener('click',()=>loadBookings().catch(e=>showError('dashboardError',humanizeError(e)))); $('refreshWaitlistButton')?.addEventListener('click',()=>loadBookings().catch(e=>showError('dashboardError',humanizeError(e)))); $('bookingFilter').addEventListener('change',renderBookings); $('paymentFilter').addEventListener('change',renderBookings); $('areaFilter').addEventListener('change',renderBookings); $('cakeFilter').addEventListener('change',renderBookings); $('sourceFilter').addEventListener('change',renderBookings); $('bookingSearch').addEventListener('input',renderBookings); $('resetBookingFiltersButton').addEventListener('click',resetBookingFilters); $('exportBookingsButton').addEventListener('click',exportFilteredBookings);
   $('openManualBookingButton').addEventListener('click',openManualBooking); $('closeManualBookingModal').addEventListener('click',closeManualBooking); $('cancelManualBookingButton').addEventListener('click',closeManualBooking); $('manualBookingForm').addEventListener('submit',saveManualBooking); ['manualTables','manualArea','manualCake'].forEach(id=>$(id).addEventListener('change',updateManualBookingSummary));
   $('bookingEditTables').addEventListener('change',updateBookingEditPreview);
+  $('bookingEditArea').addEventListener('change',updateBookingEditPreview);
   $('bookingEditCake').addEventListener('change',updateBookingEditPreview);
   $('specialDiscountAmount').addEventListener('input',updateSpecialDiscountPreview);
   $('platformStatusFilter').addEventListener('change',renderPlatformAccounts); $('refreshPlatformButton').addEventListener('click',()=>loadPlatformAccounts().catch(e=>showError('platformError',humanizeError(e))));

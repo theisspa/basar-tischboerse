@@ -226,6 +226,7 @@
 <option value="alle">Alle Bereiche</option>
 <option value="kinder">Kinder</option>
 <option value="erwachsene">Erwachsene</option>
+<option value="beide">Kinder &amp; Erwachsene</option>
 </select>
 <select aria-label="Kuchenspende filtern" class="compact-select" id="cakeFilter">
 <option value="alle">Kuchen: alle</option>
@@ -322,6 +323,7 @@
 <div class="hidden" id="bookingEditPanel">
 <div class="section-grid">
 <div class="field"><label for="bookingEditTables">Tische</label><select id="bookingEditTables"><option value="1">1 Tisch</option><option value="2">2 Tische</option><option value="3">3 Tische</option></select><span class="hint">Mehr Tische sind nur möglich, wenn noch genug passende Plätze frei sind.</span></div>
+<div class="field"><label for="bookingEditArea">Verkaufsbereich</label><select id="bookingEditArea"></select><span class="hint" id="bookingEditAreaHint">Die Auswahl richtet sich nach den Einstellungen dieses Basars.</span></div>
 <div class="field"><label for="bookingEditCake">Kuchenspende</label><select id="bookingEditCake"><option value="false">Nein</option><option value="true">Ja</option></select><span class="hint">Der hinterlegte Kuchenrabatt wird automatisch neu berechnet.</span></div>
 <div class="field full"><span class="hint" id="bookingEditPreview"></span></div>
 <div class="field full"><span class="hint">Hinweis: Ein vorhandener Sonderrabatt bleibt bestehen und wird bei Bedarf auf den neuen Buchungsbetrag begrenzt. Bereits bezahlte Buchungen solltest du nach einer Preisänderung auf Nachzahlung oder Rückzahlung prüfen.</span></div>
@@ -338,7 +340,7 @@
 <div class="form-error hidden" id="specialDiscountError" role="alert"></div>
 <div class="modal-actions"><button class="secondary" data-action="cancel-special-discount" type="button">Abbrechen</button><button class="secondary" data-action="full-special-discount" type="button">Komplett kostenfrei</button><button class="primary" data-action="save-special-discount" id="saveSpecialDiscountButton" style="width:auto;margin-top:0" type="button">Sonderrabatt speichern</button></div>
 </div>
-<div class="modal-actions"><button class="secondary" data-action="edit-booking-details" id="editBookingDetailsButton" type="button">Tische / Kuchen ändern</button><button class="secondary" data-action="edit-special-discount" id="editSpecialDiscountButton" type="button">Sonderrabatt / Preis anpassen</button><button class="secondary hidden" data-action="send-booking-email" id="sendBookingEmailButton" type="button">Bestätigungs-E-Mail senden</button><button class="secondary hidden" data-action="print-cake-allergen" id="printCakeAllergenBookingButton" type="button">Kuchen-/Allergenformular</button><button class="secondary hidden" data-action="mark-open" id="markOpenButton" type="button">Als offen markieren</button><button class="secondary" data-action="mark-paid" id="markPaidButton" type="button">Als bezahlt markieren</button><button class="danger" data-action="cancel-booking" id="cancelBookingButton" type="button">Buchung stornieren</button></div>
+<div class="modal-actions"><button class="secondary" data-action="edit-booking-details" id="editBookingDetailsButton" type="button">Tische / Bereich / Kuchen ändern</button><button class="secondary" data-action="edit-special-discount" id="editSpecialDiscountButton" type="button">Sonderrabatt / Preis anpassen</button><button class="secondary hidden" data-action="send-booking-email" id="sendBookingEmailButton" type="button">Bestätigungs-E-Mail senden</button><button class="secondary hidden" data-action="print-cake-allergen" id="printCakeAllergenBookingButton" type="button">Kuchen-/Allergenformular</button><button class="secondary hidden" data-action="mark-open" id="markOpenButton" type="button">Als offen markieren</button><button class="secondary" data-action="mark-paid" id="markPaidButton" type="button">Als bezahlt markieren</button><button class="danger" data-action="cancel-booking" id="cancelBookingButton" type="button">Buchung stornieren</button></div>
 </div>
 </div>
 <footer class="admin-footer">
@@ -355,6 +357,6 @@
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=292"></script>
-<script src="admin.js?v=298"></script>
+<script src="admin.js?v=2981"></script>
 </body>
 </html>
