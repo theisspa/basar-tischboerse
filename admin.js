@@ -1002,6 +1002,52 @@ ${humanizeError(error)}`);
   }
 
 
+  function exportCakeDonors() {
+    const rows = bookings.filter(r => r.kuchenspende === true && !['storniert','abgelaufen'].includes(r.zahlungsstatus));
+    if (!rows.length) {
+      showError('dashboardError', 'Für diesen Basar gibt es aktuell keine aktiven Buchungen mit Kuchenspende.');
+      return;
+    }
+    clearError('dashboardError');
+
+    // Bewusst kompakte Arbeitsliste für den Veranstaltungstag.
+    // Die beiden letzten Spalten bleiben leer und können in Excel/LibreOffice
+    // bzw. auf einem Ausdruck beim Eintreffen abgehakt werden.
+    const header = [
+      'Buchungsnummer','Vorname','Nachname','Telefon','E-Mail','Tische','Bereich',
+      'Zahlungsstatus','Kuchen erhalten','Allergenformular erhalten'
+    ];
+    const lines = [header, ...rows
+      .slice()
+      .sort((a,b) => String(a.nachname||'').localeCompare(String(b.nachname||''), 'de') || String(a.vorname||'').localeCompare(String(b.vorname||''), 'de'))
+      .map(r => [
+        r.buchungsnummer,
+        r.vorname,
+        r.nachname,
+        excelPhoneCell(r.telefon),
+        r.email,
+        r.anzahl_tische,
+        areaLabel(r.verkaufsbereich),
+        bookingStatusInfo(r)[0],
+        '',
+        ''
+      ])
+    ].map(row => row.map(csvCell).join(';')).join('\r\n');
+
+    const basar = basare.find(b => b.id === selectedBasarId);
+    const safeName = String(basar?.name || 'basar').normalize('NFKD').replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'basar';
+    const date = new Date().toISOString().slice(0,10);
+    const blob = new Blob(['\ufeff' + lines], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `kuchenspender-${safeName}-${date}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
   function openBooking(id) {
     selectedBooking=bookings.find(b=>b.id===id)||null; if(!selectedBooking)return; const r=selectedBooking; const [status]=bookingStatusInfo(r); const deadline=deadlineInfo(r);
     $('bookingModalTitle').textContent=r.buchungsnummer;
@@ -1424,7 +1470,7 @@ ${humanizeError(error)}`);
   $('basarForm').addEventListener('input',markBasarFormDirty);
   $('basarForm').addEventListener('change',markBasarFormDirty);
   window.addEventListener('beforeunload',e=>{ if(!basarFormDirty) return; e.preventDefault(); e.returnValue=''; });
-  $('printBlankFormButton').addEventListener('click',printBlankBookingForm); $('printCakeAllergenFormButton').addEventListener('click',()=>printCakeAllergenForm(null)); $('deleteCurrentBasarButton').addEventListener('click',deleteCurrentBasar); $('editCurrentButton').addEventListener('click',()=>{const b=basare.find(x=>x.id===selectedBasarId);if(b)editBasar(b);}); $('refreshButton').addEventListener('click',()=>loadBasare().catch(e=>showError('dashboardError',humanizeError(e)))); $('refreshBookingsButton').addEventListener('click',()=>loadBookings().catch(e=>showError('dashboardError',humanizeError(e)))); $('refreshWaitlistButton')?.addEventListener('click',()=>loadBookings().catch(e=>showError('dashboardError',humanizeError(e)))); $('bookingFilter').addEventListener('change',renderBookings); $('paymentFilter').addEventListener('change',renderBookings); $('areaFilter').addEventListener('change',renderBookings); $('cakeFilter').addEventListener('change',renderBookings); $('sourceFilter').addEventListener('change',renderBookings); $('bookingSearch').addEventListener('input',renderBookings); $('resetBookingFiltersButton').addEventListener('click',resetBookingFilters); $('exportBookingsButton').addEventListener('click',exportFilteredBookings);
+  $('printBlankFormButton').addEventListener('click',printBlankBookingForm); $('printCakeAllergenFormButton').addEventListener('click',()=>printCakeAllergenForm(null)); $('deleteCurrentBasarButton').addEventListener('click',deleteCurrentBasar); $('editCurrentButton').addEventListener('click',()=>{const b=basare.find(x=>x.id===selectedBasarId);if(b)editBasar(b);}); $('refreshButton').addEventListener('click',()=>loadBasare().catch(e=>showError('dashboardError',humanizeError(e)))); $('refreshBookingsButton').addEventListener('click',()=>loadBookings().catch(e=>showError('dashboardError',humanizeError(e)))); $('refreshWaitlistButton')?.addEventListener('click',()=>loadBookings().catch(e=>showError('dashboardError',humanizeError(e)))); $('bookingFilter').addEventListener('change',renderBookings); $('paymentFilter').addEventListener('change',renderBookings); $('areaFilter').addEventListener('change',renderBookings); $('cakeFilter').addEventListener('change',renderBookings); $('sourceFilter').addEventListener('change',renderBookings); $('bookingSearch').addEventListener('input',renderBookings); $('resetBookingFiltersButton').addEventListener('click',resetBookingFilters); $('exportBookingsButton').addEventListener('click',exportFilteredBookings); $('exportCakeDonorsButton').addEventListener('click',exportCakeDonors);
   $('openManualBookingButton').addEventListener('click',openManualBooking); $('closeManualBookingModal').addEventListener('click',closeManualBooking); $('cancelManualBookingButton').addEventListener('click',closeManualBooking); $('manualBookingForm').addEventListener('submit',saveManualBooking); ['manualTables','manualArea','manualCake'].forEach(id=>$(id).addEventListener('change',updateManualBookingSummary));
   $('bookingEditTables').addEventListener('change',updateBookingEditPreview);
   $('bookingEditArea').addEventListener('change',updateBookingEditPreview);
