@@ -1,4 +1,4 @@
-// V29.9 - Zahlungserinnerungen + bestehende V29.8.2-Funktionen.
+// V29.9.2 HOTFIX - Zahlungserinnerung robust gegen geschlossene/neu geladene Buchungsansicht.
 (() => {
   'use strict';
   const config = window.BASAR_CONFIG;
@@ -1260,19 +1260,29 @@ ${humanizeError(error)}`);
       : `Zahlungserinnerung mit PayPal-/Überweisungsoptionen an ${email} senden?`;
     if (!window.confirm(question)) return;
 
+    // WICHTIG: ID vor dem asynchronen Edge-Function-Aufruf sichern.
+    // Während des Versands kann die Buchungsansicht geschlossen/neu aufgebaut werden
+    // und selectedBooking dadurch null werden. Die gespeicherte ID bleibt stabil.
+    const bookingId = Number(selectedBooking.id);
+    if (!Number.isInteger(bookingId) || bookingId <= 0) {
+      return window.alert('Die Buchungs-ID ist ungültig. Bitte die Buchungsliste aktualisieren und erneut versuchen.');
+    }
+
     const button = $('sendPaymentReminderButton');
     const originalText = button?.textContent || 'Zahlungserinnerung senden';
     if (button) { button.disabled = true; button.textContent = 'Erinnerung wird versendet …'; }
     try {
       const { data, error } = await supabase.functions.invoke('send-payment-reminder', {
-        body: { mode: 'manual', booking_id: selectedBooking.id }
+        body: { mode: 'manual', booking_id: bookingId }
       });
       if (error) throw new Error(error.message || 'Die Zahlungserinnerung konnte nicht versendet werden.');
       if (data?.error) throw new Error(data.error);
-      const bookingId = selectedBooking.id;
       await loadBookings();
-      selectedBooking = bookings.find(b => b.id === bookingId) || null;
-      if (selectedBooking) openBooking(bookingId);
+      const refreshedBooking = bookings.find(b => Number(b.id) === bookingId) || null;
+      if (refreshedBooking) {
+        selectedBooking = refreshedBooking;
+        openBooking(bookingId);
+      }
       window.alert(`Zahlungserinnerung wurde an ${email} versendet.`);
     } catch (error) {
       console.error(error);
