@@ -1,4 +1,4 @@
-// V29.8 - Buchungen nachtraeglich anpassen: Tischanzahl / Kuchenspende + bestehende V29.7.2-Funktionen.
+// V29.9 - Zahlungserinnerungen + bestehende V29.8.2-Funktionen.
 (() => {
   'use strict';
   const config = window.BASAR_CONFIG;
@@ -365,7 +365,7 @@
       if (availabilityError) console.warn('Verfügbarkeit konnte nicht aktualisiert werden:', availabilityError);
     }
 
-    const { data, error } = await supabase.from('buchungen').select('id,buchungsnummer,anzahl_tische,verkaufsbereich,kuchenspende,preis,sonderrabatt_betrag,sonderrabatt_grund,sonderrabatt_geaendert_at,vorname,nachname,strasse,hausnummer,plz,ort,email,telefon,zahlungsart,zahlungsstatus,zahlungsfrist,email_token,email_status,email_sent_at,email_last_error,veranstalter_email_status,veranstalter_email_sent_at,veranstalter_email_last_error,buchungsquelle,manuell_notiz,warteliste_id,ist_nachruecker,nachruecker_zahlungsfrist_at,created_at').eq('basar_id',selectedBasarId).order('created_at',{ascending:false});
+    const { data, error } = await supabase.from('buchungen').select('id,buchungsnummer,anzahl_tische,verkaufsbereich,kuchenspende,preis,sonderrabatt_betrag,sonderrabatt_grund,sonderrabatt_geaendert_at,vorname,nachname,strasse,hausnummer,plz,ort,email,telefon,zahlungsart,zahlungsstatus,zahlungsfrist,email_token,email_status,email_sent_at,email_last_error,veranstalter_email_status,veranstalter_email_sent_at,veranstalter_email_last_error,buchungsquelle,manuell_notiz,warteliste_id,ist_nachruecker,nachruecker_zahlungsfrist_at,zahlungserinnerung_letzte_at,zahlungserinnerung_letzte_art,zahlungserinnerung_manuell_at,zahlungserinnerung_auto_at,zahlungserinnerung_anzahl,zahlungserinnerung_last_error,zahlungserinnerung_auto_status,created_at').eq('basar_id',selectedBasarId).order('created_at',{ascending:false});
 
     if (error) {
       console.error('Buchungen konnten nicht geladen werden:', error);
@@ -1056,11 +1056,20 @@ ${humanizeError(error)}`);
     const fromWaitlist = r.buchungsquelle === 'warteliste';
     const participantMail = manual && !r.email ? 'Keine E-Mail hinterlegt' : manual && r.email_status === 'pending' ? 'Nicht automatisch versendet' : r.email_status==='sent'?'Versendet':r.email_status==='error'?'Fehler':r.email_status==='sending'?'Wird gesendet':'Ausstehend';
     const discount = specialDiscountAmount(r), due = payableAmount(r);
-    $('bookingDetails').innerHTML=`<div class="detail-item"><span>Name</span><strong>${escapeHtml(`${r.vorname} ${r.nachname}`)}</strong></div><div class="detail-item"><span>Quelle</span><strong>${bookingSourceLabel(r.buchungsquelle)}</strong></div><div class="detail-item"><span>Bereich</span><strong>${areaLabel(r.verkaufsbereich)}</strong></div><div class="detail-item"><span>Tische</span><strong>${r.anzahl_tische}</strong></div><div class="detail-item"><span>Kuchen</span><strong>${r.kuchenspende?'Ja':'Nein'}</strong></div><div class="detail-item"><span>Betrag vor Sonderrabatt</span><strong>${euro(r.preis)}</strong></div>${discount>0?`<div class="detail-item"><span>Sonderrabatt</span><strong>− ${euro(discount)}</strong></div><div class="detail-item"><span>Rabattgrund</span><strong>${escapeHtml(r.sonderrabatt_grund||'Sonderrabatt')}</strong></div>`:''}<div class="detail-item"><span>Zu zahlen</span><strong>${euro(due)}</strong></div><div class="detail-item"><span>Zahlung</span><strong>${isFreeBooking(r)?'Keine Zahlung erforderlich':paymentLabel(r.zahlungsart)}</strong></div><div class="detail-item"><span>Status</span><strong>${status}</strong></div><div class="detail-item"><span>Zahlungsfrist</span><strong>${isFreeBooking(r)?'Entfällt':`${escapeHtml(paymentDeadlineDisplay(r))}${deadline.text?` · ${escapeHtml(deadline.text)}`:''}`}</strong></div>${r.ist_nachruecker?`<div class="detail-item full"><span>Nachrücker</span><strong>Wartelistenplatz · 48-Stunden-Zahlungsfrist</strong></div>`:''}<div class="detail-item full"><span>Adresse</span><strong>${escapeHtml(address)}</strong></div><div class="detail-item"><span>E-Mail</span><strong>${escapeHtml(r.email||'—')}</strong></div><div class="detail-item"><span>Telefon</span><strong>${escapeHtml(r.telefon||'—')}</strong></div><div class="detail-item"><span>E-Mail an Teilnehmer</span><strong>${escapeHtml(participantMail)}${r.email_sent_at?` · ${formatDateTime(r.email_sent_at)}`:''}</strong></div><div class="detail-item"><span>E-Mail an Veranstalter</span><strong>${r.veranstalter_email_status==='sent'?'Versendet':r.veranstalter_email_status==='error'?'Fehler':r.veranstalter_email_status==='sending'?'Wird gesendet':fromWaitlist?'Nicht separat versendet':manual?'Nicht automatisch versendet':'Ausstehend'}${r.veranstalter_email_sent_at?` · ${formatDateTime(r.veranstalter_email_sent_at)}`:''}</strong></div>${r.sonderrabatt_geaendert_at?`<div class="detail-item full"><span>Sonderrabatt zuletzt geändert</span><strong>${formatDateTime(r.sonderrabatt_geaendert_at)}</strong></div>`:''}${manual&&r.manuell_notiz?`<div class="detail-item full"><span>Interne Notiz</span><strong>${escapeHtml(r.manuell_notiz)}</strong></div>`:''}<div class="detail-item full"><span>Buchung eingegangen</span><strong>${formatDateTime(r.created_at)}</strong></div>`;
+    const reminderInfo = r.zahlungserinnerung_letzte_at
+      ? `${r.zahlungserinnerung_letzte_art === 'automatisch' ? 'Automatisch' : 'Manuell'} versendet · ${formatDateTime(r.zahlungserinnerung_letzte_at)}${Number(r.zahlungserinnerung_anzahl||0) > 1 ? ` · ${Number(r.zahlungserinnerung_anzahl)}× insgesamt` : ''}`
+      : 'Noch keine Zahlungserinnerung versendet';
+    $('bookingDetails').innerHTML=`<div class="detail-item"><span>Name</span><strong>${escapeHtml(`${r.vorname} ${r.nachname}`)}</strong></div><div class="detail-item"><span>Quelle</span><strong>${bookingSourceLabel(r.buchungsquelle)}</strong></div><div class="detail-item"><span>Bereich</span><strong>${areaLabel(r.verkaufsbereich)}</strong></div><div class="detail-item"><span>Tische</span><strong>${r.anzahl_tische}</strong></div><div class="detail-item"><span>Kuchen</span><strong>${r.kuchenspende?'Ja':'Nein'}</strong></div><div class="detail-item"><span>Betrag vor Sonderrabatt</span><strong>${euro(r.preis)}</strong></div>${discount>0?`<div class="detail-item"><span>Sonderrabatt</span><strong>− ${euro(discount)}</strong></div><div class="detail-item"><span>Rabattgrund</span><strong>${escapeHtml(r.sonderrabatt_grund||'Sonderrabatt')}</strong></div>`:''}<div class="detail-item"><span>Zu zahlen</span><strong>${euro(due)}</strong></div><div class="detail-item"><span>Zahlung</span><strong>${isFreeBooking(r)?'Keine Zahlung erforderlich':paymentLabel(r.zahlungsart)}</strong></div><div class="detail-item"><span>Status</span><strong>${status}</strong></div><div class="detail-item"><span>Zahlungsfrist</span><strong>${isFreeBooking(r)?'Entfällt':`${escapeHtml(paymentDeadlineDisplay(r))}${deadline.text?` · ${escapeHtml(deadline.text)}`:''}`}</strong></div>${r.ist_nachruecker?`<div class="detail-item full"><span>Nachrücker</span><strong>Wartelistenplatz · 48-Stunden-Zahlungsfrist</strong></div>`:''}<div class="detail-item full"><span>Adresse</span><strong>${escapeHtml(address)}</strong></div><div class="detail-item"><span>E-Mail</span><strong>${escapeHtml(r.email||'—')}</strong></div><div class="detail-item"><span>Telefon</span><strong>${escapeHtml(r.telefon||'—')}</strong></div><div class="detail-item"><span>E-Mail an Teilnehmer</span><strong>${escapeHtml(participantMail)}${r.email_sent_at?` · ${formatDateTime(r.email_sent_at)}`:''}</strong></div><div class="detail-item"><span>E-Mail an Veranstalter</span><strong>${r.veranstalter_email_status==='sent'?'Versendet':r.veranstalter_email_status==='error'?'Fehler':r.veranstalter_email_status==='sending'?'Wird gesendet':fromWaitlist?'Nicht separat versendet':manual?'Nicht automatisch versendet':'Ausstehend'}${r.veranstalter_email_sent_at?` · ${formatDateTime(r.veranstalter_email_sent_at)}`:''}</strong></div>${r.sonderrabatt_geaendert_at?`<div class="detail-item full"><span>Sonderrabatt zuletzt geändert</span><strong>${formatDateTime(r.sonderrabatt_geaendert_at)}</strong></div>`:''}${r.zahlungsstatus==='offen'&&!isFreeBooking(r)?`<div class="detail-item full"><span>Zahlungserinnerung</span><strong>${escapeHtml(reminderInfo)}</strong>${r.zahlungserinnerung_last_error?`<br><small style="color:#a33">Letzter Fehler: ${escapeHtml(r.zahlungserinnerung_last_error)}</small>`:''}</div>`:''}${manual&&r.manuell_notiz?`<div class="detail-item full"><span>Interne Notiz</span><strong>${escapeHtml(r.manuell_notiz)}</strong></div>`:''}<div class="detail-item full"><span>Buchung eingegangen</span><strong>${formatDateTime(r.created_at)}</strong></div>`;
     const sendButton = $('sendBookingEmailButton');
     const canSendParticipantEmail = !!String(r.email || '').trim();
     sendButton.classList.toggle('hidden', !canSendParticipantEmail);
     sendButton.textContent = r.email_status === 'sent' ? 'Bestätigung erneut senden' : 'Bestätigungs-E-Mail senden';
+    const reminderButton = $('sendPaymentReminderButton');
+    if (reminderButton) {
+      const canRemind = r.zahlungsstatus === 'offen' && !isFreeBooking(r) && r.zahlungsart !== 'bar' && !!String(r.email || '').trim();
+      reminderButton.classList.toggle('hidden', !canRemind);
+      reminderButton.textContent = r.zahlungserinnerung_letzte_at ? 'Zahlungserinnerung erneut senden' : 'Zahlungserinnerung senden';
+    }
     $('printCakeAllergenBookingButton').classList.toggle('hidden', !r.kuchenspende);
     $('editBookingDetailsButton').classList.toggle('hidden', ['storniert','abgelaufen'].includes(r.zahlungsstatus));
     $('editSpecialDiscountButton').classList.toggle('hidden', ['storniert','abgelaufen'].includes(r.zahlungsstatus));
@@ -1235,6 +1244,44 @@ ${humanizeError(error)}`);
     } finally { button.disabled=false; button.textContent='Sonderrabatt speichern'; }
   }
 
+  async function sendSelectedPaymentReminder() {
+    if (!selectedBooking) return;
+    if (selectedBooking.zahlungsstatus !== 'offen' || isFreeBooking(selectedBooking)) {
+      return window.alert('Für diese Buchung ist keine offene Zahlung mehr vorhanden.');
+    }
+    if (selectedBooking.zahlungsart === 'bar') {
+      return window.alert('Für Barzahlung vor Ort wird keine Zahlungserinnerung versendet.');
+    }
+    const email = String(selectedBooking.email || '').trim();
+    if (!email) return window.alert('Für diese Buchung ist keine E-Mail-Adresse hinterlegt.');
+    const already = !!selectedBooking.zahlungserinnerung_letzte_at;
+    const question = already
+      ? `Es wurde bereits eine Zahlungserinnerung versendet. Wirklich erneut an ${email} senden?`
+      : `Zahlungserinnerung mit PayPal-/Überweisungsoptionen an ${email} senden?`;
+    if (!window.confirm(question)) return;
+
+    const button = $('sendPaymentReminderButton');
+    const originalText = button?.textContent || 'Zahlungserinnerung senden';
+    if (button) { button.disabled = true; button.textContent = 'Erinnerung wird versendet …'; }
+    try {
+      const { data, error } = await supabase.functions.invoke('send-payment-reminder', {
+        body: { mode: 'manual', booking_id: selectedBooking.id }
+      });
+      if (error) throw new Error(error.message || 'Die Zahlungserinnerung konnte nicht versendet werden.');
+      if (data?.error) throw new Error(data.error);
+      const bookingId = selectedBooking.id;
+      await loadBookings();
+      selectedBooking = bookings.find(b => b.id === bookingId) || null;
+      if (selectedBooking) openBooking(bookingId);
+      window.alert(`Zahlungserinnerung wurde an ${email} versendet.`);
+    } catch (error) {
+      console.error(error);
+      window.alert(`Zahlungserinnerung konnte nicht versendet werden.\n\n${humanizeError(error)}`);
+    } finally {
+      if (button) { button.disabled = false; button.textContent = originalText; }
+    }
+  }
+
   async function sendSelectedBookingEmail() {
     if (!selectedBooking) return;
     const button = $('sendBookingEmailButton');
@@ -1264,7 +1311,7 @@ ${humanizeError(error)}`);
     const { error }=await supabase.from('buchungen').update({zahlungsstatus:status}).eq('id',selectedBooking.id); if(error){showError('dashboardError',humanizeError(error));return;} closeBooking(); await loadBookings(); await loadDashboardOverview();
   }
 
-  document.addEventListener('click', async e=>{ const b=e.target.closest('[data-action]'); if(!b)return; const a=b.dataset.action; if(a==='open-booking')openBooking(Number(b.dataset.bookingId)); else if(a==='close-booking')closeBooking(); else if(a==='send-booking-email')await sendSelectedBookingEmail(); else if(a==='print-cake-allergen')printCakeAllergenForm(selectedBooking); else if(a==='edit-booking-details')openBookingEdit(); else if(a==='cancel-booking-edit')closeBookingEdit(); else if(a==='save-booking-edit')await saveBookingEdit(); else if(a==='edit-special-discount')openSpecialDiscountEditor(); else if(a==='cancel-special-discount')closeSpecialDiscountEditor(); else if(a==='full-special-discount')setFullSpecialDiscount(); else if(a==='save-special-discount')await saveSpecialDiscount(); else if(a==='mark-paid')await updateBookingStatus('bezahlt'); else if(a==='mark-open')await updateBookingStatus('offen'); else if(a==='cancel-booking')await updateBookingStatus('storniert'); else if(a==='promote-waitlist')await promoteWaitlistEntry(Number(b.dataset.waitlistId)); else if(a==='remove-waitlist')await removeWaitlistEntry(Number(b.dataset.waitlistId)); }, true);
+  document.addEventListener('click', async e=>{ const b=e.target.closest('[data-action]'); if(!b)return; const a=b.dataset.action; if(a==='open-booking')openBooking(Number(b.dataset.bookingId)); else if(a==='close-booking')closeBooking(); else if(a==='send-booking-email')await sendSelectedBookingEmail(); else if(a==='send-payment-reminder')await sendSelectedPaymentReminder(); else if(a==='print-cake-allergen')printCakeAllergenForm(selectedBooking); else if(a==='edit-booking-details')openBookingEdit(); else if(a==='cancel-booking-edit')closeBookingEdit(); else if(a==='save-booking-edit')await saveBookingEdit(); else if(a==='edit-special-discount')openSpecialDiscountEditor(); else if(a==='cancel-special-discount')closeSpecialDiscountEditor(); else if(a==='full-special-discount')setFullSpecialDiscount(); else if(a==='save-special-discount')await saveSpecialDiscount(); else if(a==='mark-paid')await updateBookingStatus('bezahlt'); else if(a==='mark-open')await updateBookingStatus('offen'); else if(a==='cancel-booking')await updateBookingStatus('storniert'); else if(a==='promote-waitlist')await promoteWaitlistEntry(Number(b.dataset.waitlistId)); else if(a==='remove-waitlist')await removeWaitlistEntry(Number(b.dataset.waitlistId)); }, true);
   document.addEventListener('click',e=>{if(e.target===$('bookingModal'))closeBooking(); if(e.target===$('manualBookingModal'))closeManualBooking();});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'){ closeBooking(); closeManualBooking(); }});
 
