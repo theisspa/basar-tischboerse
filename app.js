@@ -701,7 +701,9 @@
         $('resendEmailButton').classList.add('hidden');
         await sendWaitlistEmail(waitlist);
         await loadAvailability().catch(console.error);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        requestAnimationFrame(() => {
+          $('confirmation')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
         return;
       }
 
@@ -728,12 +730,21 @@
       $('externalPaypalButton').classList.add('hidden');
       $('externalPaypalButton').removeAttribute('href');
       await loadAvailability();
-      if (payload.p_zahlungsart === 'paypal_link' && booking.veranstalter_paypal_email) {
+      const paypalButtonVisible = payload.p_zahlungsart === 'paypal_link' && booking.veranstalter_paypal_email;
+      if (paypalButtonVisible) {
         $('externalPaypalButton').href = booking.veranstalter_paypal_email;
         $('externalPaypalButton').classList.remove('hidden');
       }
+
+      // Nach erfolgreicher Buchung nicht mehr an den Seitenanfang springen.
+      // Bei PayPal wird der Zahlungsbutton bewusst in die Bildschirmmitte gebracht,
+      // damit der Kunde den noch offenen Zahlungsschritt sofort sieht.
+      requestAnimationFrame(() => {
+        const target = paypalButtonVisible ? $('externalPaypalButton') : $('confirmation');
+        target?.scrollIntoView({ behavior: 'smooth', block: paypalButtonVisible ? 'center' : 'start' });
+      });
+
       await sendBookingEmail(booking);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
       console.error('Buchungsfehler:', error);
       const message = String(error?.message || '');
@@ -905,7 +916,9 @@
     $('confirmation').classList.add('hidden');
     $('booking').classList.remove('hidden');
     await loadAvailability().catch(console.error);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    requestAnimationFrame(() => {
+      $('bookingZone')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   });
 
   (async function init() {
