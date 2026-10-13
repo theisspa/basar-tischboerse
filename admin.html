@@ -252,7 +252,7 @@
 <div class="table-wrap">
 <table class="booking-table"><thead><tr><th>Buchungsnr.</th><th>Name</th><th>Tische</th><th>Bereich</th><th>Kuchen</th><th>Betrag</th><th>Zahlung</th><th>Frist</th><th>Status</th><th>Aktion</th></tr></thead><tbody id="bookingRows"><tr><td colspan="10">Buchungen werden geladen …</td></tr></tbody></table>
 </div>
-<p class="small">Offene Zahlungen werden nach Frist hervorgehoben: offen = orange, heute fällig = kräftig orange, überfällig = rot. Bei weiterhin offenen Zahlungen versendet das System automatisch nach 7 Tagen eine Zahlungserinnerung, sofern zuvor noch keine Erinnerung versendet wurde und die Zahlungsfrist noch läuft. Bereits als „Frist abgelaufen“ markierte Buchungen blockieren keine Tische mehr.</p>
+<p class="small">Offene Zahlungen werden nach Frist hervorgehoben: offen = orange, heute fällig = kräftig orange, überfällig = rot. Bei weiterhin offenen Zahlungen versendet das System automatisch nach 7 Tagen eine erste Zahlungserinnerung und 2 Tage vor Ablauf der Zahlungsfrist eine zweite Erinnerung. In der zweiten Erinnerung wird ausdrücklich darauf hingewiesen, dass die Tischreservierung nach Ablauf der Frist verfällt und der Tisch wieder freigegeben wird. Bereits als „Frist abgelaufen“ markierte Buchungen blockieren keine Tische mehr.</p>
 </section>
 <section class="card admin-section-card hidden" id="waitlistCard">
 <div class="card-head booking-card-head">
@@ -358,6 +358,6 @@
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=292"></script>
-<script src="admin.js?v=2992"></script>
+<script src="admin.js?v=2910"></script>
 </body>
 </html>
