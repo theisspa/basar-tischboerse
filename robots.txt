@@ -1,5 +1,3 @@
-# Basar Tischbörse – Live
-# Öffentliche Inhalte dürfen von Suchmaschinen gecrawlt und indexiert werden.
 User-agent: *
 Allow: /
 
