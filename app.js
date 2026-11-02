@@ -197,8 +197,8 @@
     // V29.7: Nicht automatisch in den anderen Bereich wechseln, wenn ein Bereich
     // ausgebucht ist. Der Nutzer darf bewusst den ausgebuchten Bereich wählen
     // und sich dort auf die Warteliste setzen.
-    if ($('childrenAvailability')) $('childrenAvailability').textContent = currentAvailability && childAllowed ? `${childFree} frei` : '';
-    if ($('adultsAvailability')) $('adultsAvailability').textContent = currentAvailability && adultAllowed ? `${adultFree} frei` : '';
+    if ($('childrenAvailability')) $('childrenAvailability').textContent = currentAvailability && childAllowed ? (childFree > 0 ? `${childFree} frei` : '0 frei · Warteliste möglich') : '';
+    if ($('adultsAvailability')) $('adultsAvailability').textContent = currentAvailability && adultAllowed ? (adultFree > 0 ? `${adultFree} frei` : '0 frei · Warteliste möglich') : '';
 
     const hint = $('categoryHint');
     if (hint) {
