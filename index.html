@@ -47,7 +47,7 @@
 </div>
 <div aria-label="Umkreissuche" class="proximity-tools">
 <label class="radius-control" for="radiusSelect"><span>Umkreis</span><select id="radiusSelect"><option value="10">10 km</option><option selected="" value="25">25 km</option><option value="50">50 km</option><option value="100">100 km</option></select></label>
-<label class="free-only-control"><input checked="" id="freeOnly" type="checkbox"/><span>Nur mit freien Tischen</span></label>
+<label class="free-only-control"><input id="freeOnly" type="checkbox"/><span>Nur direkt buchbare Basare</span></label>
 <button class="location-button" id="useLocationButton" type="button"><svg aria-hidden="true" class="location-pin-icon" viewbox="0 0 24 24"><path d="M12 21s6-5.2 6-11a6 6 0 1 0-12 0c0 5.8 6 11 6 11Z"></path><circle cx="12" cy="10" r="2"></circle></svg><span>Meinen Standort verwenden</span></button>
 </div>
 <div class="location-search-status hidden" id="locationSearchStatus" role="status"></div>
@@ -109,7 +109,11 @@
   <div class="event-info-item hidden" id="eventStandInfo"><span class="event-info-icon">ℹ️</span><div><strong>Standregeln</strong><p id="eventStandText"></p></div></div>
 </div>
 </div>
-<div class="availability"><strong id="availableTables">–</strong><span>Tische frei</span></div>
+<div class="availability"><strong id="availableTables">–</strong><span id="availabilityLabel">Tische frei</span></div>
+</div>
+<div class="hidden" id="waitlistNotice" role="status" aria-live="polite" style="margin:0 0 18px;padding:15px 17px;border:1px solid #e4a63a;border-radius:14px;background:#fff7e7;color:#243746;">
+  <strong style="display:block;margin-bottom:4px;font-size:1.02rem;">Aktuell ausgebucht – Warteliste verfügbar</strong>
+  <span style="display:block;line-height:1.45;">Für den gewählten Bereich sind derzeit keine Tische frei. Du kannst dich trotzdem auf die Warteliste eintragen.</span>
 </div>
 <form id="bookingForm">
 <div class="section-grid">
@@ -187,6 +191,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
 <script src="config.js?v=2873"></script>
-<script src="app.js?v=2991"></script>
+<script src="app.js?v=2912"></script>
 </body>
 </html>

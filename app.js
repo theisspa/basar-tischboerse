@@ -25,7 +25,7 @@
   let discoveryMode = 'all';
   let discoveryOrigin = null;
   let discoveryRadiusKm = 25;
-  let discoveryFreeOnly = true;
+  let discoveryFreeOnly = false;
   const discoveryDistances = new Map();
 
   function selectedValue(name) {
@@ -218,11 +218,28 @@
     const waitlist = waitlistModeActive();
     const submit = $('submitButton');
     const hint = $('waitlistHint');
+    const notice = $('waitlistNotice');
     const termsText = $('termsText');
+    const requestedTables = Number(selectedValue('tables') || 1);
+
+    if (notice) {
+      notice.classList.toggle('hidden', !waitlist);
+      if (waitlist) {
+        const noDirectTables = currentFreeTables < 1;
+        const title = noDirectTables
+          ? 'Aktuell ausgebucht – Warteliste verfügbar'
+          : 'Wunschmenge nur über Warteliste möglich';
+        const message = noDirectTables
+          ? 'Für den gewählten Bereich sind derzeit keine Tische frei. Du kannst dich trotzdem auf die Warteliste eintragen. Der Wartelisteneintrag reserviert noch keinen Tisch. Erst wenn der Veranstalter dich nachrücken lässt, entsteht eine Buchung.'
+          : `Du möchtest ${requestedTables} Tisch${requestedTables === 1 ? '' : 'e'}, aktuell ${currentFreeTables === 1 ? 'ist nur 1 Tisch' : `sind nur ${currentFreeTables} Tische`} direkt frei. Du kannst dich für deine Wunschmenge auf die Warteliste eintragen.`;
+        notice.innerHTML = `<strong style="display:block;margin-bottom:4px;font-size:1.02rem;">${title}</strong><span style="display:block;line-height:1.45;">${message}</span>`;
+      }
+    }
+
     if (hint) {
       hint.classList.toggle('hidden', !waitlist);
       hint.textContent = waitlist
-        ? `Für diese Auswahl sind aktuell nur ${currentFreeTables} Tisch${currentFreeTables === 1 ? '' : 'e'} frei. Du kannst dich auf die Warteliste setzen. Ein Tisch ist erst reserviert, wenn der Veranstalter dich nachrücken lässt.`
+        ? 'Dein Wartelisteneintrag ist noch keine Tischreservierung. Beim Nachrücken erhältst du automatisch die Buchungs- und Zahlungsinformationen.'
         : '';
     }
     if (termsText) {
@@ -231,9 +248,9 @@
         : 'Ich akzeptiere die für den ausgewählten Basar angezeigten Teilnahmebedingungen des Veranstalters sowie die <a href="nutzungsbedingungen.html?v=297" rel="noopener noreferrer" target="_blank">Nutzungsbedingungen der Basar Tischbörse</a> und bestätige, dass die Buchung verbindlich ist.';
     }
     submit.disabled = loading || !paymentConfigured;
-    if (loading) submit.textContent = waitlist ? 'Warteliste wird gespeichert …' : 'Buchung wird gespeichert …';
+    if (loading) submit.textContent = waitlist ? 'Wartelisteneintrag wird gespeichert …' : 'Buchung wird gespeichert …';
     else if (!paymentConfigured) submit.textContent = 'Keine Zahlungsart verfügbar';
-    else submit.textContent = waitlist ? 'Auf Warteliste setzen' : 'Verbindlich buchen';
+    else submit.textContent = waitlist ? 'Auf Warteliste eintragen' : 'Verbindlich buchen';
   }
 
   function updateAvailability(value) {
@@ -241,13 +258,13 @@
       ? value
       : { free_tables: Number(value) || 0, children_free: Number(value) || 0, adults_free: Number(value) || 0 };
     currentAvailability = row;
-    const overallFree = Math.max(0, Number(row.free_tables) || 0);
-    $('availableTables').textContent = overallFree;
     configureCategoryOptions();
 
     const selectedArea = selectedCategoryKey();
     const safeFree = areaAllowed(selectedArea) ? areaFree(selectedArea) : 0;
     currentFreeTables = safeFree;
+    $('availableTables').textContent = safeFree;
+    if ($('availabilityLabel')) $('availabilityLabel').textContent = safeFree > 0 ? 'Tische frei' : 'direkt frei';
 
     // V29.7: Auch bei ausgebuchten/teilweise ausgebuchten Kontingenten bleiben
     // 1-3 Tische auswählbar. Ist die Wunschmenge nicht frei, wird automatisch
@@ -386,13 +403,13 @@
       return `<article class="market-basar-card ${selected ? 'selected' : ''}" style="--card-delay:${Math.min(index,6)*45}ms">
         <div class="basar-card-art" aria-hidden="true"><span>${index % 3 === 0 ? '🧸' : index % 3 === 1 ? '👗' : '🧺'}</span><span>${index % 2 === 0 ? '🍰' : '🏷️'}</span></div>
         <div class="basar-card-body">
-          <div class="basar-card-date"><span>${formatDate(b.veranstaltungsdatum)}</span>${soldOut ? '<b class="soldout">Ausgebucht</b>' : '<b>Buchbar</b>'}</div>
+          <div class="basar-card-date"><span>${formatDate(b.veranstaltungsdatum)}</span>${soldOut ? '<b class="soldout">Ausgebucht · Warteliste</b>' : '<b>Buchbar</b>'}</div>
           ${distanceBadge}
           <h3>${escapeHtml(b.name)}</h3>
           <p class="basar-card-location">📍 ${escapeHtml(basarLocationText(b))}${b.ort && (b.stadt || b.plz) ? ` · ${escapeHtml(b.ort)}` : ''}</p>
           <div class="basar-card-area">${b.verkaufsbereiche === 'kinder' ? '🧸 Nur Kinder' : b.verkaufsbereiche === 'erwachsene' ? '👕 Nur Erwachsene' : b.kontingent_modus === 'getrennt' ? '🧸 Kinder & 👕 Erwachsene · getrennte Kontingente' : '🧸 Kinder & 👕 Erwachsene'}</div>
           <div class="basar-card-facts"><span><small>ab</small><strong>${euro(minPrice)}</strong></span><span><small>freie Tische</small><strong>${Number.isFinite(free) ? free : '…'}</strong></span></div>
-          <a class="market-card-button" href="${publicBasarPath(b)}" style="text-decoration:none;text-align:center;">${soldOut ? 'Details ansehen' : 'Details & Tisch buchen'}</a>
+          <a class="market-card-button" href="${publicBasarPath(b)}" style="text-decoration:none;text-align:center;">${soldOut ? 'Auf Warteliste eintragen' : 'Details & Tisch buchen'}</a>
         </div>
       </article>`;
     }).join('');
