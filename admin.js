@@ -1,3 +1,4 @@
+// V29.13 - manuelle Wartelistenaufnahme.
 // V29.10 - zweite automatische Zahlungserinnerung 2 Tage vor Zahlungsfrist.
 (() => {
   'use strict';
@@ -791,6 +792,74 @@
     } catch (error) { console.error(error); showError('manualBookingError',humanizeError(error)); }
     finally { button.disabled=false; button.textContent='Manuelle Buchung speichern'; }
   }
+
+  // V29.13: separate Aufnahme ohne Buchung oder Verfuegbarkeitsaenderung.
+  let manualWaitlistBasarId = null, savingManualWaitlist = false;
+  function openManualWaitlist() {
+    const basar = basare.find(b => b.id === selectedBasarId);
+    if (!basar) return showError('dashboardError','Bitte zuerst einen Basar auswählen.');
+    manualWaitlistBasarId = basar.id;
+    clearError('manualWaitlistError');
+    $('manualWaitlistForm').reset();
+    $('manualWaitlistBasarName').textContent = `${basar.name} · ${formatDate(basar.veranstaltungsdatum)}`;
+    const areas = basar.verkaufsbereiche === 'kinder' ? [['kinder','Kinder']] : basar.verkaufsbereiche === 'erwachsene' ? [['erwachsene','Erwachsene']] : basar.verkaufsbereiche === 'beide' ? [['kinder','Kinder'],['erwachsene','Erwachsene']] : [];
+    $('waitlistArea').innerHTML = areas.map(([value,label])=>`<option value="${value}">${label}</option>`).join('');
+    const payments = [];
+    if (profileSnapshot?.ueberweisung_aktiv && profileSnapshot?.iban?.trim()) payments.push(['ueberweisung','Überweisung']);
+    if (profileSnapshot?.paypal_link_aktiv && profileSnapshot?.paypal_link?.trim()) payments.push(['paypal_link','PayPal-Link']);
+    $('waitlistPayment').innerHTML = payments.map(([value,label])=>`<option value="${value}">${label}</option>`).join('');
+    $('saveManualWaitlistButton').disabled = !payments.length || !areas.length;
+    if (!payments.length) showError('manualWaitlistError','Bitte zuerst Überweisung oder PayPal-Link im Veranstalterprofil einrichten. Diese Zahlungsart wird später beim Nachrücken verwendet.');
+    $('manualWaitlistModal').classList.remove('hidden');
+    $('waitlistFirstName').focus();
+  }
+  function closeManualWaitlist() {
+    if (savingManualWaitlist) return;
+    $('manualWaitlistModal').classList.add('hidden');
+    manualWaitlistBasarId = null;
+    $('openManualWaitlistButton').focus();
+  }
+  async function saveManualWaitlist(event) {
+    event.preventDefault();
+    if (savingManualWaitlist) return;
+    clearError('manualWaitlistError');
+    if (!$('manualWaitlistForm').reportValidity()) return;
+    if (!manualWaitlistBasarId) return showError('manualWaitlistError','Bitte den Basar erneut auswählen.');
+    const first = $('waitlistFirstName').value.trim(), last = $('waitlistLastName').value.trim();
+    if (!first || !last) return showError('manualWaitlistError','Bitte Vor- und Nachname eintragen.');
+    const tables = Number($('waitlistTables').value);
+    if (!Number.isInteger(tables) || tables < 1 || tables > 3) return showError('manualWaitlistError','Bitte 1 bis 3 Tische auswählen.');
+    const payload = {
+      p_basar_id:manualWaitlistBasarId, p_anzahl_tische:tables,
+      p_verkaufsbereich:$('waitlistArea').value, p_kuchenspende:$('waitlistCake').value==='true',
+      p_vorname:first, p_nachname:last, p_email:$('waitlistEmail').value.trim(),
+      p_telefon:$('waitlistPhone').value.trim(), p_zahlungsart:$('waitlistPayment').value,
+      p_strasse:'', p_hausnummer:'', p_plz:'', p_ort:''
+    };
+    const button = $('saveManualWaitlistButton');
+    savingManualWaitlist = true; button.disabled = true; button.textContent = 'Wird gespeichert …';
+    let saved = null;
+    try {
+      const {data,error} = await supabase.rpc('create_manual_waitlist_entry',payload);
+      if (error) throw error;
+      saved = (Array.isArray(data) ? data[0] : data) || {};
+    } catch (error) {
+      showError('manualWaitlistError',humanizeError(error));
+    } finally {
+      savingManualWaitlist = false; button.disabled = false; button.textContent = 'Auf Warteliste setzen';
+    }
+    if (!saved) return;
+    closeManualWaitlist();
+    // Aufnahme ist abgeschlossen; ein Ladefehler darf keine erneute Aufnahme nahelegen.
+    try { await loadBookings(); } catch (error) { showError('waitlistError',`Eintrag gespeichert. Bitte die Ansicht aktualisieren. ${humanizeError(error)}`); }
+    window.alert(`Wartelisteneintrag ${saved.wartelisten_nummer || ''} gespeichert. Position im gewählten Bereich: ${saved.position ?? 'siehe Liste'}.\nEs wurde kein Tisch reserviert und keine E-Mail versendet.`);
+  }
+  $('openManualWaitlistButton').addEventListener('click',openManualWaitlist);
+  $('closeManualWaitlistButton').addEventListener('click',closeManualWaitlist);
+  $('cancelManualWaitlistButton').addEventListener('click',closeManualWaitlist);
+  $('manualWaitlistForm').addEventListener('submit',saveManualWaitlist);
+  document.addEventListener('click',event=>{if(event.target===$('manualWaitlistModal'))closeManualWaitlist();});
+  document.addEventListener('keydown',event=>{if(event.key==='Escape' && !$('manualWaitlistModal').classList.contains('hidden'))closeManualWaitlist();});
 
   function waitlistFreeForArea(area) {
     const basar = basare.find(b=>Number(b.id)===Number(selectedBasarId));

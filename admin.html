@@ -257,7 +257,7 @@
 <section class="card admin-section-card hidden" id="waitlistCard">
 <div class="card-head booking-card-head">
 <div><span class="eyebrow">WARTELISTE</span><h2>Nachrücker verwalten</h2><p>Wartelisteneinträge reservieren noch keinen Tisch. Sobald genug passende Tische frei sind, kannst du einen Teilnehmer manuell nachrücken lassen.</p></div>
-<div class="booking-head-actions"><button class="secondary compact-action" id="refreshWaitlistButton" type="button">Aktualisieren</button></div>
+<div class="booking-head-actions"><button class="primary compact-action" id="openManualWaitlistButton" type="button">+ Person manuell auf Warteliste setzen</button><button class="secondary compact-action" id="refreshWaitlistButton" type="button">Aktualisieren</button></div>
 </div>
 <div class="form-error hidden" id="waitlistError" role="alert"></div>
 <div class="booking-result-meta"><span id="waitlistResultCount">–</span></div>
@@ -289,6 +289,26 @@
 </section>
 </section>
 </main>
+<div aria-labelledby="manualWaitlistTitle" aria-modal="true" class="modal hidden" id="manualWaitlistModal" role="dialog">
+<div class="modal-panel manual-booking-panel">
+<div class="modal-head"><div><span class="eyebrow">WARTELISTE</span><h2 id="manualWaitlistTitle">Person manuell auf Warteliste setzen</h2><p id="manualWaitlistBasarName" class="small"></p></div><button aria-label="Schließen" class="icon-button" id="closeManualWaitlistButton" type="button">×</button></div>
+<p>Der Eintrag erhält eine normale Wartelistenposition. Es wird kein Tisch reserviert. Du entscheidest später über „Nachrücken lassen“.</p>
+<form id="manualWaitlistForm">
+<div class="section-grid manual-booking-grid">
+<div class="field"><label for="waitlistFirstName">Vorname *</label><input id="waitlistFirstName" type="text" maxlength="80" required/></div>
+<div class="field"><label for="waitlistLastName">Nachname *</label><input id="waitlistLastName" type="text" maxlength="80" required/></div>
+<div class="field"><label for="waitlistEmail">E-Mail *</label><input id="waitlistEmail" type="email" maxlength="200" required/><span class="hint">Für die spätere Nachrückbestätigung und Zahlungsinformationen.</span></div>
+<div class="field"><label for="waitlistPhone">Telefon</label><input id="waitlistPhone" type="tel" maxlength="60"/></div>
+<div class="field"><label for="waitlistTables">Tische *</label><select id="waitlistTables" required><option value="1">1 Tisch</option><option value="2">2 Tische</option><option value="3">3 Tische</option></select></div>
+<div class="field"><label for="waitlistArea">Verkaufsbereich *</label><select id="waitlistArea" required></select></div>
+<div class="field"><label for="waitlistCake">Kuchenspende</label><select id="waitlistCake"><option value="false">Nein</option><option value="true">Ja</option></select></div>
+<div class="field"><label for="waitlistPayment">Zahlungsart beim Nachrücken *</label><select id="waitlistPayment" required></select></div>
+</div>
+<p class="small">Beim Speichern wird keine E-Mail versendet. Bitte informiere die Person über den Wartelistenplatz. Eine Zahlung wird erst beim Nachrücken fällig.</p>
+<div class="form-error hidden" id="manualWaitlistError" role="alert"></div>
+<div class="modal-actions"><button class="secondary" id="cancelManualWaitlistButton" type="button">Abbrechen</button><button class="primary" id="saveManualWaitlistButton" type="submit">Auf Warteliste setzen</button></div>
+</form></div></div>
+
 <div aria-labelledby="manualBookingModalTitle" aria-modal="true" class="modal hidden" id="manualBookingModal" role="dialog">
 <div class="modal-panel manual-booking-panel">
 <div class="modal-head"><div><span class="eyebrow">MANUELLE RESERVIERUNG</span><h2 id="manualBookingModalTitle">Kunde manuell eintragen</h2><p id="manualBookingBasarName" class="small">–</p></div><button aria-label="Schließen" class="icon-button" id="closeManualBookingModal" type="button">×</button></div>
@@ -358,6 +378,6 @@
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js?v=292"></script>
-<script src="admin.js?v=2910"></script>
+<script src="admin.js?v=2913"></script>
 </body>
 </html>
